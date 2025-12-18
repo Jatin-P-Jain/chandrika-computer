@@ -1,0 +1,14 @@
+{
+  "Tab": { "TabTitle": "Chandrika Computer" },
+  "HomePage": {
+    "WelcomeMessage": "Welcome to Chandrika Computer!",
+    "Description": "This is the best place to find awesome content.",
+    "Language": "Language",
+    "English": "English",
+    "Hindi": "Hindi",
+    "DarkMode": "Dark Mode",
+    "LightMode": "Light Mode",
+    "EN": "EN",
+    "HI": "HI"
+  }
+}
