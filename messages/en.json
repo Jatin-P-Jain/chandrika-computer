@@ -7,11 +7,21 @@
     "HI": "HI",
     "Hindi": "Hindi",
     "Language": "Language",
-    "LightMode": "Light Mode"
+    "LightMode": "Light Mode",
+    "Login": "Login"
+  },
+  "DailyAccount": {
+    "Desc": "View and manage your daily account entries.",
+    "Title": "Daily Account (Patiya)"
   },
   "HomePage": {
     "Description": "This is the best place to find awesome content.",
-    "info1": "Access to the services listed below is restricted because they involve sensitive information and actions. To protect your data and ensure a secure experience, please sign in to your account before continuing. Once you are logged in, you will be able to use all available services safely and without interruption.",
+    "SecureServices": "Secure services",
+    "SecureServicesDesc": "To protect your data, access to the services below requires you to be signed in. Please log in to continue.",
     "WelcomeMessage": "Welcome to Chandrika Computer!"
+  },
+  "StampStock": {
+    "Desc": "Track your stamp stock and ledger movements.",
+    "Title": "Stamp Stock Ledger (Stamp Register)"
   }
 }
