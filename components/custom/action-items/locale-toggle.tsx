@@ -2,12 +2,12 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 
 export function LocaleToggle() {
   const router = useRouter();
   const [locale, setLocale] = useState("");
-  const t = useTranslations("HomePage");
+  const tCommon = useTranslations("Common");
 
   const toggleLocale = (localeString: string) => {
     setLocale(localeString);
@@ -31,24 +31,21 @@ export function LocaleToggle() {
 
   return (
     <div
-      className="flex w-fit mx-auto gap-8 items-center justify-between"
+      className="flex w-fit mx-auto gap-4 items-center justify-between"
       aria-label="Toggle language"
     >
-      <span className="">
-        {t("Language")}:{" "}
-        {locale === "en" ? t("English") : locale === "hi" ? t("Hindi") : "None"}
-      </span>
+      <span className="">{tCommon("Language")}: </span>
       <Button
         variant={locale === "hi" ? "default" : "outline"}
         onClick={() => toggleLocale("hi")}
       >
-        {t("Hindi")}
+        {tCommon("Hindi")}
       </Button>
       <Button
         variant={locale === "en" ? "default" : "outline"}
         onClick={() => toggleLocale("en")}
       >
-        {t("English")}
+        {tCommon("English")}
       </Button>
     </div>
   );

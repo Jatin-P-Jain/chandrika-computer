@@ -1,0 +1,17 @@
+{
+  "Common": {
+    "ChandrikaComputer": "Chandrika Computer",
+    "DarkMode": "Dark Mode",
+    "EN": "EN",
+    "English": "English",
+    "HI": "HI",
+    "Hindi": "Hindi",
+    "Language": "Language",
+    "LightMode": "Light Mode"
+  },
+  "HomePage": {
+    "Description": "This is the best place to find awesome content.",
+    "info1": "Access to the services listed below is restricted because they involve sensitive information and actions. To protect your data and ensure a secure experience, please sign in to your account before continuing. Once you are logged in, you will be able to use all available services safely and without interruption.",
+    "WelcomeMessage": "Welcome to Chandrika Computer!"
+  }
+}

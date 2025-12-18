@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
 
 export function ThemeModeToggle() {
-  const t = useTranslations("HomePage");
+  const tCommon = useTranslations("Common");
   const { theme, setTheme } = useTheme();
 
   return (
@@ -22,12 +22,12 @@ export function ThemeModeToggle() {
         <div className=" ">
           {/* Use Sun icon for light theme */}
           <WbSunnyRoundedIcon className="size-4" />{" "}
-          <span className="text-sm">{t("LightMode")}</span>
+          <span className="text-sm">{tCommon("LightMode")}</span>
         </div>
       ) : (
         <div className="">
           <DarkModeRoundedIcon className="size-4" />{" "}
-          <span className="text-sm">{t("DarkMode")}</span>
+          <span className="text-sm">{tCommon("DarkMode")}</span>
         </div>
       )}
     </Button>
