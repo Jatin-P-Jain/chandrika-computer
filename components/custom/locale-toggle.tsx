@@ -1,8 +1,8 @@
 "use client";
-import Button from "@mui/material/Button";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Button } from "../ui/button";
 
 export function LocaleToggle() {
   const router = useRouter();
@@ -39,13 +39,13 @@ export function LocaleToggle() {
         {locale === "en" ? t("English") : locale === "hi" ? t("Hindi") : "None"}
       </span>
       <Button
-        variant={locale === "hi" ? "contained" : "outlined"}
+        variant={locale === "hi" ? "default" : "outline"}
         onClick={() => toggleLocale("hi")}
       >
         {t("Hindi")}
       </Button>
       <Button
-        variant={locale === "en" ? "contained" : "outlined"}
+        variant={locale === "en" ? "default" : "outline"}
         onClick={() => toggleLocale("en")}
       >
         {t("English")}
