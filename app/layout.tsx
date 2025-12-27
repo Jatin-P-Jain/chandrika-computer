@@ -7,6 +7,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import { ThemeProvider } from "next-themes";
 import { Navbar } from "@/components/custom/sections/navbar";
 import { LanguageFontWrapper } from "@/components/custom/wrappers/language-font-wrapper";
+import { AuthProvider } from "@/context/useAuth";
 
 const martel = Martel({
   variable: "--font-martel",
@@ -45,8 +46,10 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <LanguageFontWrapper>
-              <Navbar />
-              {children}
+              <AuthProvider>
+                <Navbar />
+                {children}
+              </AuthProvider>
             </LanguageFontWrapper>
           </ThemeProvider>
         </NextIntlClientProvider>

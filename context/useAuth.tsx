@@ -125,13 +125,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         displayName: user.displayName ?? null,
         role: result.claims.admin ? "admin" : null,
         photoUrl: user.photoURL,
-        firmName: "",
-        firebaseAuth: result.claims.firebase
-          ? {
-              identities: result.claims.firebase.identities ?? {},
-              sign_in_provider: result.claims.firebase.sign_in_provider ?? "",
-            }
-          : undefined,
       };
       await createUserIfNotExists(safeUser);
       setCustomClaims(result.claims);

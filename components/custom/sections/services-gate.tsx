@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ClipboardListIcon, Info, Layers, LogInIcon } from "lucide-react";
+import {
+  ClipboardListIcon,
+  Info,
+  Layers,
+  Loader2Icon,
+  LogOutIcon,
+} from "lucide-react";
 
 import {
   Card,
@@ -9,17 +15,23 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardAction,
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
+import GoogleLoginButton from "../google-login-button";
+import { useAuth } from "@/context/useAuth";
 
 export function ServicesGate() {
   const tHomePage = useTranslations("HomePage");
   const tCommon = useTranslations("Common");
   const tDailyAccount = useTranslations("DailyAccount");
   const tStampStockLedger = useTranslations("StampStock");
+
+  const auth = useAuth();
+  const { clientUser, clientUserLoading, logout, currentUser, isLoggingOut } =
+    auth;
+
   return (
     <section className="flex w-full flex-col mx-auto space-y-3 md:space-y-6 rounded-xl bg-muted p-4 md:p-6 shadow-sm">
       {/* Information block */}
@@ -34,7 +46,7 @@ export function ServicesGate() {
           <CardDescription>{tHomePage("SecureServicesDesc")}</CardDescription>
         </CardContent>
         <CardFooter className="">
-          <Button asChild className="">
+          {/* <Button asChild className="">
             <Link
               href="/login"
               className="md:w-fit w-full flex items-center gap-2 font-semibold! text-[16px]!"
@@ -42,7 +54,39 @@ export function ServicesGate() {
               <span className="">{tCommon("Login")}</span>
               <LogInIcon />
             </Link>
-          </Button>
+          </Button> */}
+          {currentUser && clientUserLoading ? (
+            <div className="flex items-center justify-center">
+              <Loader2Icon className="h-5 w-5 animate-spin" />
+            </div>
+          ) : clientUser ? (
+            <div className="w-full flex items-center justify-between gap-3">
+              <div className="text-sm font-medium">
+                Welcome{" "}
+                {clientUser?.displayName ??
+                  currentUser?.displayName ??
+                  currentUser?.email ??
+                  "User"}
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => logout?.()}
+                disabled={isLoggingOut}
+                className="flex gap-2 justify-center dark:border-red-600 dark:bg-red-100 dark:hover:bg-red-100 border-red-600 bg-red-100 text-red-700 hover:text-red-700 hover:bg-red-100 hover:border-red-600 w-fit hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+              >
+                <span>{tCommon("Logout")}</span>
+                {isLoggingOut ? (
+                  <Loader2Icon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOutIcon className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          ) : (
+            <GoogleLoginButton variant={"outline"} className="" />
+          )}
         </CardFooter>
       </Card>
 

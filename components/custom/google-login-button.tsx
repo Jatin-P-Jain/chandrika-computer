@@ -3,10 +3,12 @@
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { useAuth } from "@/context/useAuth";
-import GoogleIcon from "@/components/custom/google-icon.svg";
-import GoogleLoadingIcon from "@/assets/icons/google-loading.gif";
+import GoogleIcon from "@/assets/google-icon.svg";
+import GoogleLoadingIcon from "@/assets/google-loading.gif";
 import Image from "next/image";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { LogInIcon } from "lucide-react";
 type ButtonProps = {
   variant?:
     | "link"
@@ -26,12 +28,12 @@ export default function GoogleLoginButton({
   variant,
   className,
   onSuccess,
-  isLogin,
 }: ButtonProps) {
+  const tSignIn = useTranslations("Common");
   const auth = useAuth();
   const router = useRouter();
   const [signingIn, setSigningIn] = useState(false);
-  const combinedClassName = `flex mx-auto rounded-4xl w-[80%] cursor-pointer w-full rounded-lg md:rounded-2xl py-3 md: py-5 shadow-sm text-sm md:text-base font-bold${
+  const combinedClassName = `w-1/2 h-1/8 flex mx-auto cursor-pointer shadow-sm text-base font-medium ${
     className ? className : ""
   }`;
   return (
@@ -56,29 +58,25 @@ export default function GoogleLoginButton({
       variant={variant}
     >
       {signingIn ? (
-        <>
+        <div className="flex flex-col items-center justify-center gap-4">
           <Image
             src={GoogleLoadingIcon}
             alt=""
             className="relative"
-            width={50}
+            width={80}
             height={50}
           />
-          {isLogin ? "Logging In with Google" : "Continue with Google"}
-        </>
+          <span className="">{tSignIn("SigningInWithGoogle")}...</span>
+          <span className="font-medium italic text-sm">
+            ({tSignIn("ContinueOnTheTab")})
+          </span>
+        </div>
       ) : (
-        <>
-          <>
-            <Image
-              src={GoogleIcon}
-              alt=""
-              className="relative"
-              width={30}
-              height={30}
-            />
-            {isLogin ? "Login with Google" : "Continue with Google"}
-          </>
-        </>
+        <div className="flex gap-2 justify-center items-center">
+          <Image src={GoogleIcon} alt="" width={25} height={25} />
+          <span className="">{tSignIn("SignInWithGoogle")}</span>
+          <LogInIcon className="size-5" />
+        </div>
       )}
     </Button>
   );

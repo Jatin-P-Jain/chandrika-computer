@@ -1,6 +1,7 @@
 {
   "Common": {
     "ChandrikaComputer": "Chandrika Computer",
+    "ContinueOnTheTab": "Continue in new tab",
     "DarkMode": "Dark Mode",
     "EN": "EN",
     "English": "English",
@@ -9,7 +10,10 @@
     "Language": "Language",
     "LightMode": "Light Mode",
     "Login": "Login",
-    "Settings": "Settings"
+    "Logout": "Logout",
+    "Settings": "Settings",
+    "SigningInWithGoogle": "Logging you in with Google",
+    "SignInWithGoogle": "Login with Google"
   },
   "DailyAccount": {
     "Desc": "View and manage your daily account entries.",

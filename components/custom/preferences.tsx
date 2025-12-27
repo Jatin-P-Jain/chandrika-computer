@@ -22,7 +22,7 @@ export function Preferences() {
         <Button
           variant="outline"
           aria-label="Open settings"
-          className="text-primary shadow-sm"
+          className="text-primary shadow-sm flex items-center gap-2"
         >
           <span className="md:block hidden">{tCommon("Settings")}</span>
           <Settings2 className="size-5" />

@@ -6,17 +6,20 @@ import { UserData } from "@/types/user";
 
 export const createUserIfNotExists = async (user: UserData) => {
   if (!user || !user.uid) return;
+  try {
+    const userRef = fireStore.collection("users").doc(user.uid);
 
-  const userRef = fireStore.collection("users").doc(user.uid);
-  const userSnapshot = await userRef.get();
+    const userSnapshot = await userRef.get();
 
-  if (!userSnapshot.exists) {
-    const newUserData = {
-      ...user,
-      profileComplete: false,
-      createdAt: new Date().toISOString(),
-    };
+    if (!userSnapshot.exists) {
+      const newUserData = {
+        ...user,
+        createdAt: new Date().toISOString(),
+      };
 
-    await userRef.set(newUserData);
+      await userRef.set(newUserData);
+    }
+  } catch (error) {
+    console.error("Error in createUserIfNotExists:", error);
   }
 };

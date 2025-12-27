@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { logoutUser } from "@/context/firebase-auth";
-import { removeToken } from "@/context/actions";
+
 import { User } from "firebase/auth";
+import { logoutUser } from "@/lib/auth/firebase-auth";
+import { removeToken } from "@/context/actions";
 
 const LAST_ACTIVITY_KEY = "lastActivity";
 const CHECK_INTERVAL_MS = 60 * 1000; // check every 1 minute

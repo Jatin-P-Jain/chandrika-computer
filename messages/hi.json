@@ -1,6 +1,7 @@
 {
   "Common": {
     "ChandrikaComputer": "चंद्रिका कंप्यूटर",
+    "ContinueOnTheTab": "नए टैब में जारी रखें",
     "DarkMode": "डार्क मोड",
     "EN": "EN",
     "English": "अंग्रेज़ी",
@@ -9,7 +10,10 @@
     "Language": "भाषा",
     "LightMode": "लाइट मोड",
     "Login": "लॉग इन करें",
-    "Settings": "सेटिंग्स"
+    "Logout": "लॉग आउट",
+    "Settings": "सेटिंग्स",
+    "SigningInWithGoogle": "आपको Google से लॉग इन किया जा रहा है",
+    "SignInWithGoogle": "Google से लॉग इन करें"
   },
   "DailyAccount": {
     "Desc": "अपने दैनिक खाता प्रविष्टियों को देखें और प्रबंधित करें।",
