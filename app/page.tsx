@@ -1,5 +1,29 @@
 import clsx from "clsx";
 import { ServicesGate } from "@/components/custom/sections/services-gate";
+import { getTranslations } from "next-intl/server";
+import { Metadata } from "next";
+
+type Props = {
+  params: { locale: string };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = params;
+
+  const tCommon = await getTranslations({
+    locale,
+    namespace: "Common",
+  });
+  const tHomePage = await getTranslations({
+    locale,
+    namespace: "HomePage",
+  });
+
+  return {
+    title: tCommon("ChandrikaComputer"),
+    description: tHomePage("Description"),
+  };
+}
 
 export default function Home() {
   return (
