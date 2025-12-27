@@ -6,29 +6,25 @@ import { ThemeModeToggle } from "../action-items/theme-mode-button";
 import { LocaleToggle } from "../action-items/locale-toggle";
 import { Separator } from "@/components/ui/separator";
 import { useTranslations } from "next-intl";
+import MobilePreferences, { Preferences } from "../preferences";
 
 export function Navbar() {
   const tCommon = useTranslations("Common");
   return (
-    <header className="w-full shadow-md bg-card">
-      <div className="mx-auto flex h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="w-full shadow-md bg-card dark:shadow-primary/10">
+      <div className="mx-auto flex h-18 items-center justify-between px-4 sm:px-6 lg:px-8 text-primary">
         {/* Left: logo + name */}
-        <Link href="/" className="flex items-center gap-4">
+        <Link href="/" className="flex items-center gap-2 md:gap-4">
           {/* Replace with <Image> or svg logo as needed */}
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
-            C
+          <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold border-2">
+            Ch
           </div>
-          <span className="text-2xl font-bold underline underline-offset-3">
+          <span className="text-lg md:text-xl font-semibold md:font-bold underline underline-offset-3">
             {tCommon("ChandrikaComputer")}
           </span>
         </Link>
 
-        {/* Right: action buttons */}
-        <div className="flex items-center gap-3">
-          <ThemeModeToggle />
-          <Separator orientation="vertical" className="h-8!" />
-          <LocaleToggle />
-        </div>
+        <Preferences />
       </div>
     </header>
   );

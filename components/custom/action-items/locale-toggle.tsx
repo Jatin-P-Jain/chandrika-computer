@@ -31,22 +31,24 @@ export function LocaleToggle() {
 
   return (
     <div
-      className="flex w-fit mx-auto gap-4 items-center justify-between"
+      className="flex w-full gap-4 items-center justify-between"
       aria-label="Toggle language"
     >
-      <span className="">{tCommon("Language")}: </span>
-      <Button
-        variant={locale === "hi" ? "default" : "outline"}
-        onClick={() => toggleLocale("hi")}
-      >
-        {tCommon("Hindi")}
-      </Button>
-      <Button
-        variant={locale === "en" ? "default" : "outline"}
-        onClick={() => toggleLocale("en")}
-      >
-        {tCommon("English")}
-      </Button>
+      <span className="text-sm">{tCommon("Language")}: </span>
+      <div className="flex gap-2 md:gap-4">
+        <Button
+          variant={locale === "hi" ? "default" : "outline"}
+          onClick={() => toggleLocale("hi")}
+        >
+          {tCommon("Hindi")}
+        </Button>
+        <Button
+          variant={locale === "en" ? "default" : "outline"}
+          onClick={() => toggleLocale("en")}
+        >
+          {tCommon("English")}
+        </Button>
+      </div>
     </div>
   );
 }

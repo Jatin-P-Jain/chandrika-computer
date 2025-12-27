@@ -45,7 +45,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body
-        className={`${halant.variable} ${inter.variable} ${martel.variable} ${poppins.variable} antialiased`}
+        className={`${halant.variable} ${inter.variable} ${martel.variable} ${poppins.variable} antialiased bg-muted-foreground/10`}
       >
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
