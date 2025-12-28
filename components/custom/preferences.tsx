@@ -36,14 +36,14 @@ export function Preferences() {
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
-          className="flex items-center justify-between"
+          className="flex items-center justify-between hover:bg-transparent!"
           onSelect={(e) => e.preventDefault()}
         >
           <ThemeModeToggle />
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          className="flex items-center justify-between"
+          className="flex items-center justify-between hover:bg-transparent!"
           onSelect={(e) => e.preventDefault()}
         >
           <LocaleToggle />

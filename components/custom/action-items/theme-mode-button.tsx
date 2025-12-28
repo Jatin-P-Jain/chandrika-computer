@@ -11,6 +11,7 @@ export function ThemeModeToggle() {
     <div className="flex w-full items-center justify-between gap-3">
       <span className="text-sm">{tCommon("DarkMode")}:</span>
       <Switch
+        className="cursor-pointer"
         id="theme-mode"
         checked={theme === "dark"}
         aria-label="Toggle dark mode"
