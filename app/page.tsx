@@ -1,7 +1,8 @@
 import clsx from "clsx";
 import { ServicesGate } from "@/components/custom/sections/services-gate";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Metadata } from "next";
+import { DateTimeDisplay } from "@/components/custom/date-time-display";
 
 type Props = {
   params: { locale: string };
@@ -29,6 +30,7 @@ export default function Home() {
   return (
     <div className={clsx("flex items-center justify-center")}>
       <main className="flex w-full max-w-6xl flex-col items-center justify-between p-4 md:p-12 lg:p-16">
+        <DateTimeDisplay />
         <ServicesGate />
       </main>
     </div>

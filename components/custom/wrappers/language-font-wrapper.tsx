@@ -10,7 +10,11 @@ interface LanguageFontWrapperProps {
 export function LanguageFontWrapper({ children }: LanguageFontWrapperProps) {
   const locale = useLocale();
   return (
-    <div className={clsx(locale === "hi" ? "font-hi font-medium" : "font-en")}>
+    <div
+      className={clsx(
+        locale === "hi" ? "font-hi font-medium" : "font-en"
+      )}
+    >
       {children}
     </div>
   );

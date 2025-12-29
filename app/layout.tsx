@@ -53,6 +53,7 @@ export default async function RootLayout({
             </LanguageFontWrapper>
           </ThemeProvider>
         </NextIntlClientProvider>
+        
       </body>
     </html>
   );

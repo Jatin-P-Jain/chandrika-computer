@@ -33,7 +33,7 @@ export default function GoogleLoginButton({
   const auth = useAuth();
   const router = useRouter();
   const [signingIn, setSigningIn] = useState(false);
-  const combinedClassName = `w-1/2 h-1/8 flex mx-auto cursor-pointer shadow-sm text-base font-medium ${
+  const combinedClassName = `h-1/8 flex mx-auto cursor-pointer shadow-sm text-base font-medium ${
     className ? className : ""
   }`;
   return (

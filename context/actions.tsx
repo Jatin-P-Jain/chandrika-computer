@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/firebase/server";
+import { User } from "firebase/auth";
 import { cookies } from "next/headers";
 
 export const removeToken = async () => {
@@ -14,47 +15,6 @@ export const setToken = async (token: string, refreshToken: string) => {
     const verifiedToken = await auth.verifyIdToken(token);
     if (!verifiedToken) return;
 
-    const userRecord = await auth.getUser(verifiedToken.uid);
-
-    const adminEmails = process.env.ADMIN_EMAILS?.split(",") || [];
-    const adminPhoneNumbers = process.env.ADMIN_PHONES?.split(",") || [];
-
-    // Start with current claims (or empty object)
-    const existingClaims = userRecord.customClaims ?? {};
-    const newClaims: Record<string, boolean> = { ...existingClaims };
-
-    // Admin logic
-    if (userRecord.email && adminEmails.includes(userRecord.email)) {
-      newClaims.admin = true;
-    }
-    if (
-      userRecord.phoneNumber &&
-      adminPhoneNumbers.includes(userRecord.phoneNumber)
-    ) {
-      newClaims.admin = true;
-    }
-
-    // Profile completeness check
-    if (
-      !userRecord.phoneNumber ||
-      !userRecord.email ||
-      !userRecord.displayName ||
-      !userRecord.customClaims?.role
-    ) {
-      newClaims.profileComplete = false;
-    }
-    if (
-      newClaims.admin &&
-      userRecord.phoneNumber &&
-      userRecord.displayName &&
-      userRecord.email
-    ) {
-      newClaims.profileComplete = true;
-    }
-
-    // Only set if changes are needed
-    await auth.setCustomUserClaims(userRecord.uid, newClaims);
-
     const cookieStore = await cookies();
     cookieStore.set("firebaseAuthToken", token, {
       httpOnly: true,
@@ -66,5 +26,39 @@ export const setToken = async (token: string, refreshToken: string) => {
     });
   } catch (e) {
     console.error("Error setting token/claims:", e);
+  }
+};
+
+// 👈 ADMIN EMAILS for auto-role assignment
+const ADMIN_EMAILS = [
+  "jatinbittu13@gmail.com",
+  // Add your admin emails here
+];
+export const setUserClaims = async (token: string, phoneNumber: string) => {
+  try {
+    const verifiedToken = await auth.verifyIdToken(token);
+    if (!verifiedToken) return;
+
+    const userRecord = await auth.getUser(verifiedToken.uid);
+    const existingClaims = userRecord.customClaims ?? {};
+    const newClaims: Record<string, boolean> = { ...existingClaims };
+
+    // Admin logic
+    if (userRecord.email && ADMIN_EMAILS.includes(userRecord.email)) {
+      newClaims.admin = true;
+    }
+
+    newClaims.phoneVerified = true;
+    newClaims.firstLoginCompleted = true;
+
+    // Set custom claims (server-side required)
+    await auth.setCustomUserClaims(userRecord.uid, {
+      ...newClaims,
+      phoneNumber: phoneNumber,
+    });
+
+    console.log("✅ Custom claims set:", newClaims);
+  } catch (error) {
+    console.error("Failed to set custom claims:", error);
   }
 };

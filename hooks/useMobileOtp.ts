@@ -5,20 +5,21 @@ import {
   linkWithCredential,
   PhoneAuthProvider,
   RecaptchaVerifier,
+  User,
 } from "firebase/auth";
 import { useAuth } from "@/context/useAuth";
 import { toast } from "sonner";
 import { handleFirebaseAuthError } from "@/lib/firebase/firebaseErrorHandler";
-import { setToken } from "@/context/actions";
+import { setToken, setUserClaims } from "@/context/actions";
 
 export function useMobileOtp({
   onSuccess,
   appVerifier,
-  isProfile,
+  currentUser,
 }: {
   onSuccess?: (() => void) | undefined;
   appVerifier: RecaptchaVerifier | null;
-  isProfile?: boolean;
+  currentUser: User | null;
 }) {
   const auth = useAuth();
   const [mobileNumber, setMobileNumber] = useState("");
@@ -62,33 +63,55 @@ export function useMobileOtp({
     try {
       if (!confirmationResult) throw new Error("No confirmation result");
       setIsVerifying(true);
-      if (isProfile) {
-        const credential = PhoneAuthProvider.credential(
-          confirmationResult.verificationId,
-          otp,
-        );
 
-        // Assume `auth.currentUser` is logged in via Google/email already
-        const user = auth.currentUser;
+      // 👈 ALWAYS link to current Google user (your 2FA flow)
+      const credential = PhoneAuthProvider.credential(
+        confirmationResult.verificationId,
+        otp
+      );
 
-        if (user) {
-          try {
-            await linkWithCredential(user, credential);
-            const token = await user.getIdToken(true);
-            await setToken(token, user.refreshToken);
-          } catch (error: unknown) {
-            handleFirebaseAuthError(error);
+      if (!currentUser) {
+        throw new Error("No active Google session. Please login first.");
+      }
+
+      // 👈 LINK PHONE CREDENTIAL TO GOOGLE USER
+      try {
+        await linkWithCredential(currentUser, credential);
+
+        // Refresh token after successful linking
+        const token = await currentUser.getIdToken(true);
+        await setToken(token, currentUser.refreshToken);
+        await setUserClaims(token, mobileNumber);
+
+        console.log("✅ Phone linked to Google account:", currentUser.uid);
+      } catch (linkError: unknown) {
+        // Handle linking errors gracefully
+        if (linkError instanceof Error) {
+          const errorCode = (linkError as any).code;
+
+          if (errorCode === "auth/provider-already-linked") {
+            console.log("✅ Phone already linked to this Google account");
+            // Still refresh token even if already linked
+            const token = await currentUser.getIdToken(true);
+            await setToken(token, currentUser.refreshToken);
+          } else if (errorCode === "auth/credential-already-in-use") {
+            console.error("Phone linked to different account");
+            handleFirebaseAuthError(linkError);
+            return;
+          } else {
+            handleFirebaseAuthError(linkError);
             return;
           }
         }
-      } else {
-        await auth?.verifyOTP(otp, confirmationResult);
       }
+
+      // 👈 SUCCESS - clear state and trigger next step
       onSuccess?.();
-      setOtpSent(false); // ✅ Only clear on successful verification
-      setOtpReset(true); // optional
-    } catch (e) {
-      handleFirebaseAuthError(e);
+      setOtpSent(false);
+      setOtpReset(true);
+    } catch (error) {
+      handleFirebaseAuthError(error);
+      console.log(error);
     } finally {
       setIsVerifying(false);
     }

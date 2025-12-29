@@ -5,6 +5,7 @@
     "DarkMode": "Dark Mode",
     "EN": "EN",
     "English": "English",
+    "Hello": "Hello",
     "HI": "HI",
     "Hindi": "Hindi",
     "Language": "Language",
@@ -24,6 +25,20 @@
     "SecureServices": "Secure services",
     "SecureServicesDesc": "To protect your data, access to the services below requires you to be signed in. Please log in to continue.",
     "WelcomeMessage": "Welcome to Chandrika Computer!"
+  },
+  "MobileNumber": {
+    "ChangeNumber": "Change Mobile Number",
+    "EnterOTP": "Enter 6-digit OTP",
+    "FirstTimeVerificationDesc": "Get started by registering your mobile number.",
+    "MobileNumber": "Mobile Number",
+    "MobileNumberDesc": "A 6-digit verification code will be sent to this mobile number",
+    "OTPSentTo": "OTP sent to",
+    "SendingOTP": "Sending OTP",
+    "SendOTP": "Send OTP",
+    "Verification": "Mobile Number Verification",
+    "VerificationDesc": "Please verify your mobile number to access secure services",
+    "Verifying": "Verifying",
+    "VerifyOTP": "Verify OTP"
   },
   "StampStock": {
     "Desc": "Track your stamp stock and ledger movements.",
