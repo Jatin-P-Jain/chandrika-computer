@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { User as FirebaseUser } from "firebase/auth";
+import type { UserData } from "@/types/user";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -32,3 +34,27 @@ export const getDeviceMetadata = () => {
 
   return { os, browser, platform };
 };
+
+type UserLike = Partial<UserData> | null | undefined;
+
+const str = (v: unknown): string => (typeof v === "string" ? v : "");
+const pickStr = (...vals: Array<unknown>) =>
+  vals.map(str).find((s) => s.trim().length > 0) ?? "";
+
+export function buildUser(
+  clientUser: UserLike,
+  currentUser: FirebaseUser | null | undefined
+): UserData {
+  console.log({ clientUser, currentUser });
+
+  return {
+    uid: pickStr(clientUser?.uid, currentUser?.uid),
+    phoneNumber: pickStr(clientUser?.phoneNumber, currentUser?.phoneNumber),
+    displayName: pickStr(clientUser?.displayName, currentUser?.displayName),
+    photoUrl: pickStr(clientUser?.photoUrl, currentUser?.photoURL),
+    email: pickStr(clientUser?.email, currentUser?.email),
+
+    // Keep these aligned to your actual UserData type:
+    role: clientUser?.role ?? null,
+  };
+}

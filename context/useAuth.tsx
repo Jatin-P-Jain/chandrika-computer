@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   loginWithEmailAndPass,
   loginWithGoogle,
@@ -43,7 +43,7 @@ type AuthContextType = {
   handleSendOTP: (
     mobile: string,
     appVerifier: RecaptchaVerifier
-  ) => Promise<ConfirmationResult>;
+  ) => Promise<ConfirmationResult | null>;
   verifyOTP: (
     otp: string,
     confirmationResult: ConfirmationResult
@@ -98,7 +98,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const snap = await getDoc(doc(firestore, "users", currentUser.uid));
       if (snap.exists()) {
         const clientUser = mapDbUserToClientUser(snap.data());
-
         setAuthState({
           status: "ready",
           clientUser,
@@ -137,6 +136,58 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // 👈 NEW: Set custom claims for first-time users
 
   // Listen for Firebase auth state changes
+  // useEffect(() => {
+  //   const unsubscribe = auth.onAuthStateChanged(async (user) => {
+  //     if (!user) {
+  //       setAuthState({ status: "no-user" });
+  //       await removeToken();
+  //       return;
+  //     }
+  //     try {
+  //       // Check custom claims to determine user type
+  //       const idTokenResult = await user.getIdTokenResult();
+  //       const claims = idTokenResult.claims as any;
+
+  //       if (!claims.phoneVerified) {
+  //         // 👈 FIRST-TIME USER - needs phone input
+  //         setAuthState({
+  //           status: "first-time-setup",
+  //           currentUser: user,
+  //         });
+  //       } else {
+  //         // 👈 RETURNING USER - direct OTP verification
+  //         setAuthState({
+  //           status: "phone-verification-required",
+  //           currentUser: user,
+  //         });
+  //       }
+
+  //       // Background setup
+  //       const safeUser: UserData = {
+  //         uid: user.uid,
+  //         email: user.email ?? null,
+  //         phoneNumber: user.phoneNumber?.slice(3) ?? null,
+  //         displayName: user.displayName ?? null,
+  //         role: claims.admin ? "admin" : null,
+  //         photoUrl: user.photoURL,
+  //       };
+
+  //       await createUserIfNotExists(safeUser);
+
+  //       const limit = claims.admin
+  //         ? parseInt(process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0")
+  //         : parseInt(process.env.NEXT_PUBLIC_USER_INACTIVITY_LIMIT || "0");
+  //       setInactivityLimit(limit);
+  //     } catch (e) {
+  //       console.error("Auth state check failed", e);
+  //       // Fallback to first-time setup
+  //       setAuthState({ status: "first-time-setup", currentUser: user });
+  //     }
+  //   });
+
+  //   return unsubscribe;
+  // }, []);
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
@@ -146,25 +197,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        // Check custom claims to determine user type
-        const idTokenResult = await user.getIdTokenResult(true);
+        // Claims only for role/admin, and don't force refresh on load
+        const idTokenResult = await user.getIdTokenResult(); // [web:125]
         const claims = idTokenResult.claims as any;
 
-        if (!claims.phoneVerified) {
-          // 👈 FIRST-TIME USER - needs phone input
-          setAuthState({
-            status: "first-time-setup",
-            currentUser: user,
-          });
-        } else {
-          // 👈 RETURNING USER - direct OTP verification
-          setAuthState({
-            status: "phone-verification-required",
-            currentUser: user,
-          });
-        }
-
-        // Background setup
+        // Ensure user doc exists
         const safeUser: UserData = {
           uid: user.uid,
           email: user.email ?? null,
@@ -173,8 +210,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           role: claims.admin ? "admin" : null,
           photoUrl: user.photoURL,
         };
-
         await createUserIfNotExists(safeUser);
+
+        // Read Firestore profile for phoneVerified + client user
+        const snap = await getDoc(doc(firestore, "users", user.uid));
+
+        if (!snap.exists()) {
+          // if doc not found, treat as first-time (or create doc then first-time)
+          setAuthState({ status: "first-time-setup", currentUser: user });
+          return;
+        }
+
+        const dbUser = snap.data();
+        const phoneVerified = dbUser.phoneVerified === true;
+
+        if (!phoneVerified) {
+          setAuthState({ status: "first-time-setup", currentUser: user });
+        } else {
+          const phoneVerifiedKey = `phone_verified:${user.uid}`;
+          const otpOk = sessionStorage.getItem(phoneVerifiedKey) === "1"; // [web:226]
+
+          if (!otpOk) {
+            setAuthState({
+              status: "phone-verification-required",
+              currentUser: user,
+            });
+            return;
+          }
+          const clientUser = mapDbUserToClientUser(dbUser);
+          setAuthState({ status: "ready", clientUser, currentUser: user });
+          // optionally refresh token in background after verification only
+          // await user.getIdToken(true); // only if you truly need claims now [web:125]
+        }
 
         const limit = claims.admin
           ? parseInt(process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0")
@@ -182,7 +249,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setInactivityLimit(limit);
       } catch (e) {
         console.error("Auth state check failed", e);
-        // Fallback to first-time setup
         setAuthState({ status: "first-time-setup", currentUser: user });
       }
     });

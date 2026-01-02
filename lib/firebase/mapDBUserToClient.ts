@@ -10,5 +10,6 @@ export function mapDbUserToClientUser(
     phoneNumber: dbUser?.phoneNumber || null,
     displayName: dbUser?.displayName || null,
     photoUrl: dbUser?.photoUrl || null,
+    phoneVerified: dbUser?.phoneVerified || false,
   };
 }

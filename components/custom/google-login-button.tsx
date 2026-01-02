@@ -33,9 +33,11 @@ export default function GoogleLoginButton({
   const auth = useAuth();
   const router = useRouter();
   const [signingIn, setSigningIn] = useState(false);
-  const combinedClassName = `h-1/8 flex mx-auto cursor-pointer shadow-sm text-base font-medium ${
-    className ? className : ""
-  }`;
+  const combinedClassName = `flex ${
+    signingIn
+      ? "bg-transparent border-0 shadow-none items-center "
+      : "bg-white border shadow-sm text-base font-semibold items-center p-5"
+  } ${className ? className : ""}`;
   return (
     <Button
       onClick={async () => {
@@ -58,21 +60,21 @@ export default function GoogleLoginButton({
       variant={variant}
     >
       {signingIn ? (
-        <div className="flex flex-col items-center justify-center gap-4">
+        <div className="flex flex-col items-center justify-center">
           <Image
             src={GoogleLoadingIcon}
             alt=""
-            className="relative"
+            className="relative bg-transparent"
             width={80}
             height={50}
           />
-          <span className="">{tSignIn("SigningInWithGoogle")}...</span>
-          <span className="font-medium italic text-sm">
+          <span className="-mt-6">{tSignIn("SigningInWithGoogle")}...</span>
+          {/* <span className="font-medium italic text-sm">
             ({tSignIn("ContinueOnTheTab")})
-          </span>
+          </span> */}
         </div>
       ) : (
-        <div className="flex gap-2 justify-center items-center">
+        <div className="flex gap-2 items-center">
           <Image src={GoogleIcon} alt="" className="size-6" />
           <span className="">{tSignIn("SignInWithGoogle")}</span>
           <LogInIcon className="size-5" />

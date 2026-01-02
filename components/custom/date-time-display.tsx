@@ -7,6 +7,12 @@ import clsx from "clsx";
 
 export function DateTimeDisplay() {
   const locale = useLocale();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -28,6 +34,10 @@ export function DateTimeDisplay() {
     minute: "2-digit",
     second: "2-digit",
   });
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div

@@ -47,7 +47,7 @@ const useMonitorInactivity = (
           await logoutUser();
           await removeToken();
           localStorage.removeItem(LAST_ACTIVITY_KEY);
-          window.location.href = "/login?sessionExpired=1";
+          window.location.href = "?sessionExpired=1";
         } catch (err) {
           console.error("Logout failed due to inactivity:", err);
         }

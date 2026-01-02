@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { Navbar } from "@/components/custom/sections/navbar";
 import { LanguageFontWrapper } from "@/components/custom/wrappers/language-font-wrapper";
 import { AuthProvider } from "@/context/useAuth";
+import { Toaster } from "sonner";
 
 const martel = Martel({
   variable: "--font-martel",
@@ -49,11 +50,11 @@ export default async function RootLayout({
               <AuthProvider>
                 <Navbar />
                 {children}
+                <Toaster richColors />
               </AuthProvider>
             </LanguageFontWrapper>
           </ThemeProvider>
         </NextIntlClientProvider>
-        
       </body>
     </html>
   );

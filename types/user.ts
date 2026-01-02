@@ -1,8 +1,4 @@
-
-
-export type UserRole =
-  | "admin"
-  | "guest"
+export type UserRole = "admin" | "guest";
 
 export type UserData = {
   uid: string;
@@ -11,4 +7,5 @@ export type UserData = {
   phoneNumber: string | null;
   displayName: string | null;
   photoUrl?: string | null;
+  phoneVerified?: boolean;
 };

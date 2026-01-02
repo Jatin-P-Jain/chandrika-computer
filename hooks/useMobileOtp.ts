@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ConfirmationResult,
   linkWithCredential,
@@ -27,8 +27,7 @@ export function useMobileOtp({
   const [otpSent, setOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [confirmationResult, setConfirmationResult] =
-    useState<ConfirmationResult>();
+  const confirmationRef = useRef<ConfirmationResult | null>(null);
 
   const resetOtp = () => {
     setOtpSent(false);
@@ -36,6 +35,8 @@ export function useMobileOtp({
   };
 
   const sendOtp = async (mobile: string, isResent: boolean = false) => {
+    console.log(mobile);
+
     try {
       if (!appVerifier) {
         toast.error("Recaptcha not ready. Please try again in a moment.");
@@ -43,11 +44,9 @@ export function useMobileOtp({
       }
       setSendingOtp(true);
       const confirmation = await auth?.handleSendOTP(mobile, appVerifier);
+      confirmationRef.current = confirmation;
       setMobileNumber(mobile);
       setOtpSent(true);
-      setTimeout(() => {
-        setConfirmationResult(confirmation);
-      }, 0);
       if (!isResent) {
         toast.success("OTP sent successfully");
       }
@@ -61,8 +60,11 @@ export function useMobileOtp({
 
   const verifyOtp = async (otp: string) => {
     try {
-      if (!confirmationResult) throw new Error("No confirmation result");
       setIsVerifying(true);
+      const confirmationResult = confirmationRef.current;
+      if (!confirmationResult) throw new Error("No confirmation result");
+      await auth.verifyOTP(otp, confirmationResult);
+      // await confirmationResult.confirm(otp);
 
       // 👈 ALWAYS link to current Google user (your 2FA flow)
       const credential = PhoneAuthProvider.credential(
@@ -107,6 +109,7 @@ export function useMobileOtp({
 
       // 👈 SUCCESS - clear state and trigger next step
       onSuccess?.();
+      toast.success("Mobile number verified successfully!");
       setOtpSent(false);
       setOtpReset(true);
     } catch (error) {

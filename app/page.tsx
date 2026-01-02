@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import { DateTimeDisplay } from "@/components/custom/date-time-display";
 
 type Props = {
-  params: { locale: string };
+  params: { locale: string; sessionExpired?: string };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -26,12 +26,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function Home() {
+export default function Home({ params }: Props) {
+  const { sessionExpired } = params;
   return (
     <div className={clsx("flex items-center justify-center")}>
       <main className="flex w-full max-w-6xl flex-col items-center justify-between p-4 md:p-12 lg:p-16">
         <DateTimeDisplay />
-        <ServicesGate />
+        <ServicesGate sessionExpired={sessionExpired} />
       </main>
     </div>
   );

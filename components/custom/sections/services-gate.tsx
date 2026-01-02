@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ClipboardListIcon, Layers, LockKeyholeIcon } from "lucide-react";
+import {
+  ClipboardListIcon,
+  Info,
+  Layers,
+  LockKeyholeIcon,
+  XIcon,
+} from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -14,65 +20,69 @@ import { useAuth } from "@/context/useAuth";
 import clsx from "clsx";
 import { LogoutButton } from "../action-items/logout-button";
 import { PhoneVerification } from "../phone-verification";
+import { AccountDetails } from "../account-details";
+import { buildUser } from "@/lib/utils";
 import { useState } from "react";
+import { AccountDetailsSkeleton } from "@/components/skeletons/account-details-skeleton";
+import LoginLogoutSkeleton from "@/components/skeletons/login-logout-skeleton";
 
-export function ServicesGate() {
+export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
   const locale = useLocale();
   const tHomePage = useTranslations("HomePage");
-  const tCommon = useTranslations("Common");
   const tDailyAccount = useTranslations("DailyAccount");
   const tStampStockLedger = useTranslations("StampStock");
 
   const auth = useAuth();
   const { authState, logout, completePhoneVerification } = auth;
-  const { currentUser } =
-    authState.status === "phone-verification-required" ||
-    authState.status === "first-time-setup"
-      ? authState
-      : { currentUser: null };
+  const isPhoneVerification =
+    authState.status === "first-time-setup" ||
+    authState.status === "phone-verification-required";
+  const currentUser = isPhoneVerification ? authState.currentUser : null;
+  const clientUser = authState.status === "ready" ? authState.clientUser : null;
 
-  const userName =
-    authState.status === "phone-verification-required" ||
-    authState.status === "first-time-setup"
-      ? authState.currentUser.displayName
-      : authState.status === "ready"
-      ? authState.clientUser.displayName
-      : "Guest";
-
-  // ALWAYS require phone verification AFTER Google login
-  // Even if phoneNumber exists, treat as fresh login needing OTP
-  const [requiresPhoneVerification, setRequiresPhoneVerification] =
-    useState(true);
-
-  // Show loading spinner while checking auth
-  if (authState.status === "loading") {
-    return (
-      <div className="flex w-full flex-col mx-auto rounded-xl bg-muted p-6 shadow-sm items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
-
+  const [sessionExpiredPopupShown, setSessionExpiredPopupShown] = useState(
+    sessionExpired === "1"
+  );
   return (
     <section className="flex w-full flex-col mx-auto rounded-xl bg-muted p-4 md:p-6 shadow-sm gap-4">
-      <div className="flex justify-between items-center w-full pb-4">
-        <h1 className="w-full text-md">
-          {tCommon("Hello")},{" "}
-          <span className="font-semibold text-xl">{userName}!</span>
-        </h1>
-        {authState.status !== "no-user" ? (
-          <LogoutButton onLogout={logout} />
+      {sessionExpired && sessionExpiredPopupShown && (
+        <div className="relative flex justify-center items-center w-1/2 mx-auto p-3 text-sm text-yellow-900 bg-yellow-200 border border-yellow-300 rounded-md gap-2">
+          <Info className="inline size-4" />
+          {tHomePage("SessionExpiredMessage")}
+          <XIcon
+            className="inline size-6 absolute -right-1 -top-1 cursor-pointer p-1 bg-white text-yellow-900 rounded-full border-yellow-300 border"
+            onClick={() => {
+              setSessionExpiredPopupShown(false);
+            }}
+          />
+        </div>
+      )}
+      <div className="flex justify-between items-start w-full pb-4">
+        {authState.status === "loading" ? (
+          <AccountDetailsSkeleton />
         ) : (
+          <AccountDetails user={buildUser(clientUser, currentUser)} />
+        )}
+        {authState.status === "loading" ? (
+          <LoginLogoutSkeleton />
+        ) : authState.status === "no-user" ? (
           <GoogleLoginButton variant={"outline"} />
+        ) : (
+          <LogoutButton onLogout={logout} />
         )}
       </div>
-      <PhoneVerification
-        authStateStatus={authState.status}
-        onVerified={completePhoneVerification}
-        currentUser={currentUser}
-      />
 
+      {isPhoneVerification && authState.status && (
+        <PhoneVerification
+          authStateStatus={
+            authState.status as
+              | "first-time-setup"
+              | "phone-verification-required"
+          }
+          onVerified={completePhoneVerification}
+          currentUser={currentUser!}
+        />
+      )}
       <div
         className={clsx(
           "flex justify-start items-center text-muted-foreground gap-2 text-sm",
@@ -89,7 +99,6 @@ export function ServicesGate() {
           </p>
         </div>
       </div>
-
       {/* Service cards */}
       <div className="grid gap-4 md:grid-cols-2">
         <Link href="/daily-account" className="group block">

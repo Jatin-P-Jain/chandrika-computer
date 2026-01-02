@@ -32,7 +32,7 @@
     "FirstTimeVerificationDesc": "Get started by registering your mobile number.",
     "MobileNumber": "Mobile Number",
     "MobileNumberDesc": "A 6-digit verification code will be sent to this mobile number",
-    "OTPSentTo": "OTP sent to",
+    "OTPSentTo": "An OTP is sent to your mobile number :",
     "SendingOTP": "Sending OTP",
     "SendOTP": "Send OTP",
     "Verification": "Mobile Number Verification",

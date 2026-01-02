@@ -34,8 +34,13 @@ export const loginWithEmailAndPass = async (
 export const sendOTP = async (
   mobile: string,
   verifier: RecaptchaVerifier
-): Promise<ConfirmationResult> => {
-  return await signInWithPhoneNumber(auth, `+91${mobile}`, verifier);
+): Promise<ConfirmationResult | null> => {
+  try {
+    return await signInWithPhoneNumber(auth, `+91${mobile}`, verifier);
+  } catch (error) {
+    console.log("Error in signInWithPhoneNumber", error);
+    return null;
+  }
 };
 
 export const verifyOTP = async (
@@ -49,6 +54,7 @@ export const verifyOTP = async (
       const user = result.user;
       const token = await user.getIdToken(true);
       await setToken(token, user.refreshToken);
+      sessionStorage.setItem(`phone_verified:${user.uid}`, "1");
       return user;
     } else {
       console.log("OTP verification failed: No result returned");
@@ -60,6 +66,7 @@ export const verifyOTP = async (
 };
 
 export const logoutUser = async () => {
+  sessionStorage.setItem(`phone_verified:${auth.currentUser?.uid}`, "0");
   await auth.signOut();
   await removeToken();
 };
