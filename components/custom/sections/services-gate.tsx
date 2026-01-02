@@ -71,8 +71,14 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
           <LogoutButton onLogout={logout} />
         )}
       </div>
-
-      {isPhoneVerification && authState.status && (
+      <PhoneVerification
+        authStateStatus={
+          authState.status as "first-time-setup" | "phone-verification-required"
+        }
+        onVerified={completePhoneVerification}
+        currentUser={currentUser!}
+      />
+      {/* {isPhoneVerification && authState.status && (
         <PhoneVerification
           authStateStatus={
             authState.status as
@@ -82,23 +88,27 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
           onVerified={completePhoneVerification}
           currentUser={currentUser!}
         />
+      )} */}
+      {authState.status !== "ready" && (
+        <div
+          className={clsx(
+            "flex justify-start items-center text-muted-foreground gap-2 text-sm",
+            locale === "hi" && "text-base!"
+          )}
+        >
+          <div className="rounded-full p-2 w-fit bg-primary/10 text-primary">
+            <LockKeyholeIcon className="size-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-foreground">
+              {tHomePage("SecureServices")}
+            </span>
+            <p className={clsx("text-xs", locale === "hi" && "text-sm!")}>
+              {tHomePage("SecureServicesDesc")}
+            </p>
+          </div>
+        </div>
       )}
-      <div
-        className={clsx(
-          "flex justify-start items-center text-muted-foreground gap-2 text-sm",
-          locale === "hi" && "text-base!"
-        )}
-      >
-        <div className="rounded-full p-2 w-fit bg-primary/10 text-primary">
-          <LockKeyholeIcon className="size-5" />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-foreground">{tHomePage("SecureServices")}</span>
-          <p className={clsx("text-xs", locale === "hi" && "text-sm!")}>
-            {tHomePage("SecureServicesDesc")}
-          </p>
-        </div>
-      </div>
       {/* Service cards */}
       <div className="grid gap-4 md:grid-cols-2">
         <Link href="/daily-account" className="group block">
@@ -117,7 +127,9 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
                 </CardDescription>
               </div>
             </CardHeader>
-            <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-red-800 bg-primary/10 p-1 rounded-md" />
+            {authState.status !== "ready" && (
+              <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
+            )}
           </Card>
         </Link>
 
@@ -137,7 +149,9 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
                 </CardDescription>
               </div>
             </CardHeader>
-            <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-red-800 bg-primary/10 p-1 rounded-md" />
+            {authState.status !== "ready" && (
+              <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
+            )}
           </Card>
         </Link>
       </div>

@@ -58,3 +58,11 @@ export function buildUser(
     role: clientUser?.role ?? null,
   };
 }
+
+export const formatTime = (secs: number) => {
+  const min = Math.floor(secs / 60)
+    .toString()
+    .padStart(2, "0");
+  const sec = (secs % 60).toString().padStart(2, "0");
+  return `${min}:${sec}`;
+};

@@ -27,7 +27,9 @@ export function useMobileOtp({
   const [otpSent, setOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
+  const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(
+    null
+  );
 
   const resetOtp = () => {
     setOtpSent(false);
@@ -35,7 +37,7 @@ export function useMobileOtp({
   };
 
   const sendOtp = async (mobile: string, isResent: boolean = false) => {
-    console.log(mobile);
+    const mobileFormatted = mobile.startsWith("+") ? mobile.slice(3) : mobile;
 
     try {
       if (!appVerifier) {
@@ -43,8 +45,11 @@ export function useMobileOtp({
         return;
       }
       setSendingOtp(true);
-      const confirmation = await auth?.handleSendOTP(mobile, appVerifier);
-      confirmationRef.current = confirmation;
+      const confirmation = await auth?.handleSendOTP(
+        mobileFormatted,
+        appVerifier
+      );
+      setConfirmation(confirmation || null);
       setMobileNumber(mobile);
       setOtpSent(true);
       if (!isResent) {
@@ -61,14 +66,12 @@ export function useMobileOtp({
   const verifyOtp = async (otp: string) => {
     try {
       setIsVerifying(true);
-      const confirmationResult = confirmationRef.current;
-      if (!confirmationResult) throw new Error("No confirmation result");
-      await auth.verifyOTP(otp, confirmationResult);
-      // await confirmationResult.confirm(otp);
+      if (!confirmation) throw new Error("No confirmation result");
+      await auth.verifyOTP(otp, confirmation);
 
       // 👈 ALWAYS link to current Google user (your 2FA flow)
       const credential = PhoneAuthProvider.credential(
-        confirmationResult.verificationId,
+        confirmation.verificationId,
         otp
       );
 

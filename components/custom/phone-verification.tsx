@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Loader2Icon, Send } from "lucide-react";
+import { Check, Loader2, Loader2Icon, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMobileOtp } from "@/hooks/useMobileOtp";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
@@ -17,6 +17,8 @@ import { useEffect, useRef, useState } from "react";
 import OTPInput from "./otp-input";
 import { User } from "firebase/auth";
 import MobileFriendlyIcon from "@mui/icons-material/MobileFriendly";
+import { formatTime } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface PhoneAuthState {
   phoneNumber: string;
@@ -48,7 +50,7 @@ export function PhoneVerification({
   }
 
   const showPhoneInput = authStateStatus === "first-time-setup";
-  const showOtpInput = authStateStatus === "phone-verification-required";
+  const phoneVerification = authStateStatus === "phone-verification-required";
 
   const tMobileNumber = useTranslations("MobileNumber");
   const [phoneAuthState, setPhoneAuthState] = useState<PhoneAuthState>({
@@ -85,6 +87,60 @@ export function PhoneVerification({
   const handleVerifyOTP = async () => {
     await verifyOtp(phoneAuthState.otp);
   };
+  const [timer, setTimer] = useState(30); // countdown
+  const [canResend, setCanResend] = useState(false);
+  const [hasResentOnce, setHasResentOnce] = useState(false);
+  const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "done">(
+    "idle"
+  );
+  const [expiryTimer, setExpiryTimer] = useState(300); // 5 min = 300s
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setExpiryTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleResend = async () => {
+    if (hasResentOnce || sendingOtp) return;
+    try {
+      setResendStatus("sending");
+      await sendOtp(phoneAuthState.phoneNumber, true);
+      setResendStatus("done");
+      setHasResentOnce(true);
+      toast.success("OTP resent successfully");
+      setExpiryTimer(300); // Reset expiry timer to 5 minutes
+      setTimer(30);
+      setCanResend(false);
+    } catch (err) {
+      console.error("Error resending OTP:", err);
+      toast.error("Failed to resend OTP");
+      setResendStatus("idle");
+    }
+  };
 
   useEffect(() => {
     if (
@@ -99,29 +155,6 @@ export function PhoneVerification({
       }));
     }
   }, [authStateStatus, currentUser?.phoneNumber]);
-
-  const autoSentRef = useRef(false);
-
-  useEffect(() => {
-    const phone = currentUser?.phoneNumber
-      ? currentUser.phoneNumber.replace(/\s+/g, "").slice(3)
-      : null;
-    const canAutoSend =
-      authStateStatus === "phone-verification-required" &&
-      !!recaptchaVerifier &&
-      !!currentUser?.phoneNumber;
-
-    if (!canAutoSend) {
-      console.log("returning from auto-send");
-      return;
-    }
-    if (autoSentRef.current) return;
-
-    autoSentRef.current = true;
-    sendOtp(phone!).catch(() => {
-      autoSentRef.current = false; // allow retry on failure
-    });
-  }, [authStateStatus, recaptchaVerifier, currentUser?.phoneNumber, sendOtp]);
 
   return (
     <section className="flex items-center justify-center">
@@ -181,11 +214,13 @@ export function PhoneVerification({
             </div>
           )}
 
-          {(otpSent || showOtpInput) && (
+          {phoneVerification && (
             <div className="flex flex-col gap-4">
               <div className="flex justify-between">
                 <p className="text-sm text-muted-foreground gap-2 flex items-center justify-start w-full">
-                  {tMobileNumber("OTPSentTo")}
+                  {otpSent
+                    ? tMobileNumber("OTPSentTo")
+                    : tMobileNumber("OTPWillSendTo")}
                   <span className="text-base font-semibold">
                     +91 -{" "}
                     {phoneAuthState.phoneNumber.startsWith("+91")
@@ -203,42 +238,101 @@ export function PhoneVerification({
                   {tMobileNumber("ChangeNumber")}
                 </Button>
               </div>
-              <div className="grid grid-cols-[1fr_3fr_2fr] justify-center items-center gap-4">
-                <div className="grid w-full gap-2 text-muted-foreground">
-                  <span>{tMobileNumber("EnterOTP")}: </span>
-                </div>
-                <div className="flex flex-col items-center justify-start">
-                  <OTPInput
-                    length={6}
-                    value={phoneAuthState.otp}
-                    onChange={(value) =>
-                      setPhoneAuthState({ ...phoneAuthState, otp: value })
-                    }
-                  />
-                  {phoneAuthState.error && (
-                    <p className="text-sm text-destructive">
-                      {phoneAuthState.error}
-                    </p>
-                  )}
-                </div>
 
-                <Button
-                  onClick={handleVerifyOTP}
-                  className="w-full"
-                  disabled={phoneAuthState.otp.length !== 6 || isVerifying}
-                >
+              {otpSent ? (
+                <div className="flex flex-col gap-4">
+                  <div className="grid grid-cols-[1fr_3fr_2fr] justify-center items-center gap-4">
+                    <div className="grid w-full gap-2 text-muted-foreground">
+                      <span>{tMobileNumber("EnterOTP")}: </span>
+                    </div>
+                    <div className="flex flex-col items-center justify-start">
+                      <OTPInput
+                        length={6}
+                        value={phoneAuthState.otp}
+                        onChange={(value) =>
+                          setPhoneAuthState({ ...phoneAuthState, otp: value })
+                        }
+                      />
+                      {phoneAuthState.error && (
+                        <p className="text-sm text-destructive">
+                          {phoneAuthState.error}
+                        </p>
+                      )}
+                    </div>
+                    {expiryTimer === 0 ? (
+                      <p className="text-red-700 text-sm flex gap-2 items-center justify-end">
+                        OTP Expired!
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground text-xs flex gap-2 items-center justify-end">
+                        Your OTP will expire in{" "}
+                        <span className="font-semibold">
+                          {formatTime(expiryTimer)}
+                        </span>{" "}
+                        seconds.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex w-full items-center justify-center gap-4">
+                    <div className="text-muted-foreground text-sm flex w-1/2">
+                      {canResend || hasResentOnce ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="text-primary w-full"
+                          onClick={handleResend}
+                          disabled={
+                            resendStatus === "done" ||
+                            resendStatus === "sending"
+                          }
+                        >
+                          {resendStatus === "sending" ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Resending OTP
+                            </>
+                          ) : (
+                            "Resend OTP"
+                          )}
+                        </Button>
+                      ) : (
+                        <span className="text-primary/80 text-xs">
+                          Resend OTP in {timer} seconds...
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      onClick={handleVerifyOTP}
+                      className="w-1/2"
+                      disabled={phoneAuthState.otp.length !== 6 || isVerifying}
+                    >
+                      <div className="flex items-center gap-2">
+                        {isVerifying
+                          ? tMobileNumber("Verifying")
+                          : tMobileNumber("VerifyOTP")}
+                        {isVerifying ? (
+                          <Loader2Icon className="size-4 animate-spin" />
+                        ) : (
+                          <Check className="ml-2 size-4!" />
+                        )}
+                      </div>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button onClick={handleSendOTP} className="w-full">
                   <div className="flex items-center gap-2">
-                    {isVerifying
-                      ? tMobileNumber("Verifying")
-                      : tMobileNumber("VerifyOTP")}
-                    {isVerifying ? (
+                    {sendingOtp
+                      ? tMobileNumber("SendingOTP")
+                      : tMobileNumber("SendOTP")}
+                    {sendingOtp ? (
                       <Loader2Icon className="size-4 animate-spin" />
                     ) : (
-                      <Check className="ml-2 size-4!" />
+                      <Send className="ml-2 size-4!" />
                     )}
                   </div>
                 </Button>
-              </div>
+              )}
             </div>
           )}
         </CardContent>
