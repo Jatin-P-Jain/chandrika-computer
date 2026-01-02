@@ -36,7 +36,7 @@ export default function GoogleLoginButton({
   const combinedClassName = `flex ${
     signingIn
       ? "bg-transparent border-0 shadow-none items-center "
-      : "bg-white border shadow-sm text-base font-semibold items-center p-5"
+      : "text-base font-semibold items-center justify-center min-h-0 h-fit dark:bg-white! dark:text-black! hover:shadow-md hover:translate-x-0 transition-all duration-300 translate-x-0.5"
   } ${className ? className : ""}`;
   return (
     <Button
@@ -74,7 +74,7 @@ export default function GoogleLoginButton({
           </span> */}
         </div>
       ) : (
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center justify-center">
           <Image src={GoogleIcon} alt="" className="size-6" />
           <span className="">{tSignIn("SignInWithGoogle")}</span>
           <LogInIcon className="size-5" />

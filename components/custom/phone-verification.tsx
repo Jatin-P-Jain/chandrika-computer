@@ -82,6 +82,7 @@ export function PhoneVerification({
 
   const handleSendOTP = async () => {
     await sendOtp(phoneAuthState.phoneNumber);
+    setOtpEpoch((x) => x + 1);
   };
 
   const handleVerifyOTP = async () => {
@@ -94,8 +95,10 @@ export function PhoneVerification({
     "idle"
   );
   const [expiryTimer, setExpiryTimer] = useState(300); // 5 min = 300s
+  const [otpEpoch, setOtpEpoch] = useState(0);
 
   useEffect(() => {
+    if (!otpSent) return;
     const interval = setInterval(() => {
       setExpiryTimer((prev) => {
         if (prev <= 1) {
@@ -107,9 +110,10 @@ export function PhoneVerification({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [otpSent]);
 
   useEffect(() => {
+    if (!otpSent) return;
     const interval = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
@@ -122,7 +126,7 @@ export function PhoneVerification({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [otpSent]);
 
   const handleResend = async () => {
     if (hasResentOnce || sendingOtp) return;
@@ -217,11 +221,13 @@ export function PhoneVerification({
           {phoneVerification && (
             <div className="flex flex-col gap-4">
               <div className="flex justify-between">
-                <p className="text-sm text-muted-foreground gap-2 flex items-center justify-start w-full">
+                <p className="text-muted-foreground gap-2 flex items-center justify-start w-full">
                   {otpSent
-                    ? tMobileNumber("OTPSentTo")
-                    : tMobileNumber("OTPWillSendTo")}
-                  <span className="text-base font-semibold">
+                    ? tMobileNumber("OTPSentTo", {
+                        phone: "",
+                      })
+                    : tMobileNumber("OTPWillSendTo", { phone: "" })}
+                  <span className=" font-semibold">
                     +91 -{" "}
                     {phoneAuthState.phoneNumber.startsWith("+91")
                       ? phoneAuthState.phoneNumber.slice(3)
@@ -241,7 +247,7 @@ export function PhoneVerification({
 
               {otpSent ? (
                 <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-[1fr_3fr_2fr] justify-center items-center gap-4">
+                  <div className="grid grid-cols-[2fr_3fr_2fr] justify-center items-center gap-4">
                     <div className="grid w-full gap-2 text-muted-foreground">
                       <span>{tMobileNumber("EnterOTP")}: </span>
                     </div>
