@@ -81,17 +81,6 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
         onVerified={completePhoneVerification}
         currentUser={currentUser!}
       />
-      {/* {isPhoneVerification && authState.status && (
-        <PhoneVerification
-          authStateStatus={
-            authState.status as
-              | "first-time-setup"
-              | "phone-verification-required"
-          }
-          onVerified={completePhoneVerification}
-          currentUser={currentUser!}
-        />
-      )} */}
       {authState.status !== "ready" && (
         <div
           className={clsx(

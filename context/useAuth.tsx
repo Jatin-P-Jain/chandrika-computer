@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import {
   loginWithEmailAndPass,
   loginWithGoogle,
@@ -132,61 +132,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Failed to refresh and save FCM token", error);
     }
   };
-
-  // 👈 NEW: Set custom claims for first-time users
-
-  // Listen for Firebase auth state changes
-  // useEffect(() => {
-  //   const unsubscribe = auth.onAuthStateChanged(async (user) => {
-  //     if (!user) {
-  //       setAuthState({ status: "no-user" });
-  //       await removeToken();
-  //       return;
-  //     }
-  //     try {
-  //       // Check custom claims to determine user type
-  //       const idTokenResult = await user.getIdTokenResult();
-  //       const claims = idTokenResult.claims as any;
-
-  //       if (!claims.phoneVerified) {
-  //         // 👈 FIRST-TIME USER - needs phone input
-  //         setAuthState({
-  //           status: "first-time-setup",
-  //           currentUser: user,
-  //         });
-  //       } else {
-  //         // 👈 RETURNING USER - direct OTP verification
-  //         setAuthState({
-  //           status: "phone-verification-required",
-  //           currentUser: user,
-  //         });
-  //       }
-
-  //       // Background setup
-  //       const safeUser: UserData = {
-  //         uid: user.uid,
-  //         email: user.email ?? null,
-  //         phoneNumber: user.phoneNumber?.slice(3) ?? null,
-  //         displayName: user.displayName ?? null,
-  //         role: claims.admin ? "admin" : null,
-  //         photoUrl: user.photoURL,
-  //       };
-
-  //       await createUserIfNotExists(safeUser);
-
-  //       const limit = claims.admin
-  //         ? parseInt(process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0")
-  //         : parseInt(process.env.NEXT_PUBLIC_USER_INACTIVITY_LIMIT || "0");
-  //       setInactivityLimit(limit);
-  //     } catch (e) {
-  //       console.error("Auth state check failed", e);
-  //       // Fallback to first-time setup
-  //       setAuthState({ status: "first-time-setup", currentUser: user });
-  //     }
-  //   });
-
-  //   return unsubscribe;
-  // }, []);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
