@@ -61,7 +61,10 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
         {authState.status === "loading" ? (
           <AccountDetailsSkeleton />
         ) : (
-          <AccountDetails user={buildUser(clientUser, currentUser)} />
+          <AccountDetails
+            user={buildUser(clientUser, currentUser)}
+            userStatus={authState.status}
+          />
         )}
         {authState.status === "loading" ? (
           <LoginLogoutSkeleton />
