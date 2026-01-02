@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Loader2, Loader2Icon, Send } from "lucide-react";
+import { Check, Loader2, Loader2Icon, Redo2Icon, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMobileOtp } from "@/hooks/useMobileOtp";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
@@ -48,6 +48,8 @@ export function PhoneVerification({
   ) {
     return null;
   }
+
+  const tToast = useTranslations("Toast");
 
   const showPhoneInput = authStateStatus === "first-time-setup";
   const phoneVerification = authStateStatus === "phone-verification-required";
@@ -110,7 +112,7 @@ export function PhoneVerification({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [otpSent]);
+  }, [otpSent, otpEpoch]);
 
   useEffect(() => {
     if (!otpSent) return;
@@ -135,13 +137,13 @@ export function PhoneVerification({
       await sendOtp(phoneAuthState.phoneNumber, true);
       setResendStatus("done");
       setHasResentOnce(true);
-      toast.success("OTP resent successfully");
+      toast.success(tToast("OtpResentSuccessfully"));
       setExpiryTimer(300); // Reset expiry timer to 5 minutes
       setTimer(30);
       setCanResend(false);
     } catch (err) {
       console.error("Error resending OTP:", err);
-      toast.error("Failed to resend OTP");
+      toast.error(tToast("FailedToResendOtp"));
       setResendStatus("idle");
     }
   };
@@ -267,15 +269,13 @@ export function PhoneVerification({
                     </div>
                     {expiryTimer === 0 ? (
                       <p className="text-red-700 text-sm flex gap-2 items-center justify-end">
-                        OTP Expired!
+                        {tMobileNumber("OTPExpired")}
                       </p>
                     ) : (
                       <p className="text-muted-foreground text-xs flex gap-2 items-center justify-end">
-                        Your OTP will expire in{" "}
-                        <span className="font-semibold">
-                          {formatTime(expiryTimer)}
-                        </span>{" "}
-                        seconds.
+                        {tMobileNumber("OTPExpiresIn", {
+                          time: formatTime(expiryTimer),
+                        })}
                       </p>
                     )}
                   </div>
@@ -294,16 +294,19 @@ export function PhoneVerification({
                         >
                           {resendStatus === "sending" ? (
                             <>
+                              {tMobileNumber("ResendingOTP")}
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Resending OTP
                             </>
                           ) : (
-                            "Resend OTP"
+                            <>
+                              {tMobileNumber("ResendOTP")}
+                              <Redo2Icon className="size-4" />
+                            </>
                           )}
                         </Button>
                       ) : (
                         <span className="text-primary/80 text-xs">
-                          Resend OTP in {timer} seconds...
+                          {tMobileNumber("ResendOTPIn", { timer: timer })}
                         </span>
                       )}
                     </div>

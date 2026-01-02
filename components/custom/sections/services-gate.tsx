@@ -25,12 +25,14 @@ import { buildUser } from "@/lib/utils";
 import { useState } from "react";
 import { AccountDetailsSkeleton } from "@/components/skeletons/account-details-skeleton";
 import LoginLogoutSkeleton from "@/components/skeletons/login-logout-skeleton";
+import { toast } from "sonner";
 
 export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
   const locale = useLocale();
   const tHomePage = useTranslations("HomePage");
   const tDailyAccount = useTranslations("DailyAccount");
   const tStampStockLedger = useTranslations("StampStock");
+  const tToast = useTranslations("Toast");
 
   const auth = useAuth();
   const { authState, logout, completePhoneVerification } = auth;
@@ -107,7 +109,18 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
       )}
       {/* Service cards */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Link href="/daily-account" className="group block">
+        <Link
+          href="/daily-account"
+          className="group block"
+          onNavigate={(e) => {
+            if (authState.status !== "ready") {
+              e.preventDefault(); // blocks Next navigation [web:309]
+              toast.info(tToast("SecuredService"), {
+                description: tToast("PleaseLoginToAccessServiceDesc"),
+              });
+            }
+          }}
+        >
           <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
             <CardHeader className="flex flex-row items-center gap-3">
               <div className="flex h-fit p-4 size-16 items-center justify-center rounded-md bg-indigo-100 text-indigo-900/90 ">
@@ -129,7 +142,18 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
           </Card>
         </Link>
 
-        <Link href="/stamp-stock-ledger" className="group block">
+        <Link
+          href="/stamp-stock-ledger"
+          className="group block"
+          onNavigate={(e) => {
+            if (authState.status !== "ready") {
+              e.preventDefault(); // blocks Next navigation [web:309]
+              toast.info(tToast("SecuredService"), {
+                description: tToast("PleaseLoginToAccessServiceDesc"),
+              });
+            }
+          }}
+        >
           <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
             <CardHeader className="flex flex-row items-center gap-3">
               <div className="flex h-fit p-4 size-16 items-center justify-center rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">

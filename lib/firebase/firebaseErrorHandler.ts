@@ -1,29 +1,39 @@
 // lib/firebaseErrorHandler.ts
 import { FirebaseError } from "firebase/app";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 export function handleFirebaseAuthError(error: unknown) {
+  const tToast = useTranslations("Toast");
   if (error instanceof FirebaseError) {
     switch (error.code) {
       case "auth/invalid-verification-code":
-        toast.error("Invalid OTP. Please try again.");
+        toast.error(tToast("InvalidOTP"), {
+          description: tToast("InvalidOTPDesc"),
+        });
         break;
       case "auth/code-expired":
-        toast.error("OTP expired. Please request a new one.");
+        toast.error(tToast("OTPExpired"), {
+          description: tToast("OTPExpiredDesc"),
+        });
         break;
       case "auth/missing-verification-code":
-        toast.error("Please enter the OTP code.");
+        toast.error(tToast("MissingOTP"), {
+          description: tToast("MissingOTPDesc"),
+        });
         break;
       case "auth/invalid-verification-id":
-        toast.error("Session expired. Please resend the OTP.");
+        toast.error(tToast("SessionExpired"));
         break;
       case "auth/credential-already-in-use":
-        toast.error("This phone number is already in use.");
+        toast.error(tToast("CredentialAlreadyInUse"), {
+          description: tToast("CredentialAlreadyInUseDesc"),
+        });
         break;
       case "auth/account-exists-with-different-credential":
-        toast.error(
-          "This number is linked to an account with a different method.",
-        );
+        toast.error(tToast("AccountExistsWithDifferentCredential"), {
+          description: tToast("AccountExistsWithDifferentCredentialDesc"),
+        });
         break;
       case "auth/too-many-requests":
         toast.error("Too many attempts. Try again later.");
@@ -40,7 +50,9 @@ export function handleFirebaseAuthError(error: unknown) {
         console.error("Unhandled Firebase auth error:", error);
     }
   } else {
-    toast.error("Something went wrong. Please try again.");
+    toast.error(tToast("SomethingWentWrong"), {
+      description: tToast("SomethingWentWrongDesc"),
+    });
     console.error("Unknown error:", error);
   }
 }

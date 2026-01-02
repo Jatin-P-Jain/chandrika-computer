@@ -11,6 +11,7 @@ import { useAuth } from "@/context/useAuth";
 import { toast } from "sonner";
 import { handleFirebaseAuthError } from "@/lib/firebase/firebaseErrorHandler";
 import { setToken, setUserClaims } from "@/context/actions";
+import { useTranslations } from "next-intl";
 
 export function useMobileOtp({
   onSuccess,
@@ -21,6 +22,7 @@ export function useMobileOtp({
   appVerifier: RecaptchaVerifier | null;
   currentUser: User | null;
 }) {
+  const tToast = useTranslations("Toast");
   const auth = useAuth();
   const [mobileNumber, setMobileNumber] = useState("");
   const [otpReset, setOtpReset] = useState(false);
@@ -53,7 +55,9 @@ export function useMobileOtp({
       setMobileNumber(mobile);
       setOtpSent(true);
       if (!isResent) {
-        toast.success("OTP sent successfully");
+        toast.success(tToast("OTPSent"), {
+          description: tToast("OTPSentDesc"),
+        });
       }
     } catch (e) {
       console.error(e);
@@ -112,7 +116,9 @@ export function useMobileOtp({
 
       // 👈 SUCCESS - clear state and trigger next step
       onSuccess?.();
-      toast.success("Mobile number verified successfully!");
+      toast.success(tToast("MobileVerified"), {
+        description: tToast("MobileVerifiedDesc"),
+      });
       setOtpSent(false);
       setOtpReset(true);
     } catch (error) {

@@ -22,7 +22,7 @@
   },
   "HomePage": {
     "Description": "This is the best place to find awesome content.",
-    "SecureServices": "Secure services",
+    "SecureServices": "Secured Services",
     "SecureServicesDesc": "To protect your data, access to the services below requires you to be signed in. Please log in to continue.",
     "WelcomeMessage": "Welcome to Chandrika Computer!"
   },
@@ -32,8 +32,13 @@
     "FirstTimeVerificationDesc": "Get started by registering your mobile number.",
     "MobileNumber": "Mobile Number",
     "MobileNumberDesc": "A 6-digit verification code will be sent to this mobile number",
+    "OTPExpired": "OTP Expired!",
+    "OTPExpiresIn": "Your OTP will expire in {time} seconds",
     "OTPSentTo": "OTP sent to : {phone}",
     "OTPWillSendTo": "An OTP will be sent to your mobile number : {phone}",
+    "ResendingOTP": "Resending OTP",
+    "ResendOTP": "Resend OTP",
+    "ResendOTPIn": "Resend OTP in {timer} seconds",
     "SendingOTP": "Sending OTP",
     "SendOTP": "Send OTP",
     "Verification": "Mobile Number Verification",
@@ -44,5 +49,27 @@
   "StampStock": {
     "Desc": "Track your stamp stock and ledger movements.",
     "Title": "Stamp Stock Ledger (Stamp Register)"
+  },
+  "Toast": {
+    "AccountExistsWithDifferentCredential": "Mobile Number already registered",
+    "AccountExistsWithDifferentCredentialDesc": "This mobile number is linked to an account with a different method.",
+    "CredentialAlreadyInUse": "Mobile Number already in use",
+    "CredentialAlreadyInUseDesc": "This phone number is already in use. Please use a different one.",
+    "FailedToResendOtp": "Failed to send OTP",
+    "InvalidOTP": "Invalid OTP",
+    "InvalidOTPDesc": "OTP entered is wrong. Please try again!",
+    "MissingOTP": "OTP Missing",
+    "MissingOTPDesc": "Please enter an OTP to continue",
+    "MobileNumberVerifiedDesc": "Your mobile number is verified",
+    "MobileVerified": "Mobile Number Verified",
+    "OTPExpired": "OTP Expired",
+    "OTPExpiredDesc": "Entered OTP has been expired. Please enter a fresh OTP",
+    "OTPReSent": "OTP resent to your mobile number",
+    "OTPSent": "OTP Sent",
+    "OTPSentDesc": "An 6 digit OTP is sent your mobile number",
+    "PleaseLoginToAccessServiceDesc": "Please login to access the service",
+    "SecuredService": "Secured Service",
+    "SomethingWentWrong": "Something went wrong",
+    "SomethingWentWrongDesc": "Please try again after some time"
   }
 }

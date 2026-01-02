@@ -22,7 +22,7 @@
   },
   "HomePage": {
     "Description": "बेहतरीन कंटेंट खोजने के लिए यह सबसे अच्छी जगह है।",
-    "SecureServices": "सुरक्षित सेवाएं",
+    "SecureServices": "सुरक्षित सेवाएँ",
     "SecureServicesDesc": "आपके डेटा की सुरक्षा के लिए, नीचे दी गई सेवाओं का उपयोग करने के लिए आपको लॉग इन करना होगा। कृपया जारी रखने के लिए लॉग इन करें।",
     "WelcomeMessage": "चंद्रिका कंप्यूटर में स्वागत है!"
   },
@@ -32,8 +32,13 @@
     "FirstTimeVerificationDesc": "अपना मोबाइल नंबर रजिस्टर करके शुरुआत करें।",
     "MobileNumber": "मोबाइल नंबर",
     "MobileNumberDesc": "इस मोबाइल नंबर पर 6 अंकों का OTP कोड भेजा जाएगा।",
+    "OTPExpired": "ओटीपी की समय सीमा समाप्त हो गई है!",
+    "OTPExpiresIn": "आपके OTP की वैधता {time} सेकंड मे समाप्त हो जाएगी ",
     "OTPSentTo": "OTP इस नंबर पर भेजा गया: {phone}",
     "OTPWillSendTo": "आपके मोबाइल नंबर {phone} पर एक OTP भेजा जाएगा ",
+    "ResendingOTP": "OTP पुनः भेजा जा रहा है",
+    "ResendOTP": "OTP पुनः भेजें",
+    "ResendOTPIn": "{timer} सेकंड में OTP दोबारा भेजें",
     "SendingOTP": "OTP भेजा जा रहा है",
     "SendOTP": "OTP भेजें",
     "Verification": "मोबाइल नंबर पुष्टिकरण",
@@ -44,5 +49,27 @@
   "StampStock": {
     "Desc": "अपने स्टाम्प स्टॉक और बहीखाते की गतिविधियों पर नज़र रखें।",
     "Title": "स्टाम्प स्टॉक लेजर (स्टाम्प रजिस्टर)"
+  },
+  "Toast": {
+    "AccountExistsWithDifferentCredential": "मोबाइल नंबर पहले से पंजीकृत है",
+    "AccountExistsWithDifferentCredentialDesc": "यह मोबाइल नंबर एक अलग तरीके से एक खाते से जुड़ा हुआ है।",
+    "CredentialAlreadyInUse": "मोबाइल नंबर पहले से ही उपयोग में है",
+    "CredentialAlreadyInUseDesc": "यह फ़ोन नंबर पहले से ही उपयोग में है। कृपया कोई दूसरा नंबर इस्तेमाल करें।",
+    "FailedToResendOtp": "OTP भेजने में विफल",
+    "InvalidOTP": "अमान्य ओटीपी",
+    "InvalidOTPDesc": "दर्ज किया गया ओटीपी गलत है। कृपया पुनः प्रयास करें!",
+    "MissingOTP": "ओटीपी गायब है",
+    "MissingOTPDesc": "जारी रखने के लिए कृपया OTP दर्ज करें",
+    "MobileNumberVerifiedDesc": "आपका मोबाइल नंबर सत्यापित हो गया है।",
+    "MobileVerified": "मोबाइल नंबर सत्यापित",
+    "OTPExpired": "ओटीपी की समय सीमा समाप्त हो गई है",
+    "OTPExpiredDesc": "दर्ज किया गया ओटीपी समाप्त हो चुका है। कृपया नया ओटीपी दर्ज करें।",
+    "OTPReSent": "आपके मोबाइल नंबर पर ओटीपी दोबारा भेजा गया है।",
+    "OTPSent": "ओटीपी भेजा गया",
+    "OTPSentDesc": "आपके मोबाइल नंबर पर 6 अंकों का OTP भेजा गया",
+    "PleaseLoginToAccessServiceDesc": "सेवा का उपयोग करने के लिए कृपया लॉग इन करें।",
+    "SecuredService": "सुरक्षित सेवा",
+    "SomethingWentWrong": "कुछ तो गलत हुआ ",
+    "SomethingWentWrongDesc": "कृपया कुछ समय बाद पुनः प्रयास करें।"
   }
 }
