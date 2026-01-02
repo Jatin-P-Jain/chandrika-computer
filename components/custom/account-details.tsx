@@ -12,7 +12,6 @@ export function AccountDetails({
 }) {
   const userReady = userStatus === "ready";
   const guest = userStatus === "no-user";
-  const userLoading = userStatus === "loading";
   const profileImage = user?.photoUrl || "/default-profile.png";
   const name = user?.displayName || "Guest User";
   const email = user?.email || "No Email";
