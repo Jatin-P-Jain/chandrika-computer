@@ -105,10 +105,10 @@ export function useMobileOtp({
             await setToken(token, currentUser.refreshToken);
           } else if (errorCode === "auth/credential-already-in-use") {
             console.error("Phone linked to different account");
-            handleFirebaseAuthError(linkError);
+            handleFirebaseAuthError(linkError, tToast);
             return;
           } else {
-            handleFirebaseAuthError(linkError);
+            handleFirebaseAuthError(linkError, tToast);
             return;
           }
         }
@@ -122,7 +122,7 @@ export function useMobileOtp({
       setOtpSent(false);
       setOtpReset(true);
     } catch (error) {
-      handleFirebaseAuthError(error);
+      handleFirebaseAuthError(error, tToast);
       console.log(error);
     } finally {
       setIsVerifying(false);

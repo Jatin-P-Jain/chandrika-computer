@@ -3,8 +3,7 @@ import { FirebaseError } from "firebase/app";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-export function handleFirebaseAuthError(error: unknown) {
-  const tToast = useTranslations("Toast");
+export function handleFirebaseAuthError(error: unknown, tToast: any) {
   if (error instanceof FirebaseError) {
     switch (error.code) {
       case "auth/invalid-verification-code":

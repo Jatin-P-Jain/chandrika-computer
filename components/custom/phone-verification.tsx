@@ -9,7 +9,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Loader2, Loader2Icon, Redo2Icon, Send } from "lucide-react";
+import {
+  Check,
+  Loader2,
+  Loader2Icon,
+  Redo2Icon,
+  Send,
+  SendHorizonalIcon,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMobileOtp } from "@/hooks/useMobileOtp";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
@@ -322,7 +329,7 @@ export function PhoneVerification({
                         {isVerifying ? (
                           <Loader2Icon className="size-4 animate-spin" />
                         ) : (
-                          <Check className="ml-2 size-4!" />
+                          <SendHorizonalIcon className="ml-2 size-4!" />
                         )}
                       </div>
                     </Button>
