@@ -26,22 +26,22 @@ export function AccountDetails({
     : "No Phone Number";
   return (
     <div className="flex items-center gap-4">
-      <Avatar className="h-13 w-13 ring-2 p-0.5 ring-primary">
+      <Avatar className="size-8 md:h-13 md:w-13 ring-2 p-0.5 ring-primary">
         <AvatarImage src={profileImage} alt={name} className="rounded-full" />
         <AvatarFallback className="bg-white dark:bg-white/10">
           {guest ? (
-            <UserRound className="text-primary size-8" />
+            <UserRound className="text-primary size-6 md:size-8" />
           ) : userReady ? (
-            <UserRoundCheck className="text-primary size-8" />
+            <UserRoundCheck className="text-primary size-6 md:size-8" />
           ) : (
-            <UserRound className="text-muted-foreground size-8 animate-pulse" />
+            <UserRound className="text-muted-foreground size-6 md:size-8 animate-pulse" />
           )}
         </AvatarFallback>
       </Avatar>
       <div className="flex flex-col items-start">
         <p
           className={clsx(
-            "text-lg font-semibold text-primary",
+            "md:text-lg font-semibold text-primary",
             locale === "hi" ? "text-base font-en" : ""
           )}
         >
@@ -49,7 +49,7 @@ export function AccountDetails({
         </p>
         <p
           className={clsx(
-            "text-sm font-semibold text-primary",
+            "text-xs md:text-sm font-semibold text-primary",
             locale === "hi" ? "text-base font-en" : ""
           )}
         >
@@ -57,7 +57,7 @@ export function AccountDetails({
         </p>
         <p
           className={clsx(
-            "text-sm font-semibold text-primary",
+            "text-xs md:text-sm font-semibold text-primary",
             locale === "hi" ? "text-base font-en" : ""
           )}
         >

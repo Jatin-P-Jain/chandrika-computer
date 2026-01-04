@@ -26,6 +26,7 @@ import { useState } from "react";
 import { AccountDetailsSkeleton } from "@/components/skeletons/account-details-skeleton";
 import LoginLogoutSkeleton from "@/components/skeletons/login-logout-skeleton";
 import { toast } from "sonner";
+import { AccountFooter } from "../mobile/account-footer";
 
 export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
   const locale = useLocale();
@@ -46,7 +47,7 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
     sessionExpired === "1"
   );
   return (
-    <section className="flex w-full flex-col mx-auto rounded-xl bg-muted p-4 md:p-6 shadow-sm gap-4">
+    <section className="flex w-full flex-col mx-auto rounded-xl bg-muted p-4 m-20 md:p-8 md:mt-24 md:mb-0 shadow-sm gap-4 no-scrollbar!">
       {sessionExpired && sessionExpiredPopupShown && (
         <div className="relative flex justify-center items-center w-1/2 mx-auto p-3 text-sm text-yellow-900 bg-yellow-200 border border-yellow-300 rounded-md gap-2">
           <Info className="inline size-4" />
@@ -59,23 +60,11 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
           />
         </div>
       )}
-      <div className="flex justify-between items-start w-full pb-4">
-        {authState.status === "loading" ? (
-          <AccountDetailsSkeleton />
-        ) : (
-          <AccountDetails
-            user={buildUser(clientUser, currentUser)}
-            userStatus={authState.status}
-          />
-        )}
-        {authState.status === "loading" ? (
-          <LoginLogoutSkeleton />
-        ) : authState.status === "no-user" ? (
-          <GoogleLoginButton variant={"outline"} />
-        ) : (
-          <LogoutButton onLogout={logout} />
-        )}
-      </div>
+      <AccountFooter
+        onLogout={logout}
+        user={buildUser(clientUser, currentUser)}
+        userStatus={authState.status}
+      />
       {isPhoneVerification && authState.status && (
         <PhoneVerification
           authStateStatus={
@@ -87,21 +76,27 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
           currentUser={currentUser!}
         />
       )}
+
       {authState.status !== "ready" && (
         <div
           className={clsx(
-            "flex justify-start items-center text-muted-foreground gap-2 text-sm",
+            "flex justify-start items-center text-muted-foreground gap-2 text-base px-2",
             locale === "hi" && "text-lg!"
           )}
         >
           <div className="rounded-full p-2 w-fit bg-primary/10 text-primary">
             <LockKeyholeIcon className="size-5" />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             <span className="text-foreground ">
               {tHomePage("SecureServices")}
             </span>
-            <p className={clsx("text-sm", locale === "hi" && "text-base!")}>
+            <p
+              className={clsx(
+                "text-sm text-justify",
+                locale === "hi" && "text-sm! md:text-base!"
+              )}
+            >
               {tHomePage("SecureServicesDesc")}
             </p>
           </div>
@@ -123,7 +118,7 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
         >
           <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
             <CardHeader className="flex flex-row items-center gap-3">
-              <div className="flex h-fit p-4 size-16 items-center justify-center rounded-md bg-indigo-100 text-indigo-900/90 ">
+              <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-indigo-100 text-indigo-900/90 ">
                 {/* replace with your own icon */}
                 <span className="">
                   <ClipboardListIcon className="size-8" />
@@ -156,14 +151,18 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
         >
           <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
             <CardHeader className="flex flex-row items-center gap-3">
-              <div className="flex h-fit p-4 size-16 items-center justify-center rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+              <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
                 {/* replace with your own icon */}
                 <span className="font-semibold">
                   <Layers className="size-8" />
                 </span>
               </div>
               <div className="flex flex-col gap-2">
-                <CardTitle className="">{tStampStockLedger("Title")}</CardTitle>
+                <CardTitle
+                  className={clsx("leading-2", locale === "hi" && "leading-6")}
+                >
+                  {tStampStockLedger("Title")}
+                </CardTitle>
                 <CardDescription className="">
                   {tStampStockLedger("Desc")}
                 </CardDescription>

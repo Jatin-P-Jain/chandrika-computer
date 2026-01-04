@@ -17,7 +17,7 @@ import {
   Send,
   SendHorizonalIcon,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useMobileOtp } from "@/hooks/useMobileOtp";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
 import { useEffect, useRef, useState } from "react";
@@ -26,6 +26,7 @@ import { User } from "firebase/auth";
 import MobileFriendlyIcon from "@mui/icons-material/MobileFriendly";
 import { formatTime } from "@/lib/utils";
 import { toast } from "sonner";
+import clsx from "clsx";
 
 interface PhoneAuthState {
   phoneNumber: string;
@@ -56,6 +57,7 @@ export function PhoneVerification({
     return null;
   }
 
+  const locale = useLocale();
   const tToast = useTranslations("Toast");
 
   const showPhoneInput = authStateStatus === "first-time-setup";
@@ -174,12 +176,12 @@ export function PhoneVerification({
       <Card className="w-full">
         <CardHeader className="flex flex-col items-center text-center gap-1">
           <div className="">
-            <MobileFriendlyIcon className="size-10! text-primary" />
+            <MobileFriendlyIcon className="size-8! md:size-10! text-primary" />
           </div>
-          <CardTitle className="text-2xl text-primary">
+          <CardTitle className="text-lg md:text-2xl text-primary">
             {tMobileNumber("Verification")}
           </CardTitle>
-          <CardDescription className="text-muted-foreground">
+          <CardDescription className="text-xs md:text-base text-muted-foreground">
             {showPhoneInput
               ? tMobileNumber("FirstTimeVerificationDesc")
               : tMobileNumber("VerificationDesc")}
@@ -187,8 +189,8 @@ export function PhoneVerification({
         </CardHeader>
         <CardContent>
           {showPhoneInput && (
-            <div className="flex gap-4">
-              <div className="grid grid-cols-[1fr_4fr] w-full gap-1 justify-center items-center">
+            <div className="flex md:flex-row flex-col gap-2 md:gap-4">
+              <div className="grid md:grid-cols-[2fr_4fr] w-full gap-1 md:justify-center items-center">
                 <span className="text-muted-foreground">
                   {tMobileNumber("MobileNumber")} :
                 </span>
@@ -203,7 +205,7 @@ export function PhoneVerification({
                       phoneNumber: e.target.value,
                     })
                   }
-                  className="w-full"
+                  className="w-full text-lg!"
                 />
               </div>
 
@@ -212,7 +214,7 @@ export function PhoneVerification({
                   {phoneAuthState.error}
                 </p>
               )}
-              <Button onClick={handleSendOTP} className="w-1/4">
+              <Button onClick={handleSendOTP} className="md:w-1/4">
                 <div className="flex items-center gap-2">
                   {sendingOtp
                     ? tMobileNumber("SendingOTP")
@@ -228,22 +230,32 @@ export function PhoneVerification({
           )}
 
           {phoneVerification && (
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-between">
-                <p className="text-muted-foreground gap-2 flex items-center justify-start w-full">
+            <div className="flex flex-col gap-2 md:gap-4">
+              <div className="flex md:flex-row flex-col justify-between">
+                <p
+                  className={clsx(
+                    "text-sm text-muted-foreground gap-1 md:gap-2 flex flex-col md:flex-row items-start justify-start md:items-center w-full",
+                    locale === "hi" && "text-base!"
+                  )}
+                >
                   {otpSent
                     ? tMobileNumber("OTPSentTo", {
                         phone: "",
                       })
                     : tMobileNumber("OTPWillSendTo", { phone: "" })}
-                  <span className=" font-semibold">
+                  <span
+                    className={clsx(
+                      "text-base font-semibold",
+                      locale === "hi" && "text-xl"
+                    )}
+                  >
                     +91 -{" "}
                     {phoneAuthState.phoneNumber.startsWith("+91")
                       ? phoneAuthState.phoneNumber.slice(3)
                       : currentUser?.phoneNumber?.slice(3)}
                   </span>
                 </p>
-                <Button
+                {/* <Button
                   disabled
                   variant="link"
                   onClick={() =>
@@ -251,13 +263,13 @@ export function PhoneVerification({
                   }
                 >
                   {tMobileNumber("ChangeNumber")}
-                </Button>
+                </Button> */}
               </div>
 
               {otpSent ? (
                 <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-[2fr_3fr_2fr] justify-center items-center gap-4">
-                    <div className="grid w-full gap-2 text-muted-foreground">
+                  <div className="grid md:grid-cols-[2fr_3fr_2fr] justify-center items-center gap-2 md:gap-4">
+                    <div className="grid w-full md:gap-2 text-muted-foreground">
                       <span>{tMobileNumber("EnterOTP")}: </span>
                     </div>
                     <div className="flex flex-col items-center justify-start">
@@ -275,19 +287,19 @@ export function PhoneVerification({
                       )}
                     </div>
                     {expiryTimer === 0 ? (
-                      <p className="text-red-700 text-sm flex gap-2 items-center justify-end">
+                      <p className="text-red-700 text-sm flex gap-2 items-center md:justify-end">
                         {tMobileNumber("OTPExpired")}
                       </p>
                     ) : (
-                      <p className="text-muted-foreground text-xs flex gap-2 items-center justify-end">
+                      <p className="text-muted-foreground text-xs flex gap-2 items-center md:justify-end">
                         {tMobileNumber("OTPExpiresIn", {
                           time: formatTime(expiryTimer),
                         })}
                       </p>
                     )}
                   </div>
-                  <div className="flex w-full items-center justify-center gap-4">
-                    <div className="text-muted-foreground text-sm flex w-1/2">
+                  <div className="flex flex-col md:flex-row w-full items-center justify-center gap-4">
+                    <div className="text-muted-foreground text-sm flex md:w-1/2">
                       {canResend || hasResentOnce ? (
                         <Button
                           type="button"
@@ -319,7 +331,7 @@ export function PhoneVerification({
                     </div>
                     <Button
                       onClick={handleVerifyOTP}
-                      className="w-1/2"
+                      className="w-full md:w-1/2"
                       disabled={phoneAuthState.otp.length !== 6 || isVerifying}
                     >
                       <div className="flex items-center gap-2">

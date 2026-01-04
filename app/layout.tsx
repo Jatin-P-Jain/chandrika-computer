@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import {
   Baloo_2,
   Halant,
@@ -16,6 +15,7 @@ import { Navbar } from "@/components/custom/sections/navbar";
 import { LanguageFontWrapper } from "@/components/custom/wrappers/language-font-wrapper";
 import { AuthProvider } from "@/context/useAuth";
 import { Toaster } from "sonner";
+import { DateTimeDisplay } from "@/components/custom/date-time-display";
 
 const laila = Laila({
   variable: "--font-laila",
@@ -57,25 +57,48 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body
-        className={`${halant.variable} ${inter.variable} ${baloo.variable} ${poppins.variable} ${laila.variable} antialiased bg-muted-foreground/10`}
+        className={`${halant.variable} ${inter.variable} ${baloo.variable} ${poppins.variable} ${laila.variable} antialiased no-scrollbar`}
       >
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <LanguageFontWrapper>
               <AuthProvider>
                 <Navbar />
+                <DateTimeDisplay />
                 {children}
-                <Toaster
-                  richColors
-                  className="flex justify-center"
-                  toastOptions={{
-                    classNames: {
-                      toast: "w-fit! flex items-center gap-3",
-                      title: "text-lg font-semibold w-full",
-                      description: "text-base",
-                    },
-                  }}
-                />
+                
+                <div className="flex md:hidden">
+                  <Toaster
+                    closeButton
+                    richColors
+                    position="bottom-center"
+                    mobileOffset={"108px"}
+                    className="flex justify-center"
+                    toastOptions={{
+                      classNames: {
+                        toast:
+                          "w-[65%]! md:w-fit! flex items-center p-2! px-4! md:p-4!",
+                        title: "font-semibold w-full",
+                        description: "",
+                      },
+                    }}
+                  />
+                </div>
+                <div className="hidden md:flex">
+                  <Toaster
+                    closeButton
+                    richColors
+                    position="top-center"
+                    className="flex justify-center"
+                    toastOptions={{
+                      classNames: {
+                        toast: "w-fit! flex items-center gap-3",
+                        title: "text-lg font-semibold w-full",
+                        description: "md:text-base",
+                      },
+                    }}
+                  />
+                </div>
               </AuthProvider>
             </LanguageFontWrapper>
           </ThemeProvider>

@@ -11,7 +11,7 @@ import MobilePreferences, { Preferences } from "../preferences";
 export function Navbar() {
   const tCommon = useTranslations("Common");
   return (
-    <header className="w-full shadow-md bg-card dark:shadow-primary/10">
+    <header className="fixed w-full bg-card">
       <div className="mx-auto flex h-18 items-center justify-between px-4 sm:px-6 lg:px-8 text-primary">
         {/* Left: logo + name */}
         <Link href="/" className="flex items-center gap-2 md:gap-4">

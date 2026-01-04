@@ -35,8 +35,8 @@ export default function GoogleLoginButton({
   const [signingIn, setSigningIn] = useState(false);
   const combinedClassName = `flex ${
     signingIn
-      ? "bg-transparent border-0 shadow-none items-center "
-      : "text-base font-semibold items-center justify-center min-h-0 h-fit dark:bg-white! dark:text-black! hover:shadow-md hover:translate-x-0 transition-all duration-300 translate-x-0.5"
+      ? ""
+      : "px-3 py-3 text-base font-semibold items-center justify-center min-h-0 h-fit dark:bg-white! dark:text-black! hover:shadow-md hover:translate-x-0 transition-all duration-300 translate-x-0.5"
   } ${className ? className : ""}`;
   return (
     <Button
@@ -57,28 +57,34 @@ export default function GoogleLoginButton({
         }
       }}
       className={`${combinedClassName}`}
-      variant={variant}
+      variant={signingIn ? "ghost" : variant}
     >
       {signingIn ? (
         <div className="flex flex-col items-center justify-center">
           <Image
             src={GoogleLoadingIcon}
             alt=""
-            className="relative bg-transparent"
-            width={80}
-            height={50}
+            className="-mt-4"
+            width={60}
+            height={20}
           />
-          <span className="-mt-6">{tSignIn("SigningInWithGoogle")}...</span>
-          {/* <span className="font-medium italic text-sm">
-            ({tSignIn("ContinueOnTheTab")})
-          </span> */}
+          <span className="hidden md:flex">
+            {tSignIn("SigningInWithGoogle")}...
+          </span>
         </div>
       ) : (
-        <div className="flex gap-2 items-center justify-center">
-          <Image src={GoogleIcon} alt="" className="size-6" />
-          <span className="">{tSignIn("SignInWithGoogle")}</span>
-          <LogInIcon className="size-5" />
-        </div>
+        <>
+          <div className="hidden md:flex gap-2 items-center justify-center ">
+            <Image src={GoogleIcon} alt="" className="size-6" />
+            <span className="">{tSignIn("SignInWithGoogle")}</span>
+            <LogInIcon className="size-5" />
+          </div>
+          <div className="flex md:hidden gap-1 items-center justify-center ">
+            <Image src={GoogleIcon} alt="" className="size-5" />
+            <span className="text-sm">{tSignIn("SignInWithGoogleMobile")}</span>
+            <LogInIcon className="size-5" />
+          </div>
+        </>
       )}
     </Button>
   );

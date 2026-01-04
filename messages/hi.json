@@ -14,7 +14,8 @@
     "Logout": "लॉग आउट",
     "Settings": "सेटिंग्स",
     "SigningInWithGoogle": "आपको Google से लॉग इन किया जा रहा है",
-    "SignInWithGoogle": "Google से लॉग इन करें"
+    "SignInWithGoogle": "Google से लॉग इन करें",
+    "SignInWithGoogleMobile": "गूगल लॉगिन"
   },
   "DailyAccount": {
     "Desc": "अपने दैनिक खाता प्रविष्टियों को देखें और प्रबंधित करें।",
@@ -62,6 +63,7 @@
     "MissingOTPDesc": "जारी रखने के लिए कृपया OTP दर्ज करें",
     "MobileNumberVerifiedDesc": "आपका मोबाइल नंबर सत्यापित हो गया है।",
     "MobileVerified": "मोबाइल नंबर सत्यापित",
+    "MobileVerifiedDesc": "आपने अपना मोबाइल नंबर सफलतापूर्वक सत्यापित कर लिया है।",
     "OTPExpired": "ओटीपी की समय सीमा समाप्त हो गई है",
     "OTPExpiredDesc": "दर्ज किया गया ओटीपी समाप्त हो चुका है। कृपया नया ओटीपी दर्ज करें।",
     "OTPReSent": "आपके मोबाइल नंबर पर ओटीपी दोबारा भेजा गया है।",

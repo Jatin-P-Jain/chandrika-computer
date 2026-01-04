@@ -14,7 +14,8 @@
     "Logout": "Logout",
     "Settings": "Settings",
     "SigningInWithGoogle": "Logging you in with Google",
-    "SignInWithGoogle": "Login with Google"
+    "SignInWithGoogle": "Login with Google",
+    "SignInWithGoogleMobile": "Google Login"
   },
   "DailyAccount": {
     "Desc": "View and manage your daily account entries.",
@@ -62,6 +63,7 @@
     "MissingOTPDesc": "Please enter an OTP to continue",
     "MobileNumberVerifiedDesc": "Your mobile number is verified",
     "MobileVerified": "Mobile Number Verified",
+    "MobileVerifiedDesc": "You have successfully verified your mobile number",
     "OTPExpired": "OTP Expired",
     "OTPExpiredDesc": "Entered OTP has been expired. Please enter a fresh OTP",
     "OTPReSent": "OTP resent to your mobile number",

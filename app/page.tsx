@@ -30,8 +30,8 @@ export default function Home({ params }: Props) {
   const { sessionExpired } = params;
   return (
     <div className={clsx("flex items-center justify-center")}>
-      <main className="flex w-full max-w-6xl flex-col items-center justify-between p-4 md:p-12 lg:p-16">
-        <DateTimeDisplay />
+      <main className="flex w-full max-w-7xl flex-col items-center justify-between overflow-auto mt-12 p-4 md:mt-4 md:p-12 no-scrollbar">
+        
         <ServicesGate sessionExpired={sessionExpired} />
       </main>
     </div>

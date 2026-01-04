@@ -12,7 +12,7 @@ export function LogoutButton({ onLogout }: LogoutButtonProps) {
     <Button
       variant="outline"
       onClick={onLogout}
-      className="flex items-center! h-full border-red-600 bg-red-600 text-white hover:text-white font-bold dark:border-red-500 dark:bg-red-500 hover:bg-red-600 hover:shadow-md hover:translate-x-0.5 transition-all duration-300"
+      className="flex items-center! border-red-600 bg-red-600 text-white hover:text-white font-bold dark:border-red-500 dark:bg-red-500 hover:bg-red-600 hover:shadow-md hover:translate-x-0.5 transition-all duration-300"
     >
       <span className="">{tCommon("Logout")}</span>
       <LogOutIcon className="" />

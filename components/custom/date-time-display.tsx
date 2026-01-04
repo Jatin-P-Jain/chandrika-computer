@@ -39,27 +39,39 @@ export function DateTimeDisplay() {
   return (
     <div
       className={clsx(
-        "flex w-full items-center justify-between text-muted-foreground px-2 pb-2 text-base font-medium",
+        "fixed flex w-full items-center justify-between text-muted-foreground top-16 px-4 md:px-8 py-2 text-sm md:text-base font-medium shadow-md dark:shadow-primary/10 bg-muted",
         locale === "hi" && "font-semibold"
       )}
     >
-      <span className=" flex justify-center items-center gap-2">
+      <span className="flex justify-center items-center gap-1 md:gap-2">
         <CalendarDays size={20} />
         {mounted ? (
           <>
             <span className={clsx(locale === "en" && "text-sm")}>{day},</span>{" "}
-            <span className="">{date}</span>
+            <span
+              className={clsx(
+                "text-base md:text-xl",
+                locale === "en" && "md:text-base! font-semibold"
+              )}
+            >
+              {date}
+            </span>
           </>
         ) : (
-          <Skeleton className="h-5 w-50 bg-muted-foreground/30" />
+          <Skeleton className="h-4 w-30 md:h-5 md:w-50 bg-muted-foreground/30" />
         )}
       </span>
-      <span className="flex justify-center items-center gap-2 font-en">
+      <span
+        className={clsx(
+          "flex justify-center items-center gap-1 md:gap-2 text-lg",
+          locale === "en" && "text-base!"
+        )}
+      >
         <AlarmClock size={20} />
         {mounted ? (
           time
         ) : (
-          <Skeleton className="h-5 w-30 bg-muted-foreground/30" />
+          <Skeleton className="h-4 w-20 md:h-5 md:w-30 bg-muted-foreground/30" />
         )}
       </span>
     </div>
