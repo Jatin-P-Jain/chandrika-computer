@@ -15,18 +15,11 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { useLocale, useTranslations } from "next-intl";
-import GoogleLoginButton from "../google-login-button";
 import { useAuth } from "@/context/useAuth";
 import clsx from "clsx";
-import { LogoutButton } from "../action-items/logout-button";
 import { PhoneVerification } from "../phone-verification";
-import { AccountDetails } from "../account-details";
-import { buildUser } from "@/lib/utils";
 import { useState } from "react";
-import { AccountDetailsSkeleton } from "@/components/skeletons/account-details-skeleton";
-import LoginLogoutSkeleton from "@/components/skeletons/login-logout-skeleton";
 import { toast } from "sonner";
-import { AccountFooter } from "../mobile/account-footer";
 
 export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
   const locale = useLocale();
@@ -41,13 +34,12 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
     authState.status === "first-time-setup" ||
     authState.status === "phone-verification-required";
   const currentUser = isPhoneVerification ? authState.currentUser : null;
-  const clientUser = authState.status === "ready" ? authState.clientUser : null;
 
   const [sessionExpiredPopupShown, setSessionExpiredPopupShown] = useState(
     sessionExpired === "1"
   );
   return (
-    <section className="flex w-full flex-col mx-auto rounded-xl bg-muted p-4 m-20 md:p-8 md:mt-24 md:mb-0 shadow-sm gap-4 no-scrollbar!">
+    <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-4 md:p-6">
       {sessionExpired && sessionExpiredPopupShown && (
         <div className="relative flex justify-center items-center w-1/2 mx-auto p-3 text-sm text-yellow-900 bg-yellow-200 border border-yellow-300 rounded-md gap-2">
           <Info className="inline size-4" />
@@ -60,11 +52,6 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
           />
         </div>
       )}
-      <AccountFooter
-        onLogout={logout}
-        user={buildUser(clientUser, currentUser)}
-        userStatus={authState.status}
-      />
       {isPhoneVerification && authState.status && (
         <PhoneVerification
           authStateStatus={
@@ -124,8 +111,8 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
                   <ClipboardListIcon className="size-8" />
                 </span>
               </div>
-              <div className="flex flex-col gap-2 items-start">
-                <CardTitle className="">{tDailyAccount("Title")}</CardTitle>
+              <div className="flex flex-col gap-1 md:gap-2 items-start">
+                <CardTitle className="leading-6">{tDailyAccount("Title")}</CardTitle>
                 <CardDescription className="">
                   {tDailyAccount("Desc")}
                 </CardDescription>
@@ -157,10 +144,8 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
                   <Layers className="size-8" />
                 </span>
               </div>
-              <div className="flex flex-col gap-2">
-                <CardTitle
-                  className={clsx("leading-2", locale === "hi" && "leading-6")}
-                >
+              <div className="flex flex-col gap-1 md:gap-2">
+                <CardTitle className={clsx("leading-6")}>
                   {tStampStockLedger("Title")}
                 </CardTitle>
                 <CardDescription className="">
@@ -174,7 +159,7 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
           </Card>
         </Link>
       </div>
-      <div id="recaptcha-container" className=""></div>
+      <div id="recaptcha-container" className="hidden"></div>
     </section>
   );
 }

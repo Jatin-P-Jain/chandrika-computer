@@ -16,6 +16,7 @@ import { LanguageFontWrapper } from "@/components/custom/wrappers/language-font-
 import { AuthProvider } from "@/context/useAuth";
 import { Toaster } from "sonner";
 import { DateTimeDisplay } from "@/components/custom/date-time-display";
+import { AccountFooter } from "@/components/custom/mobile/account-footer";
 
 const laila = Laila({
   variable: "--font-laila",
@@ -57,7 +58,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body
-        className={`${halant.variable} ${inter.variable} ${baloo.variable} ${poppins.variable} ${laila.variable} antialiased no-scrollbar`}
+        className={`${halant.variable} ${inter.variable} ${baloo.variable} ${poppins.variable} ${laila.variable} antialiased no-scrollbar bg-muted/60`}
       >
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -65,8 +66,10 @@ export default async function RootLayout({
               <AuthProvider>
                 <Navbar />
                 <DateTimeDisplay />
-                {children}
-                
+                <main className="flex w-full max-w-7xl flex-col items-center justify-between overflow-auto p-4 md:p-12 no-scrollbar! mx-auto">
+                  {children}
+                </main>
+                <AccountFooter />
                 <div className="flex md:hidden">
                   <Toaster
                     closeButton

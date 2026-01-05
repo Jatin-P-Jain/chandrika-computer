@@ -13,7 +13,7 @@ import Link from "next/link";
 import { BackButton } from "@/components/custom/action-items/back-button";
 
 const NotFound: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-muted px-4">
+  <div className="flex justify-center items-center w-full mt-30 mb-26">
     <Card className="w-full max-w-md shadow-lg">
       <CardHeader className="flex flex-col items-center">
         <AlertTriangle className="text-destructive mb-2" size={48} />

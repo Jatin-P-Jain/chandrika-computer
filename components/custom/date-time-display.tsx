@@ -39,7 +39,7 @@ export function DateTimeDisplay() {
   return (
     <div
       className={clsx(
-        "fixed flex w-full items-center justify-between text-muted-foreground top-16 px-4 md:px-8 py-2 text-sm md:text-base font-medium shadow-md dark:shadow-primary/10 bg-muted",
+        "fixed flex w-full items-center justify-between text-muted-foreground dark:text-white/80 top-16 px-4 md:px-8 py-2 text-sm md:text-base font-medium shadow-md dark:shadow-primary/10 bg-muted",
         locale === "hi" && "font-semibold"
       )}
     >
@@ -47,11 +47,11 @@ export function DateTimeDisplay() {
         <CalendarDays size={20} />
         {mounted ? (
           <>
-            <span className={clsx(locale === "en" && "text-sm")}>{day},</span>{" "}
+            <span className={clsx("text-xs md:text-sm")}>{day},</span>{" "}
             <span
               className={clsx(
-                "text-base md:text-xl",
-                locale === "en" && "md:text-base! font-semibold"
+                "text-sm md:text-base",
+                locale === "hi" && "text-base! md:text-lg!"
               )}
             >
               {date}
@@ -63,8 +63,8 @@ export function DateTimeDisplay() {
       </span>
       <span
         className={clsx(
-          "flex justify-center items-center gap-1 md:gap-2 text-lg",
-          locale === "en" && "text-base!"
+          "flex justify-center items-center gap-1 md:gap-2 text-sm md:text-base",
+          locale === "hi" && "text-base! md:text-lg!"
         )}
       >
         <AlarmClock size={20} />
