@@ -1,13 +1,13 @@
 "use client";
 
-import GoogleLoginButton from "../google-login-button";
-import { LogoutButton } from "../action-items/logout-button";
-import { AccountDetails } from "../account-details";
 import { AccountDetailsSkeleton } from "@/components/skeletons/account-details-skeleton";
 import LoginLogoutSkeleton from "@/components/skeletons/login-logout-skeleton";
 import type { UserData } from "@/types/user";
 import { useAuth } from "@/context/useAuth";
 import { buildUser } from "@/lib/utils";
+import GoogleLoginButton from "./google-login-button";
+import { LogoutButton } from "./action-items/logout-button";
+import { AccountDetails } from "./account-details";
 
 type UserStatus =
   | "loading"

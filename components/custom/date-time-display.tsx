@@ -39,7 +39,7 @@ export function DateTimeDisplay() {
   return (
     <div
       className={clsx(
-        "fixed flex w-full items-center justify-between text-muted-foreground dark:text-white/80 top-16 px-4 md:px-8 py-2 text-sm md:text-base font-medium shadow-md dark:shadow-primary/10 bg-muted",
+        "fixed flex w-full items-center justify-between text-muted-foreground dark:text-white/80 top-16 px-4 md:px-8 py-2 text-sm md:text-base font-medium shadow-md dark:shadow-primary/10 bg-muted z-30",
         locale === "hi" && "font-semibold"
       )}
     >

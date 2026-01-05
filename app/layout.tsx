@@ -1,4 +1,5 @@
 import {
+  Amita,
   Baloo_2,
   Halant,
   Inter,
@@ -16,7 +17,12 @@ import { LanguageFontWrapper } from "@/components/custom/wrappers/language-font-
 import { AuthProvider } from "@/context/useAuth";
 import { Toaster } from "sonner";
 import { DateTimeDisplay } from "@/components/custom/date-time-display";
-import { AccountFooter } from "@/components/custom/mobile/account-footer";
+import { AccountFooter } from "@/components/custom/account-footer";
+
+const amita = Amita({
+  variable: "--font-amita",
+  weight: ["400", "700"],
+});
 
 const laila = Laila({
   variable: "--font-laila",
@@ -58,7 +64,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body
-        className={`${halant.variable} ${inter.variable} ${baloo.variable} ${poppins.variable} ${laila.variable} antialiased no-scrollbar bg-muted/60`}
+        className={`${halant.variable} ${inter.variable} ${baloo.variable} ${poppins.variable} ${laila.variable} ${amita.variable} antialiased no-scrollbar bg-muted/60`}
       >
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
