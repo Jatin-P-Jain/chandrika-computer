@@ -15,15 +15,15 @@ const log = (...args: string[]) => {
 
 const useMonitorInactivity = (
   currentUser: User | null,
-  INACTIVITY_LIMIT: number | undefined,
+  INACTIVITY_LIMIT: number | undefined
 ) => {
   useEffect(() => {
     if (!currentUser || !INACTIVITY_LIMIT) return;
 
-    // log("⏳ Inactivity monitor initialized", {
-    //   user: currentUser.uid,
-    //   limitInSeconds: INACTIVITY_LIMIT / 1000,
-    // });
+    console.log("⏳ Inactivity monitor initialized", {
+      user: currentUser.uid,
+      limitInSeconds: INACTIVITY_LIMIT / 1000,
+    });
 
     const updateLastActivity = () => {
       localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
@@ -35,11 +35,11 @@ const useMonitorInactivity = (
       const now = Date.now();
       const diff = now - last;
 
-      // log("🔍 Checking inactivity:", {
-      //   lastActivity: new Date(last).toLocaleString(),
-      //   now: new Date(now).toLocaleString(),
-      //   diffInSeconds: diff / 1000,
-      // });
+      console.log("🔍 Checking inactivity:", {
+        lastActivity: new Date(last).toLocaleString(),
+        now: new Date(now).toLocaleString(),
+        diffInSeconds: diff / 1000,
+      });
 
       if (diff >= INACTIVITY_LIMIT) {
         log("⛔ User is inactive. Logging out...");
@@ -47,7 +47,7 @@ const useMonitorInactivity = (
           await logoutUser();
           await removeToken();
           localStorage.removeItem(LAST_ACTIVITY_KEY);
-          window.location.href = "?sessionExpired=1";
+          window.location.href = "/?sessionExpired=1";
         } catch (err) {
           console.error("Logout failed due to inactivity:", err);
         }
@@ -67,7 +67,7 @@ const useMonitorInactivity = (
       "touchstart",
     ];
     activityEvents.forEach((event) =>
-      window.addEventListener(event, updateLastActivity, { passive: true }),
+      window.addEventListener(event, updateLastActivity, { passive: true })
     );
 
     // Check periodically
@@ -84,7 +84,7 @@ const useMonitorInactivity = (
     // Cleanup
     return () => {
       activityEvents.forEach((event) =>
-        window.removeEventListener(event, updateLastActivity),
+        window.removeEventListener(event, updateLastActivity)
       );
       document.removeEventListener("visibilitychange", onVisibilityChange);
       clearInterval(interval);

@@ -106,6 +106,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Refresh FCM token
         await refreshAndSaveFcmToken();
+
+        window.location.href = "/"; // Redirect to home or desired page
       } else {
         throw new Error("User document not found after update");
       }
@@ -188,9 +190,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // await user.getIdToken(true); // only if you truly need claims now [web:125]
         }
 
-        const limit = claims.admin
-          ? parseInt(process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0")
-          : parseInt(process.env.NEXT_PUBLIC_USER_INACTIVITY_LIMIT || "0");
+        const limit = parseInt(
+          process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0"
+        );
+
         setInactivityLimit(limit);
       } catch (e) {
         console.error("Auth state check failed", e);

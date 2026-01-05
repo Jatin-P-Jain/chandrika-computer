@@ -22,6 +22,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
+  console.log({ sessionExpired });
+
   const locale = useLocale();
   const tHomePage = useTranslations("HomePage");
   const tDailyAccount = useTranslations("DailyAccount");
@@ -41,9 +43,16 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
   return (
     <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-4 md:p-6">
       {sessionExpired && sessionExpiredPopupShown && (
-        <div className="relative flex justify-center items-center w-1/2 mx-auto p-3 text-sm text-yellow-900 bg-yellow-200 border border-yellow-300 rounded-md gap-2">
-          <Info className="inline size-4" />
-          {tHomePage("SessionExpiredMessage")}
+        <div className="w-full relative flex justify-center items-center md:w-1/2 mx-auto p-3 text-sm text-yellow-700 bg-yellow-200 border border-yellow-200 rounded-md gap-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-center flex gap-2 justify-center items-center font-medium">
+              <Info className="inline size-4" />
+              <span className="text-lg">
+                {tHomePage("SessionExpiredMessage")}
+              </span>
+            </span>
+            <span className="">{tHomePage("SessionExpiredMessageDesc")}</span>
+          </div>
           <XIcon
             className="inline size-6 absolute -right-1 -top-1 cursor-pointer p-1 bg-white text-yellow-900 rounded-full border-yellow-300 border"
             onClick={() => {
@@ -112,7 +121,9 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
                 </span>
               </div>
               <div className="flex flex-col gap-1 md:gap-2 items-start">
-                <CardTitle className="leading-6">{tDailyAccount("Title")}</CardTitle>
+                <CardTitle className="leading-6">
+                  {tDailyAccount("Title")}
+                </CardTitle>
                 <CardDescription className="">
                   {tDailyAccount("Desc")}
                 </CardDescription>

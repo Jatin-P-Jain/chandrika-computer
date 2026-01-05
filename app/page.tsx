@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next";
 
 type Props = {
-  params: { locale: string; sessionExpired?: string };
+  params: { locale: string };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -24,8 +24,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function Home({ params }: Props) {
-  const { sessionExpired } = params;
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ sessionExpired?: string }>;
+}) {
+  const { sessionExpired } = await searchParams;
+  console.log("Home", { sessionExpired });
+
   return (
     <div className="flex justify-center items-center w-full mt-30 mb-26">
       <ServicesGate sessionExpired={sessionExpired} />
