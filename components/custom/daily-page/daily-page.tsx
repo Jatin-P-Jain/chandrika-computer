@@ -2,6 +2,8 @@
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
+import { useLocale } from "next-intl";
+import clsx from "clsx";
 
 import {
   Accordion,
@@ -13,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import {
   Form,
   FormControl,
@@ -22,7 +24,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+
+// shadcn Input Group [web:47]
+import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
+
 import { DailyFormValues, dailySchema } from "@/schema/dailay-page.schema";
+import { formatINR, parseINR } from "@/lib/utils";
 
 function sumAmounts(items?: { amount?: number }[]) {
   return (items ?? []).reduce((acc, it) => acc + (Number(it?.amount) || 0), 0);
@@ -37,6 +44,10 @@ function LineItemRow({
   namePrefix: string; // e.g. "earnings.0"
   onRemove: () => void;
 }) {
+  const locale = useLocale();
+  const isHi = locale === "hi";
+  const textCls = clsx(isHi && "font-[inherit]");
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end rounded-md border p-3">
       <FormField
@@ -44,7 +55,7 @@ function LineItemRow({
         name={`${namePrefix}.label`}
         render={({ field }) => (
           <FormItem className="md:col-span-5">
-            <FormLabel>Label</FormLabel>
+            <FormLabel className={textCls}>Label</FormLabel>
             <FormControl>
               <Input placeholder="Enter label" {...field} />
             </FormControl>
@@ -58,14 +69,28 @@ function LineItemRow({
         name={`${namePrefix}.amount`}
         render={({ field }) => (
           <FormItem className="md:col-span-3">
-            <FormLabel>Amount</FormLabel>
+            <FormLabel className={textCls}>Amount</FormLabel>
             <FormControl>
-              <Input
-                type="number"
-                inputMode="decimal"
-                placeholder="0"
-                {...field}
-              />
+              <InputGroup className="focus-within:ring-1 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
+                <InputGroupAddon>₹</InputGroupAddon>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  {...field}
+                  className={clsx(
+                    "text-center",
+                    "focus-visible:ring-0 focus-visible:ring-offset-0"
+                  )}
+                  value={
+                    field.value === 0
+                      ? ""
+                      : formatINR(Number(field.value), false, false)
+                  }
+                  onChange={(e) => field.onChange(parseINR(e.target.value))}
+                />
+                <InputGroupAddon align="inline-end">/-</InputGroupAddon>
+              </InputGroup>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -77,7 +102,7 @@ function LineItemRow({
         name={`${namePrefix}.tag`}
         render={({ field }) => (
           <FormItem className="md:col-span-3">
-            <FormLabel>
+            <FormLabel className={textCls}>
               Tag{" "}
               <span className="text-xs text-muted-foreground">(optional)</span>
             </FormLabel>
@@ -116,6 +141,10 @@ function LineItemRow({
 }
 
 export default function DailyPage() {
+  const locale = useLocale();
+  const isHi = locale === "hi";
+  const textCls = clsx(isHi && "font-[inherit]");
+
   const form = useForm<DailyFormValues>({
     resolver: zodResolver(dailySchema),
     defaultValues: {
@@ -151,44 +180,85 @@ export default function DailyPage() {
   const totalBusiness = sumAmounts(businessExpenses);
   const totalSpends = sumAmounts(dailySpends);
 
-  // Static derived row example (you can rename/replace formula)
   const netForDay = totalEarnings - (totalFixed + totalBusiness + totalSpends);
 
   const onSubmit = (values: DailyFormValues) => {
-    // Replace with API/Firebase call
     console.log("Daily form submit:", values);
   };
 
   return (
     <Card className="w-full p-6 py-3 shadow-sm border rounded-md dark:bg-slate-800 gap-2 overflow-auto">
-      <div className="w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col">
+      <div
+        className={clsx(
+          "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col",
+          textCls
+        )}
+      >
         <span className="text-base text-yellow-700">ॐ</span>
         <span className="text-orange-600"> श्री गणेशाय नमः</span>
       </div>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <Accordion type="multiple" className="w-full max-h-[40vh] overflow-auto no-scrollbar">
-            {/* Section 1 */}
-            <AccordionItem value="fixed">
-              <AccordionTrigger className="font-semibold">Fixed Expenses / Charges</AccordionTrigger>
-              <AccordionContent className="space-y-4 px-3">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Accordion
+            type="multiple"
+            className="w-full max-h-[40vh] overflow-auto no-scrollbar"
+          >
+            <AccordionItem value="fixed" className="pb-2">
+              <AccordionTrigger
+                className={clsx(
+                  "text-base font-semibold py-2 text-primary",
+                  textCls
+                )}
+              >
+                Fixed Expenses / Charges
+              </AccordionTrigger>
+
+              <AccordionContent className="p-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <FormField
                     control={form.control}
                     name="fixed.sd"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Stamp Duty (SD)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            placeholder="0"
-                            {...field}
-                          />
-                        </FormControl>
+                      <>
+                        <FormItem className="flex">
+                          <FormLabel className={clsx("w-full", textCls)}>
+                            Stamp Duty (SD)
+                          </FormLabel>
+                          <FormControl>
+                            <InputGroup className="focus-within:ring-1 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
+                              <InputGroupAddon>₹</InputGroupAddon>
+                              <Input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="0"
+                                {...field}
+                                className={clsx(
+                                  "w-fit",
+                                  "text-center border-0 shadow-none",
+                                  "focus-visible:ring-0 focus-visible:ring-offset-0"
+                                )}
+                                value={
+                                  field.value === 0
+                                    ? ""
+                                    : formatINR(
+                                        Number(field.value),
+                                        false,
+                                        false
+                                      )
+                                }
+                                onChange={(e) =>
+                                  field.onChange(parseINR(e.target.value))
+                                }
+                              />
+                              <InputGroupAddon align="inline-end">
+                                /-
+                              </InputGroupAddon>
+                            </InputGroup>
+                          </FormControl>
+                        </FormItem>
                         <FormMessage />
-                      </FormItem>
+                      </>
                     )}
                   />
 
@@ -196,18 +266,45 @@ export default function DailyPage() {
                     control={form.control}
                     name="fixed.sc"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Sur Charge (SC)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            placeholder="0"
-                            {...field}
-                          />
-                        </FormControl>
+                      <>
+                        <FormItem className="flex">
+                          <FormLabel className={clsx("w-full", textCls)}>
+                            Sur Charge (SC)
+                          </FormLabel>
+                          <FormControl>
+                            <InputGroup className="focus-within:ring-1 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
+                              <InputGroupAddon>₹</InputGroupAddon>
+                              <Input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="0"
+                                {...field}
+                                className={clsx(
+                                  "w-fit",
+                                  "text-center border-0 shadow-none",
+                                  "focus-visible:ring-0 focus-visible:ring-offset-0"
+                                )}
+                                value={
+                                  field.value === 0
+                                    ? ""
+                                    : formatINR(
+                                        Number(field.value),
+                                        false,
+                                        false
+                                      )
+                                }
+                                onChange={(e) =>
+                                  field.onChange(parseINR(e.target.value))
+                                }
+                              />
+                              <InputGroupAddon align="inline-end">
+                                /-
+                              </InputGroupAddon>
+                            </InputGroup>
+                          </FormControl>
+                        </FormItem>
                         <FormMessage />
-                      </FormItem>
+                      </>
                     )}
                   />
 
@@ -215,56 +312,99 @@ export default function DailyPage() {
                     control={form.control}
                     name="fixed.fs"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Photocopy (FS)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            placeholder="0"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                      <>
+                        <FormItem className="flex">
+                          <FormLabel className={clsx("w-full", textCls)}>
+                            Photocopy (FS)
+                          </FormLabel>
+                          <FormControl>
+                            <InputGroup className="focus-within:ring-1 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
+                              <InputGroupAddon>₹</InputGroupAddon>
+                              <Input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="0"
+                                {...field}
+                                className={clsx(
+                                  "w-fit",
+                                  "text-center border-0 shadow-none",
+                                  "focus-visible:ring-0 focus-visible:ring-offset-0"
+                                )}
+                                value={
+                                  field.value === 0
+                                    ? ""
+                                    : formatINR(
+                                        Number(field.value),
+                                        false,
+                                        false
+                                      )
+                                }
+                                onChange={(e) =>
+                                  field.onChange(parseINR(e.target.value))
+                                }
+                              />
+                              <InputGroupAddon align="inline-end">
+                                /-
+                              </InputGroupAddon>
+                            </InputGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      </>
                     )}
                   />
                 </div>
-
-                <div className="flex items-center justify-between rounded-md bg-muted/50 dark:bg-muted-foreground/10 p-3">
-                  <span className="text-sm text-muted-foreground">
-                    Total fixed
-                  </span>
-                  <span className="text-sm font-semibold">{totalFixed}</span>
-                </div>
               </AccordionContent>
+
+              <div className="flex items-center justify-between rounded-md bg-muted/50 dark:bg-muted-foreground/10 p-1 px-3">
+                <span
+                  className={clsx("text-sm text-muted-foreground", textCls)}
+                >
+                  Total fixed
+                </span>
+                <span className="text-base font-semibold">
+                  {formatINR(totalFixed)}
+                </span>
+              </div>
             </AccordionItem>
 
             {/* Section 2 */}
-            <AccordionItem value="earnings">
-              <AccordionTrigger>Earnings</AccordionTrigger>
-              <AccordionContent className="space-y-4">
-                {/* Static derived row */}
-                <div className="flex items-center justify-between rounded-md bg-muted/50 p-3">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">
-                      Net for day (derived)
+            <AccordionItem value="earnings" className="pb-2">
+              <AccordionTrigger
+                className={clsx(
+                  "py-2 text-base font-semibold text-primary",
+                  textCls
+                )}
+              >
+                Earnings
+              </AccordionTrigger>
+
+              <AccordionContent className="p-2 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="">
+                    <div className={clsx("text-base font-medium", textCls)}>
+                      Net Amount
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div
+                      className={clsx("text-xs text-muted-foreground", textCls)}
+                    >
                       Earnings - (Fixed + Business + Daily Spends)
                     </div>
                   </div>
-                  <div className="text-sm font-semibold">{netForDay}</div>
+                  <div className="text-base font-semibold">
+                    {formatINR(netForDay)}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm">Earning entries</Label>
                   <Button
                     type="button"
+                    size={"sm"}
                     variant="outline"
                     onClick={() =>
                       earningsFA.append({ label: "", amount: 0, tag: "" })
                     }
+                    className="w-full"
                   >
                     Add earning
                   </Button>
@@ -280,34 +420,47 @@ export default function DailyPage() {
                     />
                   ))}
                 </div>
-
-                <div className="flex items-center justify-between rounded-md bg-muted/50 p-3">
-                  <span className="text-sm text-muted-foreground">
-                    Total earnings
-                  </span>
-                  <span className="text-sm font-semibold">{totalEarnings}</span>
-                </div>
               </AccordionContent>
+
+              <div className="flex items-center justify-between rounded-md bg-green-100 text-green-900 p-2">
+                <span
+                  className={clsx("text-sm text-muted-foreground", textCls)}
+                >
+                  Total earnings
+                </span>
+                <span className="text-base font-semibold">
+                  {formatINR(totalEarnings)}
+                </span>
+              </div>
             </AccordionItem>
 
             {/* Section 3 */}
-            <AccordionItem value="businessExpenses">
-              <AccordionTrigger>Business Expense</AccordionTrigger>
-              <AccordionContent className="space-y-4">
+            <AccordionItem value="businessExpenses" className="pb-2">
+              <AccordionTrigger
+                className={clsx(
+                  "py-2 text-base font-semibold text-primary",
+                  textCls
+                )}
+              >
+                Business Expense
+              </AccordionTrigger>
+
+              <AccordionContent className="p-2 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm">Expense entries</Label>
                   <Button
                     type="button"
+                    size={"sm"}
                     variant="outline"
                     onClick={() =>
                       businessFA.append({ label: "", amount: 0, tag: "" })
                     }
+                    className="w-full"
                   >
                     Add expense
                   </Button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="">
                   {businessFA.fields.map((f, idx) => (
                     <LineItemRow
                       key={f.id}
@@ -317,28 +470,41 @@ export default function DailyPage() {
                     />
                   ))}
                 </div>
-
-                <div className="flex items-center justify-between rounded-md bg-muted/50 p-3">
-                  <span className="text-sm text-muted-foreground">
-                    Total business expense
-                  </span>
-                  <span className="text-sm font-semibold">{totalBusiness}</span>
-                </div>
               </AccordionContent>
+
+              <div className="flex items-center justify-between rounded-md bg-muted/50 p-2">
+                <span
+                  className={clsx("text-sm text-muted-foreground", textCls)}
+                >
+                  Total business expense
+                </span>
+                <span className="text-base font-semibold">
+                  {formatINR(totalBusiness)}
+                </span>
+              </div>
             </AccordionItem>
 
             {/* Section 4 */}
-            <AccordionItem value="dailySpends">
-              <AccordionTrigger>Daily Spends</AccordionTrigger>
-              <AccordionContent className="space-y-4">
+            <AccordionItem value="dailySpends" className="pb-2">
+              <AccordionTrigger
+                className={clsx(
+                  "py-2 text-primary font-semibold text-base",
+                  textCls
+                )}
+              >
+                Daily Spends
+              </AccordionTrigger>
+
+              <AccordionContent className="p-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm">Spend entries</Label>
                   <Button
                     type="button"
+                    size={"sm"}
                     variant="outline"
                     onClick={() =>
                       spendsFA.append({ label: "", amount: 0, tag: "" })
                     }
+                    className="w-full"
                   >
                     Add spend
                   </Button>
@@ -354,35 +520,61 @@ export default function DailyPage() {
                     />
                   ))}
                 </div>
-
-                <div className="flex items-center justify-between rounded-md bg-muted/50 p-3">
-                  <span className="text-sm text-muted-foreground">
-                    Total daily spends
-                  </span>
-                  <span className="text-sm font-semibold">{totalSpends}</span>
-                </div>
               </AccordionContent>
+
+              <div className="flex items-center justify-between rounded-md bg-muted/50 p-2">
+                <span
+                  className={clsx("text-sm text-muted-foreground", textCls)}
+                >
+                  Total daily spends
+                </span>
+                <span className="text-base font-semibold">
+                  {formatINR(totalSpends)}
+                </span>
+              </div>
             </AccordionItem>
           </Accordion>
 
           {/* Final input */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="totalCashCollected"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Total Cash Collected</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      placeholder="0"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                <div className="flex flex-col">
+                  <FormItem className="flex">
+                    <FormLabel
+                      className={clsx("text-base text-center w-full", textCls)}
+                    >
+                      Total Cash Collected :
+                    </FormLabel>
+                    <FormControl>
+                      <InputGroup className="w-1/2 focus-within:ring-1 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
+                        <InputGroupAddon>₹</InputGroupAddon>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          {...field}
+                          className={clsx(
+                            "h-full text-lg text-center w-full border-0 shadow-none",
+                            "focus-visible:ring-0 focus-visible:ring-offset-0"
+                          )}
+                          value={
+                            field.value === 0
+                              ? ""
+                              : formatINR(Number(field.value), false, false)
+                          }
+                          onChange={(e) =>
+                            field.onChange(parseINR(e.target.value))
+                          }
+                        />
+                        <InputGroupAddon align="inline-end">/-</InputGroupAddon>
+                      </InputGroup>
+                    </FormControl>
+                  </FormItem>
+                  <FormMessage className="text-xs" />
+                </div>
               )}
             />
 

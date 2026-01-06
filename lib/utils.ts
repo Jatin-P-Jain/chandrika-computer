@@ -66,3 +66,28 @@ export const formatTime = (secs: number) => {
   const sec = (secs % 60).toString().padStart(2, "0");
   return `${min}:${sec}`;
 };
+
+export function formatINR(value: number, prefix = true, suffix = true) {
+  const n = Number(value) || 0;
+  if (prefix === false && suffix === false) {
+    return new Intl.NumberFormat("en-IN").format(n);
+  }
+  if (prefix === false) {
+    return `${new Intl.NumberFormat("en-IN").format(n)}/-`;
+  }
+  if (suffix === false) {
+    return `₹${new Intl.NumberFormat("en-IN").format(n)}`;
+  }
+  return `₹${new Intl.NumberFormat("en-IN").format(n)}/-`;
+}
+
+export function parseINR(input: string) {
+  const cleaned = input
+    .replaceAll("₹", "")
+    .replaceAll("/-", "")
+    .replaceAll(",", "")
+    .trim();
+
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
