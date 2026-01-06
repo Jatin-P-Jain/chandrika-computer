@@ -67,6 +67,10 @@ export const formatTime = (secs: number) => {
   return `${min}:${sec}`;
 };
 
+export function sumAmounts(items?: { amount?: number }[]) {
+  return (items ?? []).reduce((acc, it) => acc + (Number(it?.amount) || 0), 0);
+}
+
 export function formatINR(value: number, prefix = true, suffix = true) {
   const n = Number(value) || 0;
   if (prefix === false && suffix === false) {
