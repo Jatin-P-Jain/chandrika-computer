@@ -103,5 +103,8 @@
     "SecuredService": "Secured Service",
     "SomethingWentWrong": "Something went wrong",
     "SomethingWentWrongDesc": "Please try again after some time"
+  },
+  "Validation": {
+    "Required": "Required"
   }
 }

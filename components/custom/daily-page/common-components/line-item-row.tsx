@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { Check, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useFormContext } from "react-hook-form";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import type { DailyFormValues } from "@/schema/dailay-page.schema";
 import { AmountInput } from "./amount-input";
 import { TagInput } from "./tag-input";
 import { formatINR } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
 import { useKeyboard } from "@/context/keyboard-context";
 
 type RowPrefix =
@@ -41,20 +40,13 @@ export function LineItemRow({
   const locale = useLocale();
   const isHi = locale === "hi";
   const textHeadCls = clsx(isHi && "text-lg! font-[inherit]");
-  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
+  const textBodyCls = clsx(isHi && "text-base! font-medium! font-[inherit]");
 
   // UI-only state (doesn't affect RHF values)
   const [isEditing, setIsEditing] = useState(true);
   // const inputRef = useRef<HTMLInputElement>(null);
 
-  const { setActiveElement, toggleHindiKeyboard, isHindiActive } =
-    useKeyboard();
-
-  // useEffect(() => {
-  //   if (inputRef.current) {
-  //     setActiveInput(inputRef);
-  //   }
-  // }, []);
+  const { setActiveElement } = useKeyboard();
 
   // read current values for view mode (keeps submit logic unchanged)
   const amount = Number(getValues(`${namePrefix}.amount` as any)) || 0;
@@ -140,17 +132,15 @@ export function LineItemRow({
           <FormField
             control={control}
             name={`${namePrefix}.label`}
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem className="w-full gap-1">
                 <FormLabel className={textBodyCls}>{tCommon("For")}</FormLabel>
                 <FormControl>
                   {/* NOTE: Input doesn't support type="textarea"; keep Input or switch to <Textarea/> */}
                   <Input
                     {...field}
-                    ref={(el) => {
-                      field.ref(el); // RHF registration
-                      setActiveElement(el); // ✅ Still works
-                    }}
+                    ref={(el) => field.ref(el)}
+                    onFocus={(e) => setActiveElement(e.currentTarget)}
                     placeholder={tCommon("EnterHere")}
                     className={textBodyCls}
                   />

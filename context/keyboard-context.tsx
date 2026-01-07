@@ -7,12 +7,11 @@ import {
   ReactNode,
   useRef,
   useEffect,
-  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 
 interface KeyboardContextType {
   isHindiActive: boolean;
-  toggleHindiKeyboard: () => void;
+  setIsHindiActive: (value: boolean) => void;
   setActiveElement: (el: HTMLInputElement | null) => void;
   activeElement: HTMLInputElement | null;
 }
@@ -23,94 +22,269 @@ const KeyboardContext = createContext<KeyboardContextType | undefined>(
 
 export function KeyboardProvider({ children }: { children: ReactNode }) {
   const [isHindiActive, setIsHindiActive] = useState(false);
+  useEffect(() => {
+    const cookieValue = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("CHANDRIKA_COMPUTER_KEYBOARD="))
+      ?.split("=")[1];
+
+    if (cookieValue === "hi") setIsHindiActive(true);
+    if (cookieValue === "en") setIsHindiActive(false);
+  }, []);
   const activeElementRef = useRef<HTMLInputElement | null>(null);
 
-  // Hindi Remington GAIL transliteration map
+  // Your mapping (unchanged)
   const hindiMap: Record<string, string> = {
-    // Consonants
-    q: "क",
-    w: "ख",
-    e: "ग",
-    r: "घ",
-    t: "ङ",
-    y: "च",
-    u: "छ",
-    i: "ज",
-    o: "झ",
-    p: "ञ",
-    "[": "ट",
-    "]": "ठ",
-    a: "ड",
-    s: "ढ",
-    d: "ण",
-    f: "त",
-    g: "थ",
-    h: "द",
-    j: "ध",
-    k: "न",
-    l: "प",
-    ";": "फ",
-    "'": "ब",
-    z: "भ",
-    x: "म",
-    c: "य",
-    v: "र",
-    b: "ल",
-    n: "व",
-    m: "श",
+    "`": "◌़",
+    "~": "द्य",
+    _: ".",
+    "=": "◌ृ",
+    "+": "◌्",
+    "!": "।",
+    "@": "/",
+    "#": ":",
+    $: "?",
+    "%": "-",
+    "^": "'",
+    "&": "'",
+    "*": "द्ध",
+    "(": "त्र",
+    ")": "ऋ",
 
-    // Matras
-    "्": "्",
-    "ि": "ि",
-    "ी": "ी",
-    "ु": "ु",
-    "ू": "ू",
-    "ृ": "ृ",
-    "े": "े",
-    "ै": "ै",
-    "ो": "ो",
-    "ौ": "ौ",
+    "1": "१",
+    "2": "२",
+    "3": "३",
+    "4": "४",
+    "5": "५",
+    "6": "६",
+    "7": "७",
+    "8": "८",
+    "9": "९",
+    "0": "0",
 
-    // Marks & punctuation
-    "ं": "ं",
-    "ँ": "ँ",
-    "ः": "ः",
-    ".": "।",
-    ",": "।",
-  };
+    q: "ु",
+    w: "ू",
+    e: "म",
+    r: "त",
+    t: "ज",
+    y: "ल",
+    u: "न",
+    i: "प",
+    o: "व",
+    p: "च",
+    "[": "ख्",
+    "]": ",",
 
-  const toggleHindiKeyboard = () => {
-    setIsHindiActive((prev) => !prev);
+    a: "ं",
+    s: "े",
+    d: "क",
+    f: "ि",
+    g: "ह",
+    h: "ी",
+    j: "र",
+    k: "ा",
+    l: "स",
+    ";": "य",
+    "'": "श्",
+
+    z: "्र",
+    x: "ग",
+    c: "ब",
+    v: "अ",
+    b: "इ",
+    n: "द",
+    m: "उ",
+    ",": "ए",
+    ".": "ण्",
+    "/": "ध्",
+
+    Q: "फ",
+    W: "ँ",
+    E: "म्",
+    R: "त्",
+    T: "ज्",
+    Y: "ल्",
+    U: "न्",
+    I: "प्",
+    O: "व्",
+    P: "च्",
+    "{": "क्ष्",
+    "}": "द्व",
+
+    A: "ा",
+    S: "ै",
+    D: "क्",
+    F: "थ्",
+    G: "ळ",
+    H: "भ्",
+    J: "श्र",
+    K: "ज्ञ",
+    L: "स्",
+    ":": "रू",
+    '"': "ष्",
+
+    Z: "र्",
+    X: "ग्",
+    C: "ब्",
+    V: "ट",
+    B: "ठ",
+    N: "छ",
+    M: "ड",
+    "<": "ढ",
+    ">": "झ",
+    "?": "घ्",
+    " ": " ",
   };
 
   const setActiveElement = (el: HTMLInputElement | null) => {
     activeElementRef.current = el;
   };
 
-  // ✅ Fixed KeyboardEvent typing
+  // ----------------- Script rules -----------------
+  const VIRAMA = "\u094D"; // ् [web:165][web:174]
+
+  const isVowelSign = (ch: string) => /[\u093A-\u094C\u0962\u0963]/.test(ch);
+  const isSyllableMark = (ch: string) => /[\u0901-\u0903]/.test(ch); // ँ ं ः
+  const isConsonantLetter = (ch: string) => /[\u0915-\u0939]/.test(ch);
+
+  const containsVowelSign = (s: string) => [...s].some(isVowelSign);
+
+  // Compose: ा + े => ो,  ा + ै => ौ
+  const composeMatras = (prevVowel: string | null, nextVowel: string) => {
+    if (prevVowel === "ा" && nextVowel === "े") return "ो";
+    if (prevVowel === "ा" && nextVowel === "ै") return "ौ";
+    return null;
+  };
+
+  // Turn chart placeholders into real combining marks (◌ is just a placeholder)
+  const normalizeMapped = (s: string) =>
+    s.replaceAll("◌़", "़").replaceAll("◌्", "्").replaceAll("◌ृ", "ृ");
+
+  // Find cluster start for multi-codepoint conjuncts
+  const findClusterStart = (value: string, cursor: number) => {
+    let i = cursor;
+    while (i > 0 && isSyllableMark(value[i - 1])) i--;
+    while (i > 0 && isVowelSign(value[i - 1])) i--;
+    if (i > 0 && value[i - 1] === VIRAMA) i--;
+
+    while (i > 0) {
+      const prev = value[i - 1];
+      if (isConsonantLetter(prev)) {
+        i--;
+        if (i > 0 && value[i - 1] === VIRAMA) {
+          i--;
+          continue;
+        }
+        continue;
+      }
+      break;
+    }
+    return i;
+  };
+
+  // NEW: If cluster ends in virama (dead consonant), first vowel-sign press should only "revive" it.
+  // Example: श् + ा => श   (not शा) on first press.
+  const shouldOnlyReviveVirama = (vowel: string) => {
+    // Apply rule for all vowel signs (including ा)
+    return isVowelSign(vowel);
+  };
+
+  const insertHindiSmart = (input: HTMLInputElement, mappedRaw: string) => {
+    const mapped = normalizeMapped(mappedRaw);
+
+    const value = input.value;
+    const start = input.selectionStart ?? value.length;
+    const end = input.selectionEnd ?? value.length;
+
+    // Replace selection
+    if (start !== end) {
+      const next = value.slice(0, start) + mapped + value.slice(end);
+      input.value = next;
+      const caret = start + mapped.length;
+      input.setSelectionRange(caret, caret);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
+    }
+
+    // MATRA PATH
+    if (containsVowelSign(mapped)) {
+      // Keep trailing marks (ं/ँ/ः)
+      let markStart = start;
+      while (markStart > 0 && isSyllableMark(value[markStart - 1])) markStart--;
+      const trailingMarks = value.slice(markStart, start);
+
+      // Find previous vowel signs
+      let vowelStart = markStart;
+      while (vowelStart > 0 && isVowelSign(value[vowelStart - 1])) vowelStart--;
+      const prevVowel = value.slice(vowelStart, markStart) || null;
+
+      // Find cluster range
+      const clusterStart = findClusterStart(value, vowelStart);
+      let clusterEnd = vowelStart;
+
+      const endsWithVirama =
+        clusterEnd > clusterStart && value[clusterEnd - 1] === VIRAMA;
+
+      // If dead consonant + vowel sign: revive only (remove virama, do not add matra yet)
+      if (endsWithVirama && shouldOnlyReviveVirama(mapped)) {
+        // remove the virama
+        const revived =
+          value.slice(0, clusterEnd - 1) + trailingMarks + value.slice(start);
+
+        input.value = revived;
+        const caret = clusterEnd - 1 + trailingMarks.length;
+        input.setSelectionRange(caret, caret);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        return;
+      }
+
+      // Otherwise, normal behavior:
+      // - drop a trailing virama (so घ् + ा => घा)
+      if (endsWithVirama) {
+        // Safety: only if consonant exists before virama
+        if (
+          clusterEnd - 2 >= clusterStart &&
+          isConsonantLetter(value[clusterEnd - 2])
+        ) {
+          clusterEnd -= 1;
+        }
+      }
+
+      // Compose (aa+e => o), (aa+ai => au)
+      const composed = prevVowel ? composeMatras(prevVowel, mapped) : null;
+      const finalVowel = composed ?? mapped;
+
+      const next =
+        value.slice(0, clusterEnd) +
+        finalVowel +
+        trailingMarks +
+        value.slice(start);
+
+      input.value = next;
+      const caret = clusterEnd + finalVowel.length + trailingMarks.length;
+      input.setSelectionRange(caret, caret);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
+    }
+
+    // NORMAL insert
+    const next = value.slice(0, start) + mapped + value.slice(start);
+    input.value = next;
+    const caret = start + mapped.length;
+    input.setSelectionRange(caret, caret);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
   useEffect(() => {
     const handleKeyDown = (evt: KeyboardEvent) => {
       if (!isHindiActive || !activeElementRef.current) return;
+      if (evt.ctrlKey || evt.altKey || evt.metaKey) return;
 
-      const hindiChar = hindiMap[evt.key];
-      if (hindiChar && !evt.ctrlKey && !evt.altKey && !evt.metaKey) {
-        evt.preventDefault();
+      const mapped = hindiMap[evt.key];
+      if (!mapped) return;
 
-        const input = activeElementRef.current;
-        const start = input.selectionStart || 0;
-        const end = input.selectionEnd || 0;
-        const newValue =
-          input.value.slice(0, start) + hindiChar + input.value.slice(end);
-
-        input.value = newValue;
-        input.setSelectionRange(
-          start + hindiChar.length,
-          start + hindiChar.length
-        );
-
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.dispatchEvent(new KeyboardEvent("change", { bubbles: true }));
-      }
+      evt.preventDefault();
+      insertHindiSmart(activeElementRef.current, mapped);
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -121,7 +295,7 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
     <KeyboardContext.Provider
       value={{
         isHindiActive,
-        toggleHindiKeyboard,
+        setIsHindiActive,
         setActiveElement,
         activeElement: activeElementRef.current,
       }}
@@ -133,8 +307,7 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
 
 export function useKeyboard() {
   const context = useContext(KeyboardContext);
-  if (!context) {
+  if (!context)
     throw new Error("useKeyboard must be used within KeyboardProvider");
-  }
   return context;
 }

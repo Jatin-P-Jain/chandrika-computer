@@ -1,29 +1,34 @@
-import { number, z } from "zod";
+import { z } from "zod";
+type TFunction = (key: string) => string;
 
-const money = z.number("Must be a number").min(1, "Must be 1 or more"); // [web:111]
+export const makeDailySchema = (t?: TFunction) => {
+  const money = z
+    .number()
+    .min(1, t ? t("Required") : "Errors.moneyMin1");
 
-export const lineItemSchema = z.object({
-  label: z.string().min(1, "Label is required"),
-  amount: money,
-  tags: z.array(z.string()).optional(),
-});
+  const lineItemSchema = z.object({
+    label: z.string().min(1, t ? t("Required") : "Errors.required"),
+    amount: money,
+    tags: z.array(z.string()).optional(),
+  });
 
-export const dailySchema = z.object({
-  fixed: z.object({
-    sd: money,
-    sc: z.number().min(0),
-    fs: money,
-  }),
+  return z.object({
+    fixed: z.object({
+      sd: money,
+      sc: z.number().min(0, t ? t("Required") : "Errors.nonNegative"),
+      fs: money,
+    }),
+    earnings: z.object({
+      netIncome: z
+        .number()
+        .min(1, t ? t("Required") : "Errors.moneyMin1"),
+      otherIncomes: z.array(lineItemSchema),
+    }),
+    businessExpenses: z.array(lineItemSchema),
+    dailySpends: z.array(lineItemSchema),
+    totalCashCollected: money,
+  });
+};
 
-  // ✅ required arrays (no default)
-  earnings: z.object({
-    netIncome: z.number().min(1),
-    otherIncomes: z.array(lineItemSchema),
-  }),
-  businessExpenses: z.array(lineItemSchema),
-  dailySpends: z.array(lineItemSchema),
-
-  totalCashCollected: money,
-});
-
-export type DailyFormValues = z.infer<typeof dailySchema>;
+export type DailyFormValues = z.infer<ReturnType<typeof makeDailySchema>>;
+export const dailySchema = makeDailySchema();

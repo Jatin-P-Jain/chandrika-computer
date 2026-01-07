@@ -103,5 +103,8 @@
     "SecuredService": "सुरक्षित सेवा",
     "SomethingWentWrong": "कुछ तो गलत हुआ ",
     "SomethingWentWrongDesc": "कृपया कुछ समय बाद पुनः प्रयास करें।"
+  },
+  "Validation": {
+    "Required": "आवश्यक है"
   }
 }

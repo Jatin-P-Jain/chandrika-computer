@@ -17,13 +17,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { DailyFormValues, dailySchema } from "@/schema/dailay-page.schema";
+import { DailyFormValues, makeDailySchema } from "@/schema/dailay-page.schema";
 import { formatINR, sumAmounts } from "@/lib/utils";
 import { FixedExpensesSection } from "./sections.tsx/fixed-expenses";
 import { FieldArraySection } from "./common-components/field-array-section";
 import { AmountInput } from "./common-components/amount-input";
 import { Loader2, SaveIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/useAuth";
 import { createDailyAccountItem } from "@/app/daily-account/actions";
 import { toast } from "sonner";
@@ -35,6 +35,9 @@ export default function DailyPage() {
   const locale = useLocale();
   const isHi = locale === "hi";
   const textCls = clsx(isHi && "text-lg font-[inherit]");
+
+  const tErrors = useTranslations("Validation");
+  const dailySchema = useMemo(() => makeDailySchema(tErrors), [tErrors]);
 
   const form = useForm<DailyFormValues>({
     resolver: zodResolver(dailySchema),
@@ -83,7 +86,11 @@ export default function DailyPage() {
       return;
     }
     const accountExistsErrorMessage = tToast("DailyAccountExists");
-    const saveResponse = await createDailyAccountItem(data, token,accountExistsErrorMessage);
+    const saveResponse = await createDailyAccountItem(
+      data,
+      token,
+      accountExistsErrorMessage
+    );
     if (!!saveResponse.error || !saveResponse.docId) {
       toast.error("Error!", { description: saveResponse.error });
       return;
