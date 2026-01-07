@@ -2,7 +2,7 @@
 "use client";
 
 import clsx from "clsx";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useFieldArray, useFormContext } from "react-hook-form";
 
 import {
@@ -15,6 +15,7 @@ import type { DailyFormValues } from "@/schema/dailay-page.schema";
 import { LineItemRow } from "./line-item-row";
 import { SectionTotalBar } from "./section-total-bar";
 import { formatINR } from "@/lib/utils";
+import { ListPlus } from "lucide-react";
 
 export function FieldArraySection({
   value,
@@ -26,7 +27,7 @@ export function FieldArraySection({
   showNet,
   netForDay,
 }: {
-  value: "earnings" | "businessExpenses" | "dailySpends";
+  value: "earnings.otherIncomes" | "businessExpenses" | "dailySpends";
   title: string;
   addButtonText: string;
   totalLabel: string;
@@ -35,64 +36,70 @@ export function FieldArraySection({
   showNet?: boolean;
   netForDay?: number;
 }) {
+  const tDailyAccount = useTranslations("DailyAccount");
   const { control } = useFormContext<DailyFormValues>();
   const locale = useLocale();
   const isHi = locale === "hi";
-  const textCls = clsx(isHi && "font-[inherit]");
+  const textHeadCls = clsx(isHi && "text-lg font-[inherit]");
+  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
 
   const fa = useFieldArray({ control, name: value });
 
   return (
-    <AccordionItem value={value} className="pb-2">
+    <AccordionItem
+      value={value}
+      className="p-1 md:h-full md:flex md:flex-col rounded-md border shadow-sm lg:shadow-none lg:border-0 lg:border-b lg:rounded-none"
+    >
       <AccordionTrigger
-        className={clsx("py-2 text-base font-semibold text-primary", textCls)}
+        className={clsx(
+          "py-2 text-base font-semibold text-primary justify-center lg:border-b items-center",
+          textHeadCls
+        )}
       >
         {title}
       </AccordionTrigger>
 
-      <AccordionContent className="p-2 flex flex-col gap-4">
+      <AccordionContent className="p-2 flex flex-col gap-2 justify-between">
         {showNet && (
           <div className="flex items-center justify-between">
             <div>
-              <div className={clsx("text-base font-medium", textCls)}>
-                Net Earnings
+              <div className={clsx("text-sm font-medium", textBodyCls)}>
+                {tDailyAccount("NetIncome")}
               </div>
-              <div
-                className={clsx("text-xs text-muted-foreground", textCls)}
-              ></div>
             </div>
-            <div className="text-base font-semibold">
+            <div className={clsx("text-base font-semibold", textHeadCls)}>
               {formatINR(netForDay || 0)}
             </div>
           </div>
         )}
+        <div className="flex flex-col gap-2 overflow-auto max-h-120 no-scrollbar">
+          {fa.fields.map((f, idx) => (
+            <LineItemRow
+              key={f.id}
+              namePrefix={`${value}.${idx}`}
+              onRemove={() => fa.remove(idx)}
+            />
+          ))}
+        </div>
         <div className="flex items-center justify-between">
           <Button
             type="button"
             size={"sm"}
             variant="outline"
-            onClick={() => fa.append({ label: "", amount: 0, tag: "" } as any)}
-            className="w-full"
+            onClick={() => fa.append({ label: "", amount: 0, tags: [] } as any)}
+            className="w-full flex justify-center items-center gap-2 shadow-md"
           >
             {addButtonText}
+            <ListPlus />
           </Button>
-        </div>
-
-        <div className="space-y-3">
-          {fa.fields.map((f, idx) => (
-            <LineItemRow
-              key={f.id}
-              namePrefix={`${value}.${idx}` as const}
-              onRemove={() => fa.remove(idx)}
-            />
-          ))}
         </div>
       </AccordionContent>
 
       <SectionTotalBar
-        className={totalBarClassName}
-        label={<span className={textCls}>{totalLabel}</span>}
+        className={clsx("mt-auto", totalBarClassName)}
+        label={<span className={textBodyCls}>{totalLabel}</span>}
         value={totalValue}
+        valueClassName={textHeadCls}
       />
     </AccordionItem>
   );

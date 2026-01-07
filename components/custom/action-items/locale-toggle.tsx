@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "../../ui/button";
 
-export function LocaleToggle() {
+export function LocaleToggle({ labelClassName }: { labelClassName: string }) {
   const router = useRouter();
   const [locale, setLocale] = useState("");
   const tCommon = useTranslations("Common");
@@ -34,7 +34,7 @@ export function LocaleToggle() {
       className="flex w-full gap-4 items-center justify-between"
       aria-label="Toggle language"
     >
-      <span className="text-sm">{tCommon("Language")}: </span>
+      <span className={labelClassName}>{tCommon("Language")}: </span>
       <div className="flex gap-2 md:gap-4">
         <Button
           variant={locale === "hi" ? "default" : "outline"}

@@ -162,8 +162,6 @@ export function PhoneVerification({
       authStateStatus === "phone-verification-required" &&
       currentUser?.phoneNumber
     ) {
-      console.log("setting phone number");
-
       setPhoneAuthState((s) => ({
         ...s,
         phoneNumber: currentUser.phoneNumber!,

@@ -1,23 +1,15 @@
 import DailyPage from "@/components/custom/daily-page/daily-page";
 import { DayNavigator } from "@/components/custom/date-navigator";
-import { ClipboardListIcon, LayoutList } from "lucide-react";
+import DailyAccountHeader from "./daily-account-header";
 
 const DailyAccountPage = () => {
   return (
-    <div className="flex flex-col justify-center items-center w-full mt-26 mb-20 gap-3 overflow-auto max-h-[80vh]">
-      <div className="flex justify-between items-center w-full">
-        <h1 className="flex justify-center items-center gap-1 font-semibold text-primary text-lg">
-          <ClipboardListIcon className="size-5" />
-          Daily Accounts
-        </h1>
-        <div className="flex gap-2 justify-between items-center font-semibold text-sm text-primary ">
-          View All
-          <LayoutList className="size-4" />
-        </div>
-      </div>
+    <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 mb-20 md:mb-16 gap-2 overflow-auto">
+      <DailyAccountHeader />
       <DayNavigator />
-
-      <DailyPage />
+      <div className="flex w-full p-2 md:p-6">
+        <DailyPage />
+      </div>
     </div>
   );
 };

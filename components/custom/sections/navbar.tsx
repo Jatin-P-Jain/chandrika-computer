@@ -2,11 +2,8 @@
 "use client";
 
 import Link from "next/link";
-import { ThemeModeToggle } from "../action-items/theme-mode-button";
-import { LocaleToggle } from "../action-items/locale-toggle";
-import { Separator } from "@/components/ui/separator";
 import { useTranslations } from "next-intl";
-import MobilePreferences, { Preferences } from "../preferences";
+import { Preferences } from "../preferences";
 
 export function Navbar() {
   const tCommon = useTranslations("Common");

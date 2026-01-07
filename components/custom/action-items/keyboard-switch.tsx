@@ -1,25 +1,22 @@
 "use client";
-import { useTheme } from "next-themes";
+
 import { useTranslations } from "next-intl";
 import { Switch } from "@/components/ui/switch";
+import { useKeyboard } from "@/context/keyboard-context";
 
-export function ThemeModeToggle({
-  labelClassName,
-}: {
-  labelClassName: string;
-}) {
+export function KeyboardSwitch({ labelClassName }: { labelClassName: string }) {
   const tCommon = useTranslations("Common");
-  const { theme, setTheme } = useTheme();
+  const { isHindiActive, toggleHindiKeyboard } = useKeyboard();
 
   return (
     <div className="flex w-full items-center justify-between gap-3">
-      <span className={labelClassName}>{tCommon("DarkMode")}:</span>
+      <span className={labelClassName}>{tCommon("HindiKeyboard")}:</span>
       <Switch
         className="cursor-pointer"
         id="theme-mode"
-        checked={theme === "dark"}
+        checked={isHindiActive}
         aria-label="Toggle dark mode"
-        onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+        onCheckedChange={toggleHindiKeyboard}
       />
     </div>
   );

@@ -32,6 +32,7 @@ type AuthStatus =
 
 type AuthContextType = {
   authState: AuthStatus;
+  getUserToken: () => Promise<string>;
   completePhoneVerification: () => Promise<void>;
   isLoggingOut: boolean;
   logout: () => Promise<void>;
@@ -56,6 +57,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authState, setAuthState] = useState<AuthStatus>({ status: "loading" });
   const [inactivityLimit, setInactivityLimit] = useState<number>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const getUserToken = async () => {
+    const { currentUser } =
+      authState.status === "ready" ? authState : { currentUser: null };
+
+    if (!currentUser) throw new Error("No current user for verification");
+
+    return currentUser.getIdToken();
+  };
 
   const completePhoneVerification = async () => {
     try {
@@ -213,6 +223,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider
       value={{
         authState,
+        getUserToken,
         completePhoneVerification,
         isLoggingOut,
         logout: async () => {

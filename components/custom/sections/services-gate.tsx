@@ -22,8 +22,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
-  console.log({ sessionExpired });
-
   const locale = useLocale();
   const tHomePage = useTranslations("HomePage");
   const tDailyAccount = useTranslations("DailyAccount");
@@ -40,6 +38,7 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
   const [sessionExpiredPopupShown, setSessionExpiredPopupShown] = useState(
     sessionExpired === "1"
   );
+
   return (
     <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-4 md:p-6">
       {sessionExpired && sessionExpiredPopupShown && (
@@ -98,6 +97,7 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
           </div>
         </div>
       )}
+
       {/* Service cards */}
       <div className="grid gap-4 md:grid-cols-2">
         <Link

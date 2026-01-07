@@ -45,8 +45,6 @@ export function buildUser(
   clientUser: UserLike,
   currentUser: FirebaseUser | null | undefined
 ): UserData {
-  console.log({ clientUser, currentUser });
-
   return {
     uid: pickStr(clientUser?.uid, currentUser?.uid),
     phoneNumber: pickStr(clientUser?.phoneNumber, currentUser?.phoneNumber),
@@ -94,4 +92,15 @@ export function parseINR(input: string) {
 
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : 0;
+}
+
+export function capitalize(str: string): string {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function capitalizePhrase(phrase: string): string {
+  const strParts = phrase.split(" ");
+  const capitalizedParts = strParts.map((part) => capitalize(part));
+  return capitalizedParts.join(" ");
 }

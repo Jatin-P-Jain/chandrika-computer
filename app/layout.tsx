@@ -18,6 +18,7 @@ import { AuthProvider } from "@/context/useAuth";
 import { Toaster } from "sonner";
 import { DateTimeDisplay } from "@/components/custom/date-time-display";
 import { AccountFooter } from "@/components/custom/account-footer";
+import { KeyboardProvider } from "@/context/keyboard-context";
 
 const amita = Amita({
   variable: "--font-amita",
@@ -69,46 +70,48 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <LanguageFontWrapper>
-              <AuthProvider>
-                <Navbar />
-                <DateTimeDisplay />
-                <main className="flex w-full max-w-7xl flex-col items-center justify-between overflow-auto p-4 md:p-12 no-scrollbar! mx-auto">
-                  {children}
-                </main>
-                <AccountFooter />
-                <div className="flex md:hidden">
-                  <Toaster
-                    closeButton
-                    richColors
-                    position="bottom-center"
-                    mobileOffset={"108px"}
-                    className="flex justify-center"
-                    toastOptions={{
-                      classNames: {
-                        toast:
-                          "w-[65%]! md:w-fit! flex items-center p-2! px-4! md:p-4!",
-                        title: "font-semibold w-full",
-                        description: "",
-                      },
-                    }}
-                  />
-                </div>
-                <div className="hidden md:flex">
-                  <Toaster
-                    closeButton
-                    richColors
-                    position="top-center"
-                    className="flex justify-center"
-                    toastOptions={{
-                      classNames: {
-                        toast: "w-fit! flex items-center gap-3",
-                        title: "text-lg font-semibold w-full",
-                        description: "md:text-base",
-                      },
-                    }}
-                  />
-                </div>
-              </AuthProvider>
+              <KeyboardProvider>
+                <AuthProvider>
+                  <Navbar />
+                  <DateTimeDisplay />
+                  <main className="flex w-full max-w-8xl flex-col items-center justify-between overflow-auto p-3 md:p-12 no-scrollbar! mx-auto">
+                    {children}
+                  </main>
+                  <AccountFooter />
+                  <div className="flex md:hidden">
+                    <Toaster
+                      closeButton
+                      richColors
+                      position="bottom-center"
+                      mobileOffset={"108px"}
+                      className="flex justify-center"
+                      toastOptions={{
+                        classNames: {
+                          toast:
+                            "w-[65%]! md:w-fit! flex items-center p-2! px-4! md:p-4!",
+                          title: "font-semibold w-full",
+                          description: "",
+                        },
+                      }}
+                    />
+                  </div>
+                  <div className="hidden md:flex">
+                    <Toaster
+                      closeButton
+                      richColors
+                      position="top-center"
+                      className="flex justify-center"
+                      toastOptions={{
+                        classNames: {
+                          toast: "w-fit! flex items-center gap-3",
+                          title: "text-lg font-semibold w-full",
+                          description: "md:text-base",
+                        },
+                      }}
+                    />
+                  </div>
+                </AuthProvider>
+              </KeyboardProvider>
             </LanguageFontWrapper>
           </ThemeProvider>
         </NextIntlClientProvider>

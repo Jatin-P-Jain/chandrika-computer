@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
 import { formatINR, parseINR } from "@/lib/utils";
+import { useLocale } from "next-intl";
 
 type AmountInputProps = {
   value: number;
@@ -14,6 +15,7 @@ type AmountInputProps = {
   inputClassName?: string;
   leftAddon?: string;
   rightAddon?: string;
+  readOnly?: boolean;
 };
 
 export function AmountInput({
@@ -24,6 +26,7 @@ export function AmountInput({
   inputClassName,
   leftAddon = "₹",
   rightAddon = "/-",
+  readOnly = false,
 }: AmountInputProps) {
   return (
     <InputGroup
@@ -34,12 +37,15 @@ export function AmountInput({
     >
       <InputGroupAddon>{leftAddon}</InputGroupAddon>
       <Input
+        readOnly={readOnly}
         type="text"
         inputMode="numeric"
         placeholder={placeholder}
         className={clsx(
           "text-center font-semibold",
           "focus-visible:ring-0 focus-visible:ring-offset-0",
+          "w-full border-0 shadow-none h-full",
+          "dark:bg-transparent",
           inputClassName
         )}
         value={value === 0 ? "" : formatINR(Number(value), false, false)}

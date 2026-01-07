@@ -30,7 +30,6 @@ export default async function Home({
   searchParams: Promise<{ sessionExpired?: string }>;
 }) {
   const { sessionExpired } = await searchParams;
-  console.log("Home", { sessionExpired });
 
   return (
     <div className="flex justify-center items-center w-full mt-30 mb-26">

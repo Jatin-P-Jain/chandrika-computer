@@ -129,3 +129,15 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;     /* Firefox */
 }
+
+.remington-theme .hg-button {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  min-height: 42px;
+}
+
+.remington-theme .hg-button:hover {
+  background: theme('colors.primary/10');
+}
+

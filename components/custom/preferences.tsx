@@ -12,10 +12,16 @@ import {
 import { Settings2 } from "lucide-react";
 import { ThemeModeToggle } from "./action-items/theme-mode-button";
 import { LocaleToggle } from "./action-items/locale-toggle";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { KeyboardSwitch } from "./action-items/keyboard-switch";
+import clsx from "clsx";
 
 export function Preferences() {
   const tCommon = useTranslations("Common");
+  const locale = useLocale();
+  const isHi = locale === "hi";
+  const textHiCls = clsx(isHi && "text-base! font-medium");
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -39,14 +45,20 @@ export function Preferences() {
           className="flex items-center justify-between hover:bg-transparent!"
           onSelect={(e) => e.preventDefault()}
         >
-          <ThemeModeToggle />
+          <KeyboardSwitch labelClassName={textHiCls} />
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="flex items-center justify-between hover:bg-transparent!"
+          onSelect={(e) => e.preventDefault()}
+        >
+          <ThemeModeToggle labelClassName={textHiCls} />
         </DropdownMenuItem>
 
         <DropdownMenuItem
           className="flex items-center justify-between hover:bg-transparent!"
           onSelect={(e) => e.preventDefault()}
         >
-          <LocaleToggle />
+          <LocaleToggle labelClassName={textHiCls} />
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
