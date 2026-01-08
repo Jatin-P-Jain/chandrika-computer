@@ -25,25 +25,29 @@ import { FixedExpensesSection } from "./sections/fixed-expenses";
 import { FieldArraySection } from "./common-components/field-array-section";
 import { AmountInput } from "./common-components/amount-input";
 import { Loader2, PencilIcon, Repeat, SaveIcon, X } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/useAuth";
 import { toast } from "sonner";
 import {
   createDailyAccountItem,
   updateDailyAccountItem,
 } from "@/app/daily-accounts/actions";
+import { DailyAccount } from "@/types/daily-account";
+import { AuditPills } from "../audit-pills";
 
 type DailyPageMode = "create" | "view" | "edit";
 
 type DailyPageProps = {
   mode: DailyPageMode;
   initialData?: DailyFormValues;
+  dailyItemData?: DailyAccount;
   docId?: string;
 };
 
 export default function DailyPage({
   mode,
   initialData,
+  dailyItemData,
   docId,
 }: DailyPageProps) {
   const tCommon = useTranslations("Common");
@@ -92,8 +96,9 @@ export default function DailyPage({
     totalCashCollected - (totalFixed + totalBusiness + totalSpends);
   const totalEarnings = earnings.netIncome + sumAmounts(earnings.otherIncomes);
 
-  const { getUserToken } = useAuth();
+  const { user, getUserToken } = useAuth();
   const router = useRouter();
+  const [renderForm, setRenderForm] = useState(isReadOnly || updateMode);
 
   // Keep this even in edit mode so netIncome is auto‑derived
   useEffect(() => {
@@ -119,7 +124,13 @@ export default function DailyPage({
 
       const dirtyFields = form.formState.dirtyFields;
 
-      const res = await updateDailyAccountItem(docId, data, dirtyFields, token);
+      const res = await updateDailyAccountItem(
+        docId,
+        data,
+        user,
+        dirtyFields,
+        token
+      );
 
       if (res.error) {
         console.log("Error", res);
@@ -138,6 +149,7 @@ export default function DailyPage({
     const accountExistsErrorMessage = tToast("DailyAccountExists");
     const saveResponse = await createDailyAccountItem(
       data,
+      user,
       token,
       accountExistsErrorMessage
     );
@@ -160,7 +172,7 @@ export default function DailyPage({
     router.push(`/daily-accounts/${docId}?mode=edit`);
   };
 
-  return (
+  return renderForm ? (
     <Card
       className={clsx(
         "w-full p-2 py-3 shadow-sm border rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh]",
@@ -236,7 +248,7 @@ export default function DailyPage({
           </Accordion>
 
           {/* Final input / read-only display */}
-          <div className="flex gap-4 w-full justify-center items-center mt-auto flex-col lg:flex-row">
+          <div className="flex gap-4 w-full justify-center items-center mt-auto flex-col">
             {isReadOnly ? (
               <div className="flex gap-4 items-center justify-center">
                 <span
@@ -264,10 +276,7 @@ export default function DailyPage({
                   <div className="flex flex-col">
                     <FormItem className="flex flex-col w-full items-center justify-center">
                       <FormLabel
-                        className={clsx(
-                          "text-base text-center",
-                          textBodyCls
-                        )}
+                        className={clsx("text-base text-center", textBodyCls)}
                       >
                         {tDailyAccount("TotalCashCollected")}:
                       </FormLabel>
@@ -288,15 +297,28 @@ export default function DailyPage({
             )}
 
             {isReadOnly ? (
-              <Button
-                variant={"outline"}
-                type="button"
-                onClick={handleEditClick}
-                className="text-primary border-primary flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
-              >
-                <span>{tCommon("Edit")}</span>
-                {<PencilIcon className="size-4" />}
-              </Button>
+              <>
+                <Button
+                  variant={"outline"}
+                  type="button"
+                  onClick={handleEditClick}
+                  className="text-primary border-primary flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
+                >
+                  <span>{tCommon("Edit")}</span>
+                  {<PencilIcon className="size-4" />}
+                </Button>
+                <AuditPills
+                  createdBy={dailyItemData?.createdBy}
+                  createdAtText={
+                    dailyItemData?.created?.toLocaleString() || "-"
+                  }
+                  updatedBy={dailyItemData?.updatedBy}
+                  updatedAtText={
+                    dailyItemData?.updated?.toLocaleString() || "-"
+                  }
+                  textBodyCls={textBodyCls}
+                />
+              </>
             ) : (
               <div className="flex gap-2 items-center justify-center lg:absolute lg:top-4 lg:right-4">
                 <Button
@@ -330,7 +352,11 @@ export default function DailyPage({
                     variant="outline"
                     type="button"
                     disabled={isSubmitting}
-                    onClick={() => router.replace(`/daily-accounts/${docId}`,{ scroll: false })}
+                    onClick={() =>
+                      router.replace(`/daily-accounts/${docId}`, {
+                        scroll: false,
+                      })
+                    }
                     className="border-red-700 text-red-700 gap-1"
                   >
                     {tCommon("Cancel")}
@@ -343,5 +369,16 @@ export default function DailyPage({
         </form>
       </Form>
     </Card>
+  ) : (
+    <div className=" gap-4 rounded-sm text-center text-muted-foreground flex flex-col justify-center items-center bg-background h-full lg:w-1/2 mx-auto p-4">
+      {tDailyAccount("NoDailyAccountFound")}
+      <Button
+        variant="outline"
+        className="shadow-md"
+        onClick={() => setRenderForm(true)}
+      >
+        {tDailyAccount("CreateDailyAccount")}
+      </Button>
+    </div>
   );
 }

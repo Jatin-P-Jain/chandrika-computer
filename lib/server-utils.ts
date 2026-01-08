@@ -1,5 +1,5 @@
 import { DailyAccount } from "@/types/daily-account";
-import { Timestamp } from "firebase/firestore";
+import { DocumentData, Timestamp } from "firebase/firestore";
 
 export type DirtyFields =
   | boolean
@@ -56,9 +56,21 @@ const toLineItems = (arr: any) =>
         tags: Array.isArray(x?.tags) ? x.tags.map(String) : undefined,
       }))
     : [];
+const toUser = (user: any) => {
+  return {
+    uid: String(user.uid ?? ""),
+    displayName: String(user.displayName ?? ""),
+    email: String(user.email ?? ""),
+    phoneNumber: String(user.phoneNumber ?? ""),
+    phoneVerified: Boolean(user.phoneVerified ?? false),
+    photoUrl: String(user.photoUrl ?? ""),
+    role: String(user.role ?? "user"),
+  };
+};
 
 export const normalizeDailyAccount = (raw: any): DailyAccount => {
   return {
+    id: String(raw?.id ?? ""),
     fixed: {
       sd: toNumber(raw?.fixed?.sd, 0),
       sc: toNumber(raw?.fixed?.sc, 0),
@@ -77,6 +89,8 @@ export const normalizeDailyAccount = (raw: any): DailyAccount => {
     updated: toMillis(raw?.updated)
       ? new Date(toMillis(raw?.updated)!)!.toLocaleString()
       : "",
+    createdBy: toUser(raw?.createdBy),
+    updatedBy: toUser(raw?.updatedBy),
   };
 };
 

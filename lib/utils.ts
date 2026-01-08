@@ -7,6 +7,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export const DAILY_ACCOUNTS_LIST_PAGE_SIZE =
+  Number(process.env.DAILY_ACCOUNTS_LIST_PAGE_SIZE) || 10;
+
 export const getDeviceMetadata = () => {
   const ua = navigator.userAgent;
 
@@ -56,6 +59,16 @@ export function buildUser(
     role: clientUser?.role ?? null,
   };
 }
+
+export const toDocId = (date = new Date()) => {
+  return (
+    date.getFullYear().toString() +
+    "-" +
+    (date.getMonth() + 1).toString().padStart(2, "0") +
+    "-" +
+    date.getDate().toString().padStart(2, "0")
+  );
+};
 
 export const formatTime = (secs: number) => {
   const min = Math.floor(secs / 60)

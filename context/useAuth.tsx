@@ -31,6 +31,7 @@ type AuthStatus =
     };
 
 type AuthContextType = {
+  user: UserData | null;
   authState: AuthStatus;
   getUserToken: () => Promise<string>;
   completePhoneVerification: () => Promise<void>;
@@ -222,6 +223,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthContext.Provider
       value={{
+        user: authState.status === "ready" ? authState.clientUser : null,
         authState,
         getUserToken,
         completePhoneVerification,

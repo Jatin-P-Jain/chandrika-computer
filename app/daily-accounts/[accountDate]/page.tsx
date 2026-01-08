@@ -5,6 +5,7 @@ import { getDailyAccountItem } from "../actions";
 import DailyAccountHeader from "../daily-account-header";
 import { clsx } from "clsx";
 import { DailyAccountDayNavigator } from "@/components/custom/daily-account-day-navigator";
+import { DailyAccount } from "@/types/daily-account";
 
 type Props = {
   params: Promise<{
@@ -19,6 +20,7 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
   const { accountDate: docId } = await params;
 
   let initialData: DailyFormValues | undefined;
+  let dailyItemData: DailyAccount | undefined;
   let mode: "create" | "view" | "edit" = "create";
 
   if (docId) {
@@ -28,8 +30,8 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
       const { mode: modeParam } = await searchParams;
       mode = modeParam === "edit" ? "edit" : "view";
       initialData = data;
+      dailyItemData = data;
     }
-    // if not found, mode stays "create" and form is empty
   }
 
   return (
@@ -42,7 +44,12 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
           mode === "view" ? "p-3" : "p-2"
         )}
       >
-        <DailyPage mode={mode} initialData={initialData} docId={docId} />
+        <DailyPage
+          mode={mode}
+          initialData={initialData}
+          dailyItemData={dailyItemData}
+          docId={docId}
+        />
       </div>
     </div>
   );

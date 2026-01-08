@@ -25,8 +25,7 @@ export function DailyAccountDayNavigator({ docId }: { docId: string }) {
     const next = toDateOnly(d);
     const nextDocId = format(next, "yyyy-MM-dd");
 
-    const qs = mode ? `?mode=${encodeURIComponent(mode)}` : "";
-    router.push(`/daily-accounts/${nextDocId}${qs}`, { scroll: false });
+    router.push(`/daily-accounts/${nextDocId}`, { scroll: false });
   };
 
   return <DayNavigator value={selected} onChange={onChange} />;

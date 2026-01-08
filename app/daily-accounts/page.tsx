@@ -1,6 +1,17 @@
-import { LayoutList } from "lucide-react";
+import DailyAccountsList from "@/components/custom/daily-accounts-list/daily-account-list";
+import { Button } from "@/components/ui/button";
+import { toDocId } from "@/lib/utils";
+import { LayoutList, PlusCircle } from "lucide-react";
+import Link from "next/link";
 
-const DailyAccounts = () => {
+type Props = {
+  searchParams: Promise<{
+    [key: string]: string | string[] | undefined;
+  }>;
+};
+
+const DailyAccounts = async ({ searchParams }: Props) => {
+  const searchParamsValues = await searchParams;
   return (
     <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 mb-20 md:mb-16 gap-2">
       <div className="flex justify-between items-center w-full">
@@ -8,11 +19,18 @@ const DailyAccounts = () => {
           <LayoutList className="size-4 md:size-5" />
           All Daily Accounts
         </h1>
+        <Button
+          asChild
+          variant={"outline"}
+          className="border shadow-lg border-primary text-primary font-bold -tracking-normal hover:bg-primary hover:text-white"
+        >
+          <Link href={`/daily-accounts/${toDocId()}`}>
+            Create Daily Account <PlusCircle className="size-5" />
+          </Link>
+        </Button>
       </div>
       <div className="flex bg-white p-2 w-full rounded-md">Filters Section</div>
-      <div className="flex w-full p-2 md:p-6 overflow-auto max-h-[calc(100vh-13rem-5rem)] no-scrollbar rounded-3xl">
-        <div className="flex">All your daily accounts will be listed here</div>
-      </div>
+      <DailyAccountsList searchParamsValues={searchParamsValues} />
     </div>
   );
 };

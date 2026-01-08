@@ -1,4 +1,7 @@
+import { UserData } from "./user";
+
 export type DailyAccount = {
+  id: string;
   fixed: {
     sd: number;
     sc: number;
@@ -23,6 +26,8 @@ export type DailyAccount = {
     tags?: string[];
   }[];
   totalCashCollected: number;
+  createdBy: UserData;
+  updatedBy: UserData;
   created: string;
   updated?: string;
 };

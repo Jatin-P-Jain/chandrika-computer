@@ -10,12 +10,24 @@ import {
 } from "@/lib/server-utils";
 import { dailySchema } from "@/schema/dailay-page.schema";
 import { DailyAccount } from "@/types/daily-account";
+import { UserData } from "@/types/user";
+import { toDocId } from "@/lib/utils";
 
 export const createDailyAccountItem = async (
-  data: Omit<DailyAccount, "created" | "updated">,
+  data: Omit<
+    DailyAccount,
+    "id" | "created" | "updated" | "createdBy" | "updatedBy"
+  >,
+  user: UserData | null,
   authtoken: string,
   accountExistsErrorMessage: string
 ) => {
+  if (!user) {
+    return {
+      error: true,
+      message: "Unauthorized",
+    };
+  }
   const verifiedToken = await auth.verifyIdToken(authtoken);
   if (!verifiedToken.admin) {
     return {
@@ -32,12 +44,7 @@ export const createDailyAccountItem = async (
     };
   }
 
-  const docId =
-    new Date().getFullYear().toString() +
-    "-" +
-    (new Date().getMonth() + 1).toString().padStart(2, "0") +
-    "-" +
-    new Date().getDate().toString().padStart(2, "0");
+  const docId = toDocId();
 
   const docRef = fireStore.collection("daily-accounts").doc(docId);
   try {
@@ -49,6 +56,8 @@ export const createDailyAccountItem = async (
       txn.set(docRef, {
         ...data,
         id: docId,
+        createdBy: user,
+        updatedBy: user,
         created: new Date(),
         updated: new Date(),
       });
@@ -92,12 +101,19 @@ export async function getDailyAccountItem(docId?: string) {
 
 export const updateDailyAccountItem = async (
   docId: string,
-  data: Omit<DailyAccount, "created" | "updated">,
+  data: Omit<
+    DailyAccount,
+    "id" | "created" | "updated" | "createdBy" | "updatedBy"
+  >,
+  user: UserData | null,
   dirtyFields: DirtyFields,
   authtoken: string,
   notFoundErrorMessage = "Daily account not found"
 ) => {
   try {
+    if (!user) {
+      return { error: true, message: "Unauthorized" };
+    }
     const verifiedToken = await auth.verifyIdToken(authtoken);
     if (!verifiedToken.admin) {
       return { error: true, message: "Unauthorized" };
@@ -140,6 +156,7 @@ export const updateDailyAccountItem = async (
         ...validation.data,
         id: docId,
         updated: new Date(),
+        updatedBy: user,
       });
     });
 

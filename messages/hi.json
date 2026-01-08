@@ -1,7 +1,7 @@
 {
   "Common": {
     "Amount": "राशि",
-    "Cancel": "रद्द करना",
+    "Cancel": "रद्द करें",
     "ChandrikaComputer": "चंद्रिका कंप्यूटर",
     "ContinueOnTheTab": "नए टैब में जारी रखें",
     "DarkMode": "डार्क मोड",
@@ -36,11 +36,13 @@
     "AddIncome": "आय जोड़ें",
     "AddSpend": "खर्च जोड़ें",
     "BusinessExpense": "व्यापारिक व्यय (सामान)",
+    "CreateDailyAccount": "दैनिक खाता बनाएं",
     "DailySpends": "दैनिक खर्च",
     "Desc": "अपने दैनिक खाता प्रविष्टियों को देखें और प्रबंधित करें।",
     "FixedExpenses": "निश्चित व्यय/शुल्क (स्टाम्प)",
     "Income": "आय (चंद्रिका)",
     "NetIncome": "शुद्ध आय",
+    "NoDailyAccountFound": "इस दिन का कोई दैनिक खता नहीं मिला।",
     "Photocopy": "फोटोकॉपी (FS)",
     "StampDuty": "स्टाम्प शुल्क (SD)",
     "SurCharge": "स्टाम्प अधिभार (SC)",
