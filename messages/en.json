@@ -1,6 +1,7 @@
 {
   "Common": {
     "Amount": "Amount",
+    "Cancel": "Cancel",
     "ChandrikaComputer": "Chandrika Computer",
     "ContinueOnTheTab": "Continue in new tab",
     "DarkMode": "Dark Mode",
@@ -26,6 +27,8 @@
     "SignInWithGoogleMobile": "Google Login",
     "Tags": "Tags",
     "TypeAndEnter": "Type and press Enter",
+    "Update": "Update",
+    "Updating": "Updating",
     "ViewAll": "View All"
   },
   "DailyAccount": {
@@ -87,6 +90,7 @@
     "CredentialAlreadyInUseDesc": "This phone number is already in use. Please use a different one.",
     "DailyAccountCreated": "Daily Account Created for the day",
     "DailyAccountExists": "You have an existing account for the day",
+    "DailyAccountUpdated": "Daily Account Updated for the day",
     "FailedToResendOtp": "Failed to send OTP",
     "InvalidOTP": "Invalid OTP",
     "InvalidOTPDesc": "OTP entered is wrong. Please try again!",

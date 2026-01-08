@@ -21,14 +21,17 @@ import {
 
 import { DailyFormValues, makeDailySchema } from "@/schema/dailay-page.schema";
 import { formatINR, sumAmounts } from "@/lib/utils";
-import { FixedExpensesSection } from "./sections.tsx/fixed-expenses";
+import { FixedExpensesSection } from "./sections/fixed-expenses";
 import { FieldArraySection } from "./common-components/field-array-section";
 import { AmountInput } from "./common-components/amount-input";
-import { Loader2, PencilIcon, SaveIcon } from "lucide-react";
+import { Loader2, PencilIcon, Repeat, SaveIcon, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useAuth } from "@/context/useAuth";
 import { toast } from "sonner";
-import { createDailyAccountItem } from "@/app/daily-accounts/actions";
+import {
+  createDailyAccountItem,
+  updateDailyAccountItem,
+} from "@/app/daily-accounts/actions";
 
 type DailyPageMode = "create" | "view" | "edit";
 
@@ -48,12 +51,14 @@ export default function DailyPage({
   const tDailyAccount = useTranslations("DailyAccount");
   const locale = useLocale();
   const isHi = locale === "hi";
-  const textCls = clsx(isHi && "text-lg font-[inherit]");
+  const textBodyCls = clsx(isHi && "text-lg font-[inherit]");
+  const textHeadCls = clsx(isHi && "text-2xl! font-[inherit]");
 
   const tErrors = useTranslations("Validation");
   const dailySchema = useMemo(() => makeDailySchema(tErrors), [tErrors]);
 
   const isReadOnly = mode === "view";
+  const updateMode = mode === "edit";
 
   const form = useForm<DailyFormValues>({
     resolver: zodResolver(dailySchema),
@@ -103,21 +108,45 @@ export default function DailyPage({
   const onSubmit = async (data: DailyFormValues) => {
     if (isReadOnly) return;
 
-    console.log("Daily form submit:", data);
     const token = await getUserToken();
-    if (!token) {
+    if (!token) return;
+
+    if (mode === "edit") {
+      if (!docId) {
+        toast.error("Error!", { description: "Missing docId" });
+        return;
+      }
+
+      const dirtyFields = form.formState.dirtyFields;
+
+      const res = await updateDailyAccountItem(docId, data, dirtyFields, token);
+
+      if (res.error) {
+        console.log("Error", res);
+        toast.error("Error!", {
+          description: res.message || "An error occurred",
+        });
+        return;
+      }
+
+      toast.success("Success!", { description: tToast("DailyAccountUpdated") });
+      router.replace(`/daily-accounts/${docId}`, { scroll: false });
       return;
     }
+
+    // create flow
     const accountExistsErrorMessage = tToast("DailyAccountExists");
     const saveResponse = await createDailyAccountItem(
       data,
       token,
       accountExistsErrorMessage
     );
+
     if (!!saveResponse.error || !saveResponse.docId) {
       toast.error("Error!", { description: saveResponse.error });
       return;
     }
+
     toast.success("Success!", { description: tToast("DailyAccountCreated") });
   };
 
@@ -141,7 +170,7 @@ export default function DailyPage({
       <div
         className={clsx(
           "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col",
-          textCls
+          textBodyCls
         )}
       >
         <span className="text-base text-yellow-700">ॐ</span>
@@ -209,16 +238,21 @@ export default function DailyPage({
           {/* Final input / read-only display */}
           <div className="flex gap-4 w-full justify-center items-center mt-auto flex-col lg:flex-row">
             {isReadOnly ? (
-              <div className="flex flex-col">
+              <div className="flex gap-4 items-center justify-center">
                 <span
                   className={clsx(
-                    "text-base text-center w-full font-semibold",
-                    textCls
+                    "text-base text-center w-full font-semibold text-muted-foreground",
+                    textBodyCls
                   )}
                 >
                   {tDailyAccount("TotalCashCollected")}:
                 </span>
-                <span className="text-xl font-semibold text-center">
+                <span
+                  className={clsx(
+                    "text-xl font-semibold text-center text-primary",
+                    textHeadCls
+                  )}
+                >
                   {formatINR(totalCashCollected)}
                 </span>
               </div>
@@ -228,11 +262,11 @@ export default function DailyPage({
                 name="totalCashCollected"
                 render={({ field }) => (
                   <div className="flex flex-col">
-                    <FormItem className="flex">
+                    <FormItem className="flex flex-col w-full items-center justify-center">
                       <FormLabel
                         className={clsx(
-                          "text-base text-center w-full",
-                          textCls
+                          "text-base text-center",
+                          textBodyCls
                         )}
                       >
                         {tDailyAccount("TotalCashCollected")}:
@@ -260,30 +294,50 @@ export default function DailyPage({
                 onClick={handleEditClick}
                 className="text-primary border-primary flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
               >
-                <span>
-                  {isSubmitting ? tCommon("Saving") : tCommon("Edit")}
-                </span>
-                {isSubmitting ? (
-                  <Loader2 className="animate-spin size-4" />
-                ) : (
-                  <PencilIcon className="size-4" />
-                )}
+                <span>{tCommon("Edit")}</span>
+                {<PencilIcon className="size-4" />}
               </Button>
             ) : (
-              <Button
-                disabled={!canSubmit || isSubmitting}
-                type="submit"
-                className="flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
-              >
-                <span>
-                  {isSubmitting ? tCommon("Saving") : tCommon("Save")}
-                </span>
-                {isSubmitting ? (
-                  <Loader2 className="animate-spin size-4" />
-                ) : (
-                  <SaveIcon className="size-4" />
+              <div className="flex gap-2 items-center justify-center lg:absolute lg:top-4 lg:right-4">
+                <Button
+                  disabled={!canSubmit || isSubmitting}
+                  type="submit"
+                  className="flex gap-2 font-semibold text-sm w-full lg:w-fit justify-center items-center"
+                >
+                  <span>
+                    {updateMode
+                      ? isSubmitting
+                        ? tCommon("Updating")
+                        : tCommon("Update")
+                      : isSubmitting
+                      ? tCommon("Saving")
+                      : tCommon("Save")}
+                  </span>
+                  {updateMode ? (
+                    isSubmitting ? (
+                      <Loader2 className="animate-spin size-4" />
+                    ) : (
+                      <Repeat className="size-4" />
+                    )
+                  ) : isSubmitting ? (
+                    <Loader2 className="animate-spin size-4" />
+                  ) : (
+                    <SaveIcon className="size-4" />
+                  )}
+                </Button>
+                {updateMode && (
+                  <Button
+                    variant="outline"
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => router.replace(`/daily-accounts/${docId}`,{ scroll: false })}
+                    className="border-red-700 text-red-700 gap-1"
+                  >
+                    {tCommon("Cancel")}
+                    <X className="size-4" />
+                  </Button>
                 )}
-              </Button>
+              </div>
             )}
           </div>
         </form>

@@ -1,10 +1,10 @@
 // app/daily-account/page.tsx
 import DailyPage from "@/components/custom/daily-page/daily-page";
-import { DayNavigator } from "@/components/custom/date-navigator";
 import { DailyFormValues } from "@/schema/dailay-page.schema";
 import { getDailyAccountItem } from "../actions";
 import DailyAccountHeader from "../daily-account-header";
 import { clsx } from "clsx";
+import { DailyAccountDayNavigator } from "@/components/custom/daily-account-day-navigator";
 
 type Props = {
   params: Promise<{
@@ -35,7 +35,7 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
   return (
     <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 mb-20 md:mb-16 gap-2">
       <DailyAccountHeader />
-      <DayNavigator />
+      <DailyAccountDayNavigator docId={docId} />
       <div
         className={clsx(
           "flex w-full md:p-6 overflow-auto max-h-[calc(100vh-13rem-5rem)] no-scrollbar rounded-3xl",

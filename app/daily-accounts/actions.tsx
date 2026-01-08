@@ -1,12 +1,18 @@
 "use server";
 
 import { auth, fireStore } from "@/firebase/server";
+import { revalidatePath } from "next/cache";
+import {
+  deepMerge,
+  DirtyFields,
+  getDirtyValues,
+  normalizeDailyAccount,
+} from "@/lib/server-utils";
 import { dailySchema } from "@/schema/dailay-page.schema";
 import { DailyAccount } from "@/types/daily-account";
-import type { Timestamp } from "firebase/firestore";
 
 export const createDailyAccountItem = async (
-  data: Omit<DailyAccount, "createdAt" | "updatedAt">,
+  data: Omit<DailyAccount, "created" | "updated">,
   authtoken: string,
   accountExistsErrorMessage: string
 ) => {
@@ -26,7 +32,12 @@ export const createDailyAccountItem = async (
     };
   }
 
-  const docId = new Date().toLocaleDateString("en-US").split("/").join("-");
+  const docId =
+    new Date().getFullYear().toString() +
+    "-" +
+    (new Date().getMonth() + 1).toString().padStart(2, "0") +
+    "-" +
+    new Date().getDate().toString().padStart(2, "0");
 
   const docRef = fireStore.collection("daily-accounts").doc(docId);
   try {
@@ -49,56 +60,6 @@ export const createDailyAccountItem = async (
       error: e instanceof Error ? e.message : "An unknown error occurred",
     };
   }
-};
-
-function toMillis(ts: Timestamp): number | null {
-  if (!ts) return null;
-
-  // Firestore Timestamp has toMillis()
-  if (typeof (ts as Timestamp).toMillis === "function")
-    return (ts as Timestamp).toMillis();
-
-  // If it was already a Date for some reason
-  if (ts instanceof Date) return ts.getTime();
-
-  return null;
-}
-
-const toNumber = (v: any, fallback = 0) => {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isFinite(n) ? n : fallback;
-};
-
-const toLineItems = (arr: any) =>
-  Array.isArray(arr)
-    ? arr.map((x) => ({
-        label: String(x?.label ?? ""),
-        amount: toNumber(x?.amount, 0),
-        tags: Array.isArray(x?.tags) ? x.tags.map(String) : undefined,
-      }))
-    : [];
-
-const normalizeDailyAccount = (raw: any): DailyAccount => {
-  return {
-    fixed: {
-      sd: toNumber(raw?.fixed?.sd, 0),
-      sc: toNumber(raw?.fixed?.sc, 0),
-      fs: toNumber(raw?.fixed?.fs, 0),
-    },
-    earnings: {
-      netIncome: toNumber(raw?.earnings?.netIncome, 0),
-      otherIncomes: toLineItems(raw?.earnings?.otherIncomes),
-    },
-    businessExpenses: toLineItems(raw?.businessExpenses),
-    dailySpends: toLineItems(raw?.dailySpends),
-    totalCashCollected: toNumber(raw?.totalCashCollected, 0),
-    createdAt: toMillis(raw?.created)
-      ? new Date(toMillis(raw?.created)!)!.toLocaleString()
-      : "",
-    updatedAt: toMillis(raw?.updated)
-      ? new Date(toMillis(raw?.updated)!)!.toLocaleString()
-      : "",
-  };
 };
 
 export async function getDailyAccountItem(docId?: string) {
@@ -128,3 +89,67 @@ export async function getDailyAccountItem(docId?: string) {
     return { data: null, error: e?.message ?? "Unknown error" };
   }
 }
+
+export const updateDailyAccountItem = async (
+  docId: string,
+  data: Omit<DailyAccount, "created" | "updated">,
+  dirtyFields: DirtyFields,
+  authtoken: string,
+  notFoundErrorMessage = "Daily account not found"
+) => {
+  try {
+    const verifiedToken = await auth.verifyIdToken(authtoken);
+    if (!verifiedToken.admin) {
+      return { error: true, message: "Unauthorized" };
+    }
+
+    const patch = getDirtyValues(dirtyFields, data);
+
+    if (!patch || Object.keys(patch).length === 0) {
+      return { docId, noChanges: true };
+    }
+
+    const docRef = fireStore.collection("daily-accounts").doc(docId);
+
+    await fireStore.runTransaction(async (txn) => {
+      const existingSnap = await txn.get(docRef);
+      if (!existingSnap.exists) {
+        throw new Error(notFoundErrorMessage);
+      }
+
+      // Normalize timestamps etc. (your helper)
+      const existingNormalized = normalizeDailyAccount(existingSnap.data());
+
+      // Remove meta fields so we validate the same shape as `dailySchema` expects (your create validates without created/updated).
+      const { created, updated, id, ...existingBase } = (existingNormalized ||
+        {}) as any;
+
+      // IMPORTANT: deep merge, because shallow spread would drop nested required fields. [web:165][web:168]
+      const merged = deepMerge<DailyAccount>(existingBase, patch);
+
+      // Validate final merged object against the *full* schema (not partial).
+      const validation = dailySchema.safeParse(merged);
+      if (!validation.success) {
+        throw new Error(
+          validation.error.issues[0]?.message || "An error occurred"
+        );
+      }
+
+      // Write back full merged payload + meta.
+      txn.update(docRef, {
+        ...validation.data,
+        id: docId,
+        updated: new Date(),
+      });
+    });
+
+    revalidatePath(`/daily-accounts/${docId}`);
+    return { docId };
+  } catch (e: unknown) {
+    console.log("e", e instanceof Error ? e.message : e);
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : "An unknown error occurred",
+    };
+  }
+};

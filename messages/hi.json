@@ -1,6 +1,7 @@
 {
   "Common": {
     "Amount": "राशि",
+    "Cancel": "रद्द करना",
     "ChandrikaComputer": "चंद्रिका कंप्यूटर",
     "ContinueOnTheTab": "नए टैब में जारी रखें",
     "DarkMode": "डार्क मोड",
@@ -26,6 +27,8 @@
     "SignInWithGoogleMobile": "Google लॉगिन",
     "Tags": "टैग",
     "TypeAndEnter": "टाइप करें और एंटर दबाएं",
+    "Update": "अपडेट",
+    "Updating": "अपडेट किया जा रहा है",
     "ViewAll": "सभी देखें"
   },
   "DailyAccount": {
@@ -87,6 +90,7 @@
     "CredentialAlreadyInUseDesc": "यह फ़ोन नंबर पहले से ही उपयोग में है। कृपया कोई दूसरा नंबर इस्तेमाल करें।",
     "DailyAccountCreated": "आज के लिए दैनिक खाता बनाया गया",
     "DailyAccountExists": "आज के लिए आपका एक मौजूदा खाता है",
+    "DailyAccountUpdated": "आज के लिए दैनिक खाता अपडेट किया गया",
     "FailedToResendOtp": "OTP भेजने में विफल",
     "InvalidOTP": "अमान्य ओटीपी",
     "InvalidOTPDesc": "दर्ज किया गया ओटीपी गलत है। कृपया पुनः प्रयास करें!",

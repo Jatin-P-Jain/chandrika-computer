@@ -68,38 +68,35 @@ export function LineItemRow({
       {/* VIEW MODE */}
       {!isEditing && (
         <div className="w-full">
-          <div className="flex flex-col items-start justify-between gap-1">
-            <div className="flex justify-between items-center w-full gap-0 ">
+          <div className="flex justify-between items-center w-full gap-2 ">
+            <div
+              className={clsx("text-base font-semibold flex-1", textHeadCls)}
+            >
+              {formatINR(amount)}
+            </div>
+            <div className="flex flex-col justify-between items-end">
               <div
                 className={clsx(
-                  "text-base font-semibold truncate",
-                  textHeadCls
-                )}
-              >
-                {formatINR(amount)}
-              </div>
-              <div
-                className={clsx(
-                  "text-base text-muted-foreground wrap-break-word",
+                  "text-right text-medium wrap-break-word flex-3",
                   textBodyCls
                 )}
               >
                 {label || "—"}
               </div>
               {tags.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1 flex-1 justify-end">
                   {tags.map((t, idx) => (
                     <Badge
                       key={`${t}-${idx}`}
                       variant="secondary"
-                      className="rounded-md"
+                      className="rounded-md text-[10px] text-muted-foreground font-semibold"
                     >
                       {t}
                     </Badge>
                   ))}
                 </div>
               ) : (
-                <div className="text-xs text-muted-foreground">No tags</div>
+                <></>
               )}
             </div>
           </div>
