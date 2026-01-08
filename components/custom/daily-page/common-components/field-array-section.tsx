@@ -3,7 +3,7 @@
 
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import {
   AccordionContent,
@@ -16,8 +16,11 @@ import { LineItemRow } from "./line-item-row";
 import { SectionTotalBar } from "./section-total-bar";
 import { formatINR } from "@/lib/utils";
 import { ListPlus } from "lucide-react";
+import { ReadOnlyLineItem } from "./read-line-item-row";
+
 
 export function FieldArraySection({
+  readOnly,
   value,
   title,
   addButtonText,
@@ -27,6 +30,7 @@ export function FieldArraySection({
   showNet,
   netForDay,
 }: {
+  readOnly: boolean;
   value: "earnings.otherIncomes" | "businessExpenses" | "dailySpends";
   title: string;
   addButtonText: string;
@@ -72,26 +76,40 @@ export function FieldArraySection({
             </div>
           </div>
         )}
+
         <div className="flex flex-col gap-2 overflow-auto max-h-120 no-scrollbar">
-          {fa.fields.map((f, idx) => (
-            <LineItemRow
-              key={f.id}
-              namePrefix={`${value}.${idx}`}
-              onRemove={() => fa.remove(idx)}
-            />
-          ))}
+          {fa.fields.map((f, idx) =>
+            readOnly ? (
+              <ReadOnlyLineItem
+                key={f.id}
+                control={control}
+                namePrefix={`${value}.${idx}`}
+                textHeadCls={textHeadCls}
+                textBodyCls={textBodyCls}
+              />
+            ) : (
+              <LineItemRow
+                key={f.id}
+                namePrefix={`${value}.${idx}`}
+                onRemove={() => fa.remove(idx)}
+              />
+            )
+          )}
         </div>
+
         <div className="flex items-center justify-between">
-          <Button
-            type="button"
-            size={"sm"}
-            variant="outline"
-            onClick={() => fa.append({ label: "", amount: 0, tags: [] } as any)}
-            className="w-full flex justify-center items-center gap-2 shadow-md"
-          >
-            {addButtonText}
-            <ListPlus />
-          </Button>
+          {!readOnly && (
+            <Button
+              type="button"
+              size={"sm"}
+              variant="outline"
+              onClick={() => fa.append({ label: "", amount: 0, tags: [] } as any)}
+              className="w-full flex justify-center items-center gap-2 shadow-md"
+            >
+              {addButtonText}
+              <ListPlus />
+            </Button>
+          )}
         </div>
       </AccordionContent>
 

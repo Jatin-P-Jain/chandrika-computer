@@ -25,9 +25,11 @@ import { formatINR } from "@/lib/utils";
 import { useEffect } from "react";
 
 export function FixedExpensesSection({
+  readOnly,
   totalFixed,
   totalBarClassName,
 }: {
+  readOnly: boolean;
   totalFixed: number;
   totalBarClassName?: string;
 }) {
@@ -43,14 +45,22 @@ export function FixedExpensesSection({
       control,
       name: "fixed.sd",
     }) || 0;
+
+  const photocopyValue =
+    useWatch({
+      control,
+      name: "fixed.fs",
+    }) || 0;
+
   const surchargeValue = Number(stampDutyValue * 0.3) || 0;
 
   useEffect(() => {
     setValue("fixed.sc", surchargeValue, {
       shouldValidate: true,
-      shouldDirty: true,
+      // Prevent view-mode from marking the form dirty just because SC is derived.
+      shouldDirty: !readOnly,
     });
-  }, [surchargeValue, setValue]);
+  }, [surchargeValue, setValue, readOnly]);
 
   return (
     <AccordionItem
@@ -77,15 +87,28 @@ export function FixedExpensesSection({
                   <FormLabel className={clsx("w-full", textBodyCls)}>
                     {tDailyAccount("StampDuty")}
                   </FormLabel>
+
                   <FormControl>
-                    <AmountInput
-                      value={Number(field.value) || 0}
-                      onChange={(n) => field.onChange(n)}
-                      inputClassName={textHeadCls}
-                    />
+                    {readOnly ? (
+                      <div
+                        className={clsx(
+                          "font-semibold tabular-nums",
+                          textHeadCls
+                        )}
+                      >
+                        {formatINR(Number(field.value) || 0)}
+                      </div>
+                    ) : (
+                      <AmountInput
+                        value={Number(field.value) || 0}
+                        onChange={(n) => field.onChange(n)}
+                        inputClassName={textHeadCls}
+                      />
+                    )}
                   </FormControl>
                 </FormItem>
-                <FormMessage />
+
+                {!readOnly && <FormMessage />}
               </>
             )}
           />
@@ -93,7 +116,7 @@ export function FixedExpensesSection({
           <FormField
             control={control}
             name="fixed.sc"
-            render={({ field }) => (
+            render={() => (
               <>
                 <FormItem className="flex">
                   <FormLabel className={clsx("w-full", textBodyCls)}>
@@ -104,16 +127,29 @@ export function FixedExpensesSection({
                       </span>
                     </p>
                   </FormLabel>
+
                   <FormControl>
-                    <AmountInput
-                      readOnly={true}
-                      value={Number(surchargeValue) || 0}
-                      onChange={() => {}}
-                      inputClassName={textHeadCls}
-                    />
+                    {readOnly ? (
+                      <div
+                        className={clsx(
+                          "font-semibold tabular-nums",
+                          textHeadCls
+                        )}
+                      >
+                        {formatINR(Number(surchargeValue) || 0)}
+                      </div>
+                    ) : (
+                      <AmountInput
+                        readOnly={true}
+                        value={Number(surchargeValue) || 0}
+                        onChange={() => {}}
+                        inputClassName={textHeadCls}
+                      />
+                    )}
                   </FormControl>
                 </FormItem>
-                <FormMessage />
+
+                {!readOnly && <FormMessage />}
               </>
             )}
           />
@@ -127,14 +163,27 @@ export function FixedExpensesSection({
                   <FormLabel className={clsx("w-full", textBodyCls)}>
                     {tDailyAccount("Photocopy")}
                   </FormLabel>
+
                   <FormControl>
-                    <AmountInput
-                      value={Number(field.value) || 0}
-                      onChange={(n) => field.onChange(n)}
-                      inputClassName={textHeadCls}
-                    />
+                    {readOnly ? (
+                      <div
+                        className={clsx(
+                          "font-semibold tabular-nums",
+                          textHeadCls
+                        )}
+                      >
+                        {formatINR(Number(photocopyValue) || 0)}
+                      </div>
+                    ) : (
+                      <AmountInput
+                        value={Number(field.value) || 0}
+                        onChange={(n) => field.onChange(n)}
+                        inputClassName={textHeadCls}
+                      />
+                    )}
                   </FormControl>
-                  <FormMessage />
+
+                  {!readOnly && <FormMessage />}
                 </FormItem>
               </>
             )}

@@ -5,6 +5,7 @@ import {
   ClipboardListIcon,
   Info,
   Layers,
+  Loader2,
   LockKeyholeIcon,
   XIcon,
 } from "lucide-react";
@@ -21,7 +22,7 @@ import { PhoneVerification } from "../phone-verification";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
+export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const locale = useLocale();
   const tHomePage = useTranslations("HomePage");
   const tDailyAccount = useTranslations("DailyAccount");
@@ -29,7 +30,10 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
   const tToast = useTranslations("Toast");
 
   const auth = useAuth();
-  const { authState, logout, completePhoneVerification } = auth;
+  const { authState, completePhoneVerification } = auth;
+  const isUserLoading = authState.status === "loading";
+  authState.status === "first-time-setup" ||
+    authState.status === "phone-verification-required";
   const isPhoneVerification =
     authState.status === "first-time-setup" ||
     authState.status === "phone-verification-required";
@@ -40,7 +44,7 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
   );
 
   return (
-    <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-4 md:p-6">
+    <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-4 md:p-6 relative">
       {sessionExpired && sessionExpiredPopupShown && (
         <div className="w-full relative flex justify-center items-center md:w-1/2 mx-auto p-3 text-sm text-yellow-700 bg-yellow-200 border border-yellow-200 rounded-md gap-2">
           <div className="flex flex-col gap-1">
@@ -98,10 +102,19 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
         </div>
       )}
 
+      {isUserLoading && (
+        <div className="flex justify-center items-center w-full h-full absolute z-10 bg-muted-foreground/30 top-0 left-0 rounded-md">
+          <div className="flex flex-col gap-2 justify-center items-center bg-white dark:bg-black/90 p-2 rounded-md">
+            <Loader2 className="animate-spin size-8 text-primary" />
+            <span className="text-primary font-bold">Please Wait...</span>
+          </div>
+        </div>
+      )}
+
       {/* Service cards */}
       <div className="grid gap-4 md:grid-cols-2">
         <Link
-          href="/daily-account"
+          href="/daily-accounts"
           className="group block"
           onNavigate={(e) => {
             if (authState.status !== "ready") {
@@ -129,9 +142,15 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
                 </CardDescription>
               </div>
             </CardHeader>
-            {authState.status !== "ready" && (
-              <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
-            )}
+            {authState.status !== "ready" ? (
+              isUserLoading ? (
+                <div className="absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md">
+                  <Loader2 className="animate-spin size-5" />
+                </div>
+              ) : (
+                <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
+              )
+            ) : null}
           </Card>
         </Link>
 
@@ -164,9 +183,15 @@ export function ServicesGate({ sessionExpired }: { sessionExpired?: string }) {
                 </CardDescription>
               </div>
             </CardHeader>
-            {authState.status !== "ready" && (
-              <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
-            )}
+            {authState.status !== "ready" ? (
+              isUserLoading ? (
+                <div className="absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md">
+                  <Loader2 className="animate-spin size-5" />
+                </div>
+              ) : (
+                <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
+              )
+            ) : null}
           </Card>
         </Link>
       </div>

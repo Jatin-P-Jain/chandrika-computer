@@ -17,7 +17,9 @@ function getCookie(name: string) {
 
 function setCookie(name: string, value: string) {
   // cookie for entire site
-  document.cookie = `${name}=${encodeURIComponent(value)};`;
+  document.cookie = `${name}=${encodeURIComponent(
+    value
+  )}; Path=/; Max-Age=31536000; SameSite=Lax`;
 }
 
 export function KeyboardSwitch({ labelClassName }: { labelClassName: string }) {

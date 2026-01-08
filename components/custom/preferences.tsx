@@ -36,7 +36,7 @@ export function Preferences() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-70 md:w-80">
-        <DropdownMenuLabel className="text-base">
+        <DropdownMenuLabel className="text-lg">
           {tCommon("Settings")}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

@@ -1,4 +1,4 @@
-import { ServicesGate } from "@/components/custom/sections/services-gate";
+import { HomePage } from "@/components/custom/sections/home-page";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next";
 
@@ -33,7 +33,7 @@ export default async function Home({
 
   return (
     <div className="flex justify-center items-center w-full mt-30 mb-26">
-      <ServicesGate sessionExpired={sessionExpired} />
+      <HomePage sessionExpired={sessionExpired} />
     </div>
   );
 }

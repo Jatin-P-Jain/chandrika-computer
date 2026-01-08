@@ -23,4 +23,6 @@ export type DailyAccount = {
     tags?: string[];
   }[];
   totalCashCollected: number;
+  createdAt: string;
+  updatedAt?: string;
 };
