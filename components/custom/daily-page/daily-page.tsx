@@ -158,7 +158,7 @@ export default function DailyPage({
       toast.error("Error!", { description: saveResponse.error });
       return;
     }
-
+    router.replace(`/daily-accounts/${saveResponse.docId}`, { scroll: false });
     toast.success("Success!", { description: tToast("DailyAccountCreated") });
   };
 
@@ -175,7 +175,7 @@ export default function DailyPage({
   return renderForm ? (
     <Card
       className={clsx(
-        "w-full p-2 py-3 shadow-sm border rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh]",
+        "w-full p-2 py-3 shadow-sm border rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",
         isReadOnly ? "border-0 shadow-lg" : "border-primary"
       )}
     >

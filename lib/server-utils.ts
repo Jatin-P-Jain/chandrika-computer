@@ -84,10 +84,10 @@ export const normalizeDailyAccount = (raw: any): DailyAccount => {
     dailySpends: toLineItems(raw?.dailySpends),
     totalCashCollected: toNumber(raw?.totalCashCollected, 0),
     created: toMillis(raw?.created)
-      ? new Date(toMillis(raw?.created)!)!.toLocaleString()
+      ? new Date(toMillis(raw?.created)!).toISOString()
       : "",
     updated: toMillis(raw?.updated)
-      ? new Date(toMillis(raw?.updated)!)!.toLocaleString()
+      ? new Date(toMillis(raw?.updated)!).toISOString()
       : "",
     createdBy: toUser(raw?.createdBy),
     updatedBy: toUser(raw?.updatedBy),

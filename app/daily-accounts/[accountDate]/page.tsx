@@ -35,7 +35,7 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
   }
 
   return (
-    <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 mb-20 md:mb-16 gap-2">
+    <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 mb-20 md:mb-16 gap-2 max-w-7xl mx-auto">
       <DailyAccountHeader />
       <DailyAccountDayNavigator docId={docId} />
       <div
