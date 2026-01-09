@@ -74,7 +74,7 @@ export default async function RootLayout({
                 <AuthProvider>
                   <Navbar />
                   <DateTimeDisplay />
-                  <main className="flex w-full max-w-8xl flex-col items-center justify-between overflow-auto p-3 md:p-12 no-scrollbar! mx-auto">
+                  <main className="flex w-full max-w-7xl flex-col items-center justify-between overflow-auto p-3 md:p-12 no-scrollbar! mx-auto">
                     {children}
                   </main>
                   <AccountFooter />

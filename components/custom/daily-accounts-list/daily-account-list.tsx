@@ -16,6 +16,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { DailyAccountCard } from "./daily-account-card";
 import { useLocale, useTranslations } from "next-intl";
+import { DailyAccountCardSkeleton } from "./daily-account-loader";
+import { LoaderCircleIcon } from "lucide-react";
 
 export default function DailyAccountsList({
   searchParamsValues,
@@ -91,20 +93,24 @@ export default function DailyAccountsList({
     1
   );
 
-  //   if (loading || !hasLoadedOnce) {
-  //     return (
-  //       <div className="flex h-full min-h-[calc(100vh-300px)] w-full flex-1 flex-col gap-4 px-4 py-6">
-  //         {[...Array(4)].map((_, i) => (
-  //           <ProductCardSkeleton key={i} />
-  //         ))}
-  //       </div>
-  //     );
-  //   }
+  if (loading || !hasLoadedOnce) {
+    return (
+      <div className="flex h-full  w-full flex-1 flex-col gap-2">
+        <div className="w-full flex justify-center text-muted-foreground items-center gap-3 animate-pulse">
+          {tCommon("FetchingData")}{" "}
+          <LoaderCircleIcon className="animate-spin size-4" />
+        </div>
+        {[...Array(4)].map((_, i) => (
+          <DailyAccountCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
 
   if (!loading && hasLoadedOnce && data.length === 0) {
     return (
       <div className="flex h-full min-h-120 w-full flex-1 items-center justify-center">
-        <p className="text-muted-foreground">No daily accounts found.</p>
+        <p className="text-muted-foreground">{tCommon("NoDataFound")}</p>
       </div>
     );
   }
