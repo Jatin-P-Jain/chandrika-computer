@@ -15,12 +15,18 @@ import clsx from "clsx";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { DailyAccountCard } from "./daily-account-card";
+import { useLocale, useTranslations } from "next-intl";
 
 export default function DailyAccountsList({
   searchParamsValues,
 }: {
   searchParamsValues: {};
 }) {
+  const tCommon = useTranslations("Common");
+  const locale = useLocale();
+  const isHi = locale === "hi";
+  const textSmCls = isHi ? "text-sm! lg:text-base!" : "";
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -105,12 +111,14 @@ export default function DailyAccountsList({
 
   return (
     <div className="relative mx-auto flex flex-col w-full max-w-7xl overflow-auto no-scrollbar rounded-md">
-      <p className="text-muted-foreground text-center text-xs">
-        Page {currentPage} • Showing {start}–{end} of {totalItems} results
+      <p
+        className={`text-muted-foreground text-center text-xs py-1 ${textSmCls}`}
+      >
+        {tCommon("ShowingResults", { currentPage, start, end, totalItems })}
       </p>
       {data && data.length > 0 && (
-        <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-145">
-          <div className="flex w-full flex-col p-2 gap-3 lg:gap-4 max-h-[60vh] overflow-auto no-scrollbar">
+        <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-140 max-h-135 overflow-auto no-scrollbar pb-2 md:pb-0">
+          <div className="flex w-full flex-col p-2 gap-3 lg:gap-4 ">
             {data.map((dailyAccount: DailyAccount, index: number) => (
               <DailyAccountCard key={index} dailyAccount={dailyAccount} />
             ))}

@@ -48,7 +48,7 @@ export function DateDisplay({
 
   // timestamp
   const dayName = format(date, "EEE", { locale: dfLocale });
-  let formatted = format(date, "dd MMM, yy", { locale: dfLocale });
+  let formatted = format(date, "dd MMMM, yy", { locale: dfLocale });
 
   if (smallDay) {
     formatted += ` (${dayName.toString()})`;

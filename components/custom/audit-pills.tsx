@@ -3,12 +3,9 @@
 import clsx from "clsx";
 import { BadgeCheck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserMini } from "@/types/user";
 
-type UserMini = {
-  displayName?: string | null;
-  phoneNumber?: string | null;
-  photoUrl?: string | null;
-};
+
 
 type AuditPillProps = {
   variant?: "created" | "updated";

@@ -8,12 +8,19 @@ import { formatINR } from "@/lib/utils";
 import { ChevronsRight } from "lucide-react";
 import { DateDisplay } from "../date-display";
 import CreatedOrUpdated from "../created-or-updated";
+import { useLocale, useTranslations } from "next-intl";
 
 type DailyAccountCardProps = {
   dailyAccount: DailyAccount;
 };
 
 export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
+  const tDailyAccount = useTranslations("DailyAccount");
+  const locale = useLocale();
+  const isHi = locale === "hi";
+  const textHeadCls = isHi ? "font-semibold text-xl!" : "";
+  const textBodyCls = isHi ? "font-medium text-lg!" : "";
+  const textSmCls = isHi ? "text-sm! lg:text-base!" : "";
   const {
     id,
     totalCashCollected,
@@ -24,7 +31,26 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
     updatedBy,
     businessExpenses,
     dailySpends,
+    fixed,
   } = dailyAccount as DailyAccount;
+
+  const totalExpenses = [
+    dailyAccount.fixed.fs || 0,
+    dailyAccount.fixed.sc || 0,
+    dailyAccount.fixed.sd || 0,
+    Array.isArray(dailyAccount.businessExpenses)
+      ? dailyAccount.businessExpenses.reduce(
+          (sum: number, expense: any) => sum + Number(expense?.amount || 0),
+          0
+        )
+      : 0,
+    Array.isArray(dailyAccount.dailySpends)
+      ? dailyAccount.dailySpends.reduce(
+          (sum: number, spend: any) => sum + Number(spend?.amount || 0),
+          0
+        )
+      : 0,
+  ].reduce((sum: number, value: number) => sum + value, 0);
 
   const totalEarnings =
     Number(earnings?.netIncome || 0) +
@@ -43,66 +69,84 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
 
   return (
     <Card className="cursor-pointer w-full flex p-1 lg:p-0 shadow-md border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]">
-      <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-0 justify-center p-1">
+      <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-0 justify-center p-1 lg:pl-4">
         <div className="flex flex-col md:col-span-5 gap-1 lg:gap-2 p-2">
           <div className="flex items-center gap-2 justify-start">
-            <span className="hidden lg:flex text-xs text-muted-foreground">
-              Daily Account:
+            <span
+              className={`hidden lg:flex text-xs text-muted-foreground ${textSmCls}`}
+            >
+              {tDailyAccount("DailyAccount")}:
             </span>{" "}
-            <span className="font-semibold text-primary text-lg">
+            <span className={`font-semibold text-primary ${textHeadCls}`}>
               {<DateDisplay value={id} type="docId" />}
             </span>
           </div>
           <div className="flex flex-col lg:flex-row w-full justify-between items-end gap-2 lg:gap-16">
-            <div className="flex flex-col gap-1 w-full pl-2">
+            <div className="flex flex-col gap-0 w-full pl-2">
               <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-muted-foreground">
-                  Total Cash Collected:
+                <span
+                  className={`text-sm text-muted-foreground ${textBodyCls}`}
+                >
+                  {tDailyAccount("TotalCashCollected")}:
                 </span>
-                <span className="text-base font-bold tabular-nums text-primary">
+                <span
+                  className={`font-medium! tabular-nums text-primary ${textHeadCls}`}
+                >
                   {formatINR(Number(totalCashCollected || 0))}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span
+                  className={`text-sm text-muted-foreground ${textBodyCls}`}
+                >
+                  {tDailyAccount("TotalExpenses")}:
+                </span>
+                <span
+                  className={`font-medium! tabular-nums text-red-600 ${textHeadCls}`}
+                >
+                  {formatINR(Number(totalExpenses || 0))}
                 </span>
               </div>
 
               <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-muted-foreground">
-                  Total Earnings:
+                <span
+                  className={`text-sm text-muted-foreground ${textBodyCls}`}
+                >
+                  {tDailyAccount("TotalIncome")}:
                 </span>
-                <span className="text-base font-bold tabular-nums text-green-600">
+                <span
+                  className={`font-bold tabular-nums text-green-600 ${textHeadCls}`}
+                >
                   {formatINR(Number(totalEarnings || 0))}
                 </span>
               </div>
             </div>
-            <div className="flex flex-col lg:flex-row gap-2 w-full justify-between">
-              <div className="flex h-full justify-center gap-4 bg-primary/10 rounded-md p-1 px-2">
-                <div className="h-full flex flex-col justify-end items-start gap-1 w-full">
-                  {tags.length > 0 ? (
-                    <span className="text-xs text-muted-foreground">
-                      All Tags:
+            <div className="flex flex-col lg:flex-row w-full justify-between items-start lg:items-end gap-1 lg:gap-0">
+              <div className="flex flex-col lg:flex-row w-full justify-end gap-1">
+                <div className="flex flex-wrap gap-1 lg:justify-end w-full items-center lg:items-end">
+                  {tags.slice(0, 3).map((tag, index) => (
+                    <span
+                      key={index}
+                      className={`bg-primary/20 text-primary font-semibold text-xs px-2 py-1 rounded-full`}
+                    >
+                      {tag}
                     </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      No Tags
+                  ))}
+                  {tags.length > 3 && (
+                    <span
+                      className={`text-muted-foreground font-semibold text-xs ${textSmCls}`}
+                    >
+                      +{tags.length - 3} more
                     </span>
                   )}
-                  <div className="flex flex-wrap gap-1 max-w-xs justify-end items-center">
-                    {tags.slice(0, 3).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="bg-primary/20 text-primary font-semibold text-xs px-2 py-1 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {tags.length > 3 && (
-                      <span className=" text-muted-foreground font-semibold text-xs">
-                        +{tags.length - 3} more
-                      </span>
-                    )}
-                  </div>
                 </div>
+                <CreatedOrUpdated
+                  createdBy={createdBy}
+                  updatedBy={updatedBy}
+                  created={created}
+                  updated={updated}
+                />
               </div>
-              <CreatedOrUpdated created={created} updated={updated} />
             </div>
           </div>
         </div>
