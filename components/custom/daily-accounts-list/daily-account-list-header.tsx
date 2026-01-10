@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toDocId } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
+import { FiltersSection } from "../filter-section/filters-section";
 
 export default function DailyAccountListHeader() {
   const tCommon = useTranslations("Common");
@@ -29,9 +30,7 @@ export default function DailyAccountListHeader() {
           {tCommon("Create")} <PlusCircle className="size-5" />
         </Link>
       </Button>
-      <div className="lg:flex hidden bg-white p-2 rounded-md w-fit ml-auto">
-        Filters Section
-      </div>
+      <FiltersSection />
     </div>
   );
 }

@@ -35,17 +35,17 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   } = dailyAccount as DailyAccount;
 
   const totalExpenses = [
-    dailyAccount.fixed.fs || 0,
-    dailyAccount.fixed.sc || 0,
-    dailyAccount.fixed.sd || 0,
-    Array.isArray(dailyAccount.businessExpenses)
-      ? dailyAccount.businessExpenses.reduce(
+    fixed.fs || 0,
+    fixed.sc || 0,
+    fixed.sd || 0,
+    Array.isArray(businessExpenses)
+      ? businessExpenses.reduce(
           (sum: number, expense: any) => sum + Number(expense?.amount || 0),
           0
         )
       : 0,
-    Array.isArray(dailyAccount.dailySpends)
-      ? dailyAccount.dailySpends.reduce(
+    Array.isArray(dailySpends)
+      ? dailySpends.reduce(
           (sum: number, spend: any) => sum + Number(spend?.amount || 0),
           0
         )

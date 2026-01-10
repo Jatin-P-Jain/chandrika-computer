@@ -12,6 +12,8 @@ import { dailySchema } from "@/schema/dailay-page.schema";
 import { DailyAccount } from "@/types/daily-account";
 import { UserData } from "@/types/user";
 import { toDocId } from "@/lib/utils";
+import { cache } from "react";
+import { FilterTag, FilterUser } from "@/types/filters";
 
 export const createDailyAccountItem = async (
   data: Omit<
@@ -20,7 +22,8 @@ export const createDailyAccountItem = async (
   >,
   user: UserData | null,
   authtoken: string,
-  accountExistsErrorMessage: string
+  accountExistsErrorMessage: string,
+  docId?: string
 ) => {
   if (!user) {
     return {
@@ -44,9 +47,9 @@ export const createDailyAccountItem = async (
     };
   }
 
-  const docId = toDocId();
+  const documentId = docId ?? toDocId();
 
-  const docRef = fireStore.collection("daily-accounts").doc(docId);
+  const docRef = fireStore.collection("daily-accounts").doc(documentId);
   try {
     await fireStore.runTransaction(async (txn) => {
       const existing = await txn.get(docRef);
@@ -55,14 +58,14 @@ export const createDailyAccountItem = async (
       }
       txn.set(docRef, {
         ...data,
-        id: docId,
+        id: documentId,
         createdBy: user,
         updatedBy: user,
         created: new Date(),
         updated: new Date(),
       });
     });
-    return { docId };
+    return { docId: documentId };
   } catch (e: unknown) {
     return {
       success: false,
@@ -170,3 +173,63 @@ export const updateDailyAccountItem = async (
     };
   }
 };
+
+export const getFilterOptions = cache(
+  async (): Promise<{
+    creators: FilterUser[];
+    updaters: FilterUser[];
+    tags: FilterTag[];
+  }> => {
+    try {
+      const [creatorsSnap, updatersSnap, tagsSnap] = await Promise.all([
+        // Top 50 creators by count
+        fireStore
+          .collection("daily_account_creators")
+          .orderBy("count", "desc")
+          .limit(50)
+          .get(),
+
+        // Top 50 updaters by count
+        fireStore
+          .collection("daily_account_updaters")
+          .orderBy("count", "desc")
+          .limit(50)
+          .get(),
+
+        // Top 100 tags by count
+        fireStore
+          .collection("daily_account_tags")
+          .orderBy("count", "desc")
+          .limit(100)
+          .get(),
+      ]);
+
+      const creators = creatorsSnap.docs.map((doc) => ({
+        label: doc.data().displayName,
+        photoUrl: doc.data().photoUrl || null,
+        email: doc.data().email || null,
+        value: doc.id,
+        count: doc.data().count || 0,
+      }));
+
+      const updaters = updatersSnap.docs.map((doc) => ({
+        label: doc.data().displayName,
+        photoUrl: doc.data().photoUrl || null,
+        email: doc.data().email || null,
+        value: doc.id,
+        count: doc.data().count || 0,
+      }));
+
+      const tags = tagsSnap.docs.map((doc) => ({
+        label: doc.data().label,
+        value: doc.id,
+        count: doc.data().count || 0,
+      }));
+
+      return { creators, updaters, tags };
+    } catch (error) {
+      console.error("Filter fetch error:", error);
+      return { creators: [], updaters: [], tags: [] };
+    }
+  }
+);

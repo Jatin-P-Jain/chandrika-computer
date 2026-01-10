@@ -31,8 +31,9 @@ export const PushHandler = () => {
           payload.notification?.title ?? payload.data?.title ?? "No title";
         const body =
           payload.notification?.body ?? payload.data?.body ?? "No body";
-
-        if (payload?.data?.uid === auth.clientUser?.uid) {
+        const user =
+          auth.authState.status === "ready" ? auth.authState.clientUser : null;
+        if (payload?.data?.uid === user?.uid) {
           // Show toast only if the message is intended for the current user
           toast.success(title, { description: body });
         }

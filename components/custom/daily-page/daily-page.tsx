@@ -141,7 +141,7 @@ export default function DailyPage({
       }
 
       toast.success("Success!", { description: tToast("DailyAccountUpdated") });
-      router.replace(`/daily-accounts/${docId}`, { scroll: false });
+      router.replace(`/daily-accounts/${docId}?mode=view`, { scroll: false });
       return;
     }
 
@@ -151,14 +151,17 @@ export default function DailyPage({
       data,
       user,
       token,
-      accountExistsErrorMessage
+      accountExistsErrorMessage,
+      docId
     );
 
     if (!!saveResponse.error || !saveResponse.docId) {
       toast.error("Error!", { description: saveResponse.error });
       return;
     }
-    router.replace(`/daily-accounts/${saveResponse.docId}`, { scroll: false });
+    router.replace(`/daily-accounts/${saveResponse.docId}?mode=view`, {
+      scroll: false,
+    });
     toast.success("Success!", { description: tToast("DailyAccountCreated") });
   };
 
