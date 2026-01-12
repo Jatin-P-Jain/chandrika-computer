@@ -30,7 +30,9 @@ export default function DailyAccountListHeader() {
           {tCommon("Create")} <PlusCircle className="size-5" />
         </Link>
       </Button>
-      <FiltersSection />
+      <div className="md:flex hidden w-fit ml-auto">
+        <FiltersSection />
+      </div>
     </div>
   );
 }

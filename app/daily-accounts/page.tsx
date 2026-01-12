@@ -1,5 +1,14 @@
 import DailyAccountsList from "@/components/custom/daily-accounts-list/daily-account-list";
 import DailyAccountListHeader from "@/components/custom/daily-accounts-list/daily-account-list-header";
+import { FiltersSection } from "@/components/custom/filter-section/filters-section";
+import { MobileFilters } from "@/components/custom/mobile-filters";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown, ListFilterPlus } from "lucide-react";
 
 type Props = {
   searchParams: Promise<{
@@ -12,9 +21,7 @@ const DailyAccounts = async ({ searchParams }: Props) => {
   return (
     <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 mb-20 md:mb-16 gap-2 max-w-6xl mx-auto">
       <DailyAccountListHeader />
-      <div className="flex lg:hidden bg-white p-2 w-full rounded-md">
-        Filters Section
-      </div>
+      <MobileFilters />
       <DailyAccountsList searchParamsValues={searchParamsValues} />
     </div>
   );

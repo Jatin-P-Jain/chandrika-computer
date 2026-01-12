@@ -43,8 +43,9 @@ export function FiltersSection() {
   const locale = useLocale();
   const isHi = locale === "hi";
   const textSmCls = clsx(isHi && "text-sm! font-[inherit]");
-  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
-  const textHeadCls = clsx(isHi && "text-2xl! font-[inherit]");
+  const textBodyCls = clsx(
+    isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!"
+  );
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -142,7 +143,7 @@ export function FiltersSection() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 ml-auto transition-all duration-300">
+    <div className="flex flex-wrap items-center gap-2 ml-auto">
       {/* Preset Date Filters */}
       <div className="flex gap-1">
         {PRESET_FILTERS.map((filter) => (
@@ -204,7 +205,7 @@ export function FiltersSection() {
                     date.to,
                     "MMM dd"
                   )}`
-                : tFilters("CustomRange")}
+                : tFilters("DateRange")}
             </span>
           </Button>
         </PopoverTrigger>
@@ -293,13 +294,17 @@ export function FiltersSection() {
               }
             )}
           >
-            <ArrowUpDown className="size-4" />
-            <span>
-              {tFilters("Sort")}{" "}
-              {tFilters(
-                SORT_FIELDS.find((f) => f.value === sortField)?.label || ""
-              )}{" "}
-              ({sortDir === "asc" ? "↑" : "↓"})
+            <span
+              className={clsx("flex justify-center items-center", textBodyCls)}
+            >
+              <ArrowUpDown className="size-4" />
+              <span>
+                {tFilters("Sort")}{" "}
+                {tFilters(
+                  SORT_FIELDS.find((f) => f.value === sortField)?.label || ""
+                )}{" "}
+                ({sortDir === "asc" ? "↑" : "↓"})
+              </span>
             </span>
           </Button>
         </PopoverTrigger>
@@ -374,10 +379,15 @@ export function FiltersSection() {
         disabled={clearFiltersDisabled}
         variant="outline"
         size="sm"
-        className="text-xs border-red-500 text-red-700 hover:bg-red-100/10 hover:text-red-800"
+        className="text-xs border-red-500 text-red-700 hover:bg-red-100/10 hover:text-red-800 mb-2 md:mb-0"
         onClick={clearAllFilters}
       >
-        {tFilters("ClearAllFilters")} <FunnelX className="size-4" />
+        <span
+          className={clsx("flex justify-between items-center gap-1", textSmCls)}
+        >
+          <FunnelX className="size-4" />
+          {tFilters("ClearAllFilters")}
+        </span>
       </Button>
     </div>
   );

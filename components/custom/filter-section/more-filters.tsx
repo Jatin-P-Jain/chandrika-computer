@@ -24,8 +24,9 @@ export function MoreFiltersPopover({
   const tFilters = useTranslations("Filters");
   const locale = useLocale();
   const isHi = locale === "hi";
-  const textSmCls = clsx(isHi && "text-sm! font-[inherit]");
-  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
+  const textSmCls = clsx(
+    isHi ? "text-sm! md:text-base!" : "text-xs! md:text-sm!"
+  );
 
   const searchParams = useSearchParams();
   const currentCreatedBy = searchParams.get("createdBy")?.split(",") || [];
@@ -145,15 +146,23 @@ export function MoreFiltersPopover({
           variant="outline"
           size="sm"
           className={clsx(
-            "gap-1 transition-all duration-300 hover:shadow-md hover:scale-102",
+            "gap-1 transition-all duration-300 hover:shadow-md hover:scale-102 ",
             {
               "text-primary border-primary scale-102 shadow-md":
                 open || totalSelected > 0,
-            }
+            },
+            textSmCls
           )}
         >
-          <Filter className="size-4" />
-          {tFilters("MoreFilters")}
+          <span
+            className={clsx(
+              textSmCls,
+              "flex justify-center items-center gap-2"
+            )}
+          >
+            <Filter className="size-4" />
+            {tFilters("MoreFilters")}
+          </span>
           {totalSelected > 0 && (
             <div className="size-5 text-xs justify-center items-center flex bg-primary/10 text-primary font-semibold rounded-full px-1.5">
               {totalSelected}
@@ -196,7 +205,7 @@ export function MoreFiltersPopover({
             size="sm"
             onClick={clearMoreFiltersOnly} // ✅ Only clears more filters!
           >
-            {tFilters("ClearAll")}
+            <span className={clsx(textSmCls)}>{tFilters("ClearAll")}</span>
           </Button>
         </div>
       </PopoverContent>
