@@ -20,7 +20,14 @@ import { FilterTag, FilterUser } from "@/types/filters";
 export const createDailyAccountItem = async (
   data: Omit<
     DailyAccount,
-    "id" | "created" | "updated" | "createdBy" | "updatedBy"
+    | "id"
+    | "created"
+    | "updated"
+    | "createdBy"
+    | "updatedBy"
+    | "allTags"
+    | "totalEarnings"
+    | "totalSpends"
   >,
   user: UserData | null,
   authtoken: string,
@@ -118,7 +125,14 @@ export const updateDailyAccountItem = async (
   docId: string,
   data: Omit<
     DailyAccount,
-    "id" | "created" | "updated" | "createdBy" | "updatedBy"
+    | "id"
+    | "created"
+    | "updated"
+    | "createdBy"
+    | "updatedBy"
+    | "allTags"
+    | "totalEarnings"
+    | "totalSpends"
   >,
   user: UserData | null,
   dirtyFields: DirtyFields,
