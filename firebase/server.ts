@@ -7,7 +7,7 @@ import { getMessaging, Messaging } from "firebase-admin/messaging";
 
 const serviceAccount = {
   type: "service_account",
-  project_id: process.env.NEXT_PUBLIC_FIREBASE_SERVER_PROJECT_ID,
+  project_id: process.env.FIREBASE_PROJECT_ID,
   private_key_id: process.env.FIRBASE_PRIVATE_KEY_ID,
   private_key: process.env.FIRBASE_PRIVATE_KEY,
   client_email: process.env.FIREBASE_CLIENT_EMAIL,
@@ -18,6 +18,8 @@ const serviceAccount = {
   client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL,
   universe_domain: "googleapis.com",
 };
+console.log({ serviceAccount });
+
 let messaging: Messaging;
 let fireStore: Firestore;
 let auth: Auth;
