@@ -13,9 +13,9 @@ export default function DailyAccountListHeader() {
   const isHi = locale === "hi";
   const textHeadCls = isHi ? "text-xl!" : "";
   return (
-    <div className="flex justify-between lg:justify-start items-center w-full gap-4">
+    <div className="flex justify-between lg:justify-end items-center w-full gap-4">
       <h1
-        className={`flex justify-center items-center gap-1 font-semibold text-primary ${textHeadCls}`}
+        className={`flex justify-center items-center gap-1 font-semibold text-primary min-w-fit! ${textHeadCls}`}
       >
         <LayoutList className="size-4 md:size-5" />
         {tDailyAccount("AllDailyAccounts")}
@@ -30,7 +30,7 @@ export default function DailyAccountListHeader() {
           {tCommon("Create")} <PlusCircle className="size-5" />
         </Link>
       </Button>
-      <div className="md:flex hidden w-fit ml-auto">
+      <div className="lg:flex hidden ml-auto">
         <FiltersSection />
       </div>
     </div>

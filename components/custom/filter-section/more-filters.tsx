@@ -25,7 +25,7 @@ export function MoreFiltersPopover({
   const locale = useLocale();
   const isHi = locale === "hi";
   const textSmCls = clsx(
-    isHi ? "text-sm! md:text-base!" : "text-xs! md:text-sm!"
+    isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!"
   );
 
   const searchParams = useSearchParams();

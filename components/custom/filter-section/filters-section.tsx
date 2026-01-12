@@ -22,7 +22,7 @@ import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import clsx from "clsx";
 import { MoreFiltersPopover } from "./more-filters";
-import { hi } from "date-fns/locale";
+import { enUS, hi } from "date-fns/locale";
 
 const PRESET_FILTERS = [
   { id: "3days", label: "Last3Days", value: "3days" },
@@ -42,8 +42,8 @@ export function FiltersSection() {
   const tFilters = useTranslations("Filters");
   const locale = useLocale();
   const isHi = locale === "hi";
-  const textSmCls = clsx(isHi && "text-sm! font-[inherit]");
-  const textBodyCls = clsx(
+  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
+  const textSmCls = clsx(
     isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!"
   );
 
@@ -143,9 +143,9 @@ export function FiltersSection() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 ml-auto">
+    <div className="flex flex-wrap items-center gap-2 ml-auto md:justify-end">
       {/* Preset Date Filters */}
-      <div className="flex gap-1">
+      <div className="hidden md:flex gap-1">
         {PRESET_FILTERS.map((filter) => (
           <Badge
             key={filter.id}
@@ -191,7 +191,7 @@ export function FiltersSection() {
             variant="outline"
             size="sm"
             className={clsx(
-              "gap-1 transition-all duration-300 hover:shadow-md hover:scale-102",
+              "gap- transition-all duration-300 hover:shadow-md hover:scale-102 w-full md:w-fit justify-center items-center",
               textBodyCls,
               {
                 "text-primary border-primary scale-102": openDatePicker || date,
@@ -199,12 +199,13 @@ export function FiltersSection() {
             )}
           >
             <CalendarRange className="size-4" />
-            <span className="">
+            <span className={clsx(textBodyCls)}>
               {date?.from && date?.to
-                ? `${format(date.from, "MMM dd")} - ${format(
-                    date.to,
-                    "MMM dd"
-                  )}`
+                ? `${format(date.from, "MMMM dd", {
+                    locale: isHi ? hi : enUS,
+                  })} - ${format(date.to, "MMMM dd", {
+                    locale: isHi ? hi : enUS,
+                  })}`
                 : tFilters("DateRange")}
             </span>
           </Button>
@@ -213,16 +214,15 @@ export function FiltersSection() {
           className={clsx("w-auto shadow-lg", {
             "border-primary": openDatePicker,
           })}
-          align="center"
+          align="end"
         >
           <Calendar
             locale={hi}
             mode="range"
             selected={date}
             onSelect={setDate}
-            numberOfMonths={2}
-            className="p-2"
-            classNames={{ day: "" }}
+            numberOfMonths={1}
+            className="p-0 w-full"
             disabled={(date) => {
               if (date > new Date()) return true;
               return false;
@@ -295,7 +295,7 @@ export function FiltersSection() {
             )}
           >
             <span
-              className={clsx("flex justify-center items-center", textBodyCls)}
+              className={clsx("flex justify-center items-center", textSmCls)}
             >
               <ArrowUpDown className="size-4" />
               <span>
