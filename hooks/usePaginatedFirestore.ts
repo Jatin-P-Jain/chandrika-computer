@@ -16,19 +16,22 @@ import { useEffect, useRef, useState } from "react";
 import { firestore } from "@/firebase/client";
 import { DailyAccount } from "@/types/daily-account";
 import { normalizeDailyAccount } from "@/lib/server-utils";
+import { FirestoreFilter } from "@/types/filters";
 
 type UsePaginatedFirestoreOptions = {
   collectionPath: string;
   pageSize?: number;
-  filters?: { field: string; op: "==" | "in"; value: string | string[] }[];
+  filters?: FirestoreFilter[];
   orderByField?: string;
+  orderByDirection?: "asc" | "desc";
 };
 
 export const usePaginatedFirestore = ({
   collectionPath,
   pageSize = 10,
   filters = [],
-  orderByField = "updated",
+  orderByField = "created",
+  orderByDirection = "desc",
 }: UsePaginatedFirestoreOptions) => {
   const [data, setData] = useState<DailyAccount[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,15 +47,30 @@ export const usePaginatedFirestore = ({
   const loadPage = async (page: number) => {
     if (!hasMore && page > currentPage) return;
     setLoading(true);
-
     try {
       let q = query(collection(firestore, collectionPath));
-      q = query(q, orderBy(orderByField, "desc"));
 
+      // Dynamic orderBy
+      q = query(q, orderBy(orderByField, orderByDirection));
+
+      // PERFECT filter handling
       filters.forEach((f) => {
-        q = query(q, where(f.field, f.op, f.value));
+        if (Array.isArray(f.value)) {
+          // array-contains-any (multiple tags)
+          if (f.operator === "array-contains-any") {
+            q = query(q, where(f.field, "array-contains-any", f.value));
+          }
+          // in queries (max 10 items)
+          else if (f.operator === "in" && (f.value as string[]).length <= 10) {
+            q = query(q, where(f.field, "in", f.value));
+          }
+        } else {
+          // Single value filters (dates, etc.)
+          q = query(q, where(f.field, f.operator, f.value));
+        }
       });
 
+      // Pagination cursor
       const cursor = cursors.current[page - 1];
       if (cursor) {
         q = query(q, startAfter(cursor));
@@ -90,8 +108,15 @@ export const usePaginatedFirestore = ({
     loadPage(1);
   };
 
+  // Reset + fetch count when filters/order change
   useEffect(() => {
-    const queryKey = JSON.stringify({ collectionPath, filters, orderByField });
+    const queryKey = JSON.stringify({
+      collectionPath,
+      filters,
+      orderByField,
+      orderByDirection,
+    });
+
     if (prevQueryKey.current !== queryKey) {
       prevQueryKey.current = queryKey;
       resetPagination();
@@ -100,9 +125,32 @@ export const usePaginatedFirestore = ({
       const fetchCount = async () => {
         try {
           let countQuery = query(collection(firestore, collectionPath));
+          countQuery = query(
+            countQuery,
+            orderBy(orderByField, orderByDirection)
+          );
+
           filters.forEach((f) => {
-            countQuery = query(countQuery, where(f.field, f.op, f.value));
+            if (Array.isArray(f.value)) {
+              if (f.operator === "array-contains-any") {
+                countQuery = query(
+                  countQuery,
+                  where(f.field, "array-contains-any", f.value)
+                );
+              } else if (
+                f.operator === "in" &&
+                (f.value as string[]).length <= 10
+              ) {
+                countQuery = query(countQuery, where(f.field, "in", f.value));
+              }
+            } else {
+              countQuery = query(
+                countQuery,
+                where(f.field, f.operator, f.value)
+              );
+            }
           });
+
           const snapshot = await getCountFromServer(countQuery);
           setTotalItems(snapshot.data().count);
         } catch (error) {
@@ -113,8 +161,7 @@ export const usePaginatedFirestore = ({
 
       fetchCount();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collectionPath, JSON.stringify(filters), orderByField]);
+  }, [collectionPath, JSON.stringify(filters), orderByField, orderByDirection]);
 
   return {
     data,

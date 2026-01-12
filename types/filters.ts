@@ -10,3 +10,19 @@ export type FilterTag = {
   value: string;
   count: number;
 };
+
+export type FilterOperator =
+  | "<="
+  | "<"
+  | "=="
+  | "!="
+  | ">="
+  | ">"
+  | "in"
+  | "array-contains-any";
+
+export type FirestoreFilter = {
+  field: string;
+  operator: FilterOperator;
+  value: string | number | boolean | string[];
+};
