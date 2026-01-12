@@ -1,14 +1,6 @@
 import DailyAccountsList from "@/components/custom/daily-accounts-list/daily-account-list";
 import DailyAccountListHeader from "@/components/custom/daily-accounts-list/daily-account-list-header";
-import { FiltersSection } from "@/components/custom/filter-section/filters-section";
 import { MobileFilters } from "@/components/custom/mobile-filters";
-import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { ChevronDown, ListFilterPlus } from "lucide-react";
 
 type Props = {
   searchParams: Promise<{
