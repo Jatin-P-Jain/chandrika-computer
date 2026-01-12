@@ -64,12 +64,18 @@ export default function DailyAccountsList({
           {
             field: "created",
             operator: ">=" as FilterOperator,
-            value: fromDate,
+            value: new Date(fromDate + "T00:00:00Z"),
           },
         ]
       : []),
     ...(toDate
-      ? [{ field: "created", operator: "<=" as FilterOperator, value: toDate }]
+      ? [
+          {
+            field: "created",
+            operator: "<=" as FilterOperator,
+            value: new Date(toDate + "T23:59:59.999Z"), // End of day
+          },
+        ]
       : []),
 
     // User filters (IN queries)
@@ -92,24 +98,12 @@ export default function DailyAccountsList({
         ]
       : []),
 
-    // Tags filter (array-contains-any)
     ...(tags.length > 0
       ? [
-          // ONE filter per field with ALL tags
           {
-            field: "businessExpense.tags",
+            field: "allTags",
             operator: "array-contains-any" as FilterOperator,
-            value: tags, // ["food", "lunch"] ✅ All tags at once
-          },
-          {
-            field: "otherIncomes.tags",
-            operator: "array-contains-any" as FilterOperator,
-            value: tags, // Same tags array ✅
-          },
-          {
-            field: "dailySpends.tags",
-            operator: "array-contains-any" as FilterOperator,
-            value: tags, // Same tags array ✅
+            value: tags,
           },
         ]
       : []),

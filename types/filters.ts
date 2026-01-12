@@ -24,5 +24,5 @@ export type FilterOperator =
 export type FirestoreFilter = {
   field: string;
   operator: FilterOperator;
-  value: string | number | boolean | string[];
+  value: string | number | boolean | string[] | Date;
 };

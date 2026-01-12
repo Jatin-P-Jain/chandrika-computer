@@ -32,9 +32,9 @@ const PRESET_FILTERS = [
 const SORT_FIELDS = [
   { value: "created", label: "CreatedDate" },
   { value: "updated", label: "UpdatedDate" },
-  { value: "earnings", label: "TotalEarnings" },
-  { value: "spends", label: "TotalSpends" },
-  { value: "cash", label: "CashCollected" },
+  { value: "totalEarnings", label: "TotalEarnings" },
+  { value: "totalSpends", label: "TotalSpends" },
+  { value: "totalCashCollected", label: "CashCollected" },
 ];
 
 export function FiltersSection() {
@@ -142,7 +142,7 @@ export function FiltersSection() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 ml-auto">
+    <div className="flex flex-wrap items-center gap-2 ml-auto transition-all duration-300">
       {/* Preset Date Filters */}
       <div className="flex gap-1">
         {PRESET_FILTERS.map((filter) => (
@@ -155,13 +155,28 @@ export function FiltersSection() {
                 "bg-primary text-white": dateRange === filter.value,
               }
             )}
-            onClick={() =>
-              updateSearchParams({
-                dateRange: filter.value,
-                fromDate: date?.from?.toISOString().split("T")[0] || "",
-                toDate: date?.to?.toISOString().split("T")[0] || "",
-              })
-            }
+            onClick={() => {
+              // 🔥 TOGGLE LOGIC
+              if (dateRange === filter.value) {
+                // Already active → Clear this preset
+                updateSearchParams({
+                  dateRange: "",
+                  fromDate: "",
+                  toDate: "",
+                });
+              } else {
+                // Inactive → Set this preset
+                const today = new Date();
+                const daysAgo = filter.value === "3days" ? 3 : 7;
+                const fromDate = format(addDays(today, -daysAgo), "yyyy-MM-dd");
+
+                updateSearchParams({
+                  dateRange: filter.value,
+                  fromDate,
+                  toDate: format(today, "yyyy-MM-dd"),
+                });
+              }
+            }}
           >
             <span className={clsx(textBodyCls)}>{tFilters(filter.label)}</span>
           </Badge>
@@ -238,7 +253,7 @@ export function FiltersSection() {
                 setDate(undefined);
                 setOpenDatePicker(false);
               }}
-              disabled={!!date?.from || !!date?.to}
+              disabled={!date?.from || !date?.to}
             >
               {tFilters("RemoveFilter")}
             </Button>
@@ -248,8 +263,8 @@ export function FiltersSection() {
               onClick={() => {
                 if (date?.from && date?.to) {
                   updateSearchParams({
-                    fromDate: date.from.toISOString().split("T")[0],
-                    toDate: date.to.toISOString().split("T")[0],
+                    fromDate: date?.from ? format(date.from, "yyyy-MM-dd") : "",
+                    toDate: date?.to ? format(date.to, "yyyy-MM-dd") : "",
                   });
                   setOpenDatePicker(false);
                 }

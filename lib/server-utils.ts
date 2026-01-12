@@ -58,13 +58,13 @@ const toLineItems = (arr: any) =>
     : [];
 const toUser = (user: any) => {
   return {
-    uid: String(user.uid ?? ""),
-    displayName: String(user.displayName ?? ""),
-    email: String(user.email ?? ""),
-    phoneNumber: String(user.phoneNumber ?? ""),
-    phoneVerified: Boolean(user.phoneVerified ?? false),
-    photoUrl: String(user.photoUrl ?? ""),
-    role: String(user.role ?? "user"),
+    uid: String(user?.uid ?? ""),
+    displayName: String(user?.displayName ?? ""),
+    email: String(user?.email ?? ""),
+    phoneNumber: String(user?.phoneNumber ?? ""),
+    phoneVerified: Boolean(user?.phoneVerified ?? false),
+    photoUrl: String(user?.photoUrl ?? ""),
+    role: String(user?.role ?? "user"),
   };
 };
 
@@ -82,6 +82,9 @@ export const normalizeDailyAccount = (raw: any): DailyAccount => {
     },
     businessExpenses: toLineItems(raw?.businessExpenses),
     dailySpends: toLineItems(raw?.dailySpends),
+    allTags: extractAllTags(raw),
+    totalEarnings: toNumber(raw?.totalEarnings, 0),
+    totalSpends: toNumber(raw?.totalSpends, 0),
     totalCashCollected: toNumber(raw?.totalCashCollected, 0),
     created: toMillis(raw?.created)
       ? new Date(toMillis(raw?.created)!).toISOString()
@@ -122,4 +125,69 @@ export function deepMerge<T>(base: T, patch: any): T {
     }
   }
   return out as T;
+}
+
+// 🔥 HELPER FUNCTIONS (add these)
+export function extractAllTags(data: any): string[] {
+  const tags: string[] = [];
+
+  // Earnings → otherIncomes tags
+  if (data.earnings?.otherIncomes?.length) {
+    data.earnings.otherIncomes.forEach((income: any) => {
+      if (Array.isArray(income.tags)) {
+        tags.push(...income.tags);
+      }
+    });
+  }
+
+  // Business Expenses tags
+  if (Array.isArray(data.businessExpenses)) {
+    data.businessExpenses.forEach((expense: any) => {
+      if (Array.isArray(expense.tags)) {
+        tags.push(...expense.tags);
+      }
+    });
+  }
+
+  // Daily Spends tags
+  if (Array.isArray(data.dailySpends)) {
+    data.dailySpends.forEach((spend: any) => {
+      if (Array.isArray(spend.tags)) {
+        tags.push(...spend.tags);
+      }
+    });
+  }
+
+  return Array.from(new Set(tags)); // Unique tags
+}
+
+export function calculateTotals(data: any) {
+  let earnings = data.earnings.netIncome;
+  let spends = 0;
+
+  // Total earnings from otherIncomes
+  if (data.earnings?.otherIncomes?.length) {
+    data.earnings.otherIncomes.forEach((income: any) => {
+      earnings += Number(income.amount) || 0;
+    });
+  }
+
+  // Total business expenses
+  if (Array.isArray(data.businessExpenses)) {
+    data.businessExpenses.forEach((expense: any) => {
+      spends += Number(expense.amount) || 0;
+    });
+  }
+
+  // Total daily spends
+  if (Array.isArray(data.dailySpends)) {
+    data.dailySpends.forEach((spend: any) => {
+      spends += Number(spend.amount) || 0;
+    });
+  }
+
+  return {
+    earnings,
+    spends,
+  };
 }

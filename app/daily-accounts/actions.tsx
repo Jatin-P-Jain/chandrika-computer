@@ -3,8 +3,10 @@
 import { auth, fireStore } from "@/firebase/server";
 import { revalidatePath } from "next/cache";
 import {
+  calculateTotals,
   deepMerge,
   DirtyFields,
+  extractAllTags,
   getDirtyValues,
   normalizeDailyAccount,
 } from "@/lib/server-utils";
@@ -48,21 +50,30 @@ export const createDailyAccountItem = async (
   }
 
   const documentId = docId ?? toDocId();
-
   const docRef = fireStore.collection("daily-accounts").doc(documentId);
+
   try {
     await fireStore.runTransaction(async (txn) => {
       const existing = await txn.get(docRef);
       if (existing.exists) {
         throw new Error(`${accountExistsErrorMessage}`);
       }
+
+      // 🔥 COMPUTE totals and tags BEFORE saving
+      const allTags = extractAllTags(data);
+      const totals = calculateTotals(data);
+
       txn.set(docRef, {
         ...data,
         id: documentId,
         createdBy: user,
-        updatedBy: user,
         created: new Date(),
-        updated: new Date(),
+        updated: new Date(), // Set initial updated time
+        // 🔥 STORE COMPUTED VALUES DIRECTLY
+        allTags,
+        totalEarnings: totals.earnings,
+        totalSpends: totals.spends,
+        lastCalculated: new Date(),
       });
     });
     return { docId: documentId };
@@ -83,6 +94,7 @@ export async function getDailyAccountItem(docId?: string) {
         .doc(docId)
         .get();
       if (!docSnap.exists) return { data: null, error: "Not found" };
+      console.log(docSnap.data());
 
       return { data: normalizeDailyAccount(docSnap.data()), error: null };
     }
@@ -136,17 +148,17 @@ export const updateDailyAccountItem = async (
         throw new Error(notFoundErrorMessage);
       }
 
-      // Normalize timestamps etc. (your helper)
       const existingNormalized = normalizeDailyAccount(existingSnap.data());
+      const { updated, ...existingBase } = existingNormalized || {};
 
-      // Remove meta fields so we validate the same shape as `dailySchema` expects (your create validates without created/updated).
-      const { created, updated, id, ...existingBase } = (existingNormalized ||
-        {}) as any;
-
-      // IMPORTANT: deep merge, because shallow spread would drop nested required fields. [web:165][web:168]
+      // 🔥 DEEP MERGE first
       const merged = deepMerge<DailyAccount>(existingBase, patch);
 
-      // Validate final merged object against the *full* schema (not partial).
+      // 🔥 COMPUTE totals/tags from MERGED data
+      const allTags = extractAllTags(merged);
+      const totals = calculateTotals(merged);
+
+      // Validate
       const validation = dailySchema.safeParse(merged);
       if (!validation.success) {
         throw new Error(
@@ -154,12 +166,16 @@ export const updateDailyAccountItem = async (
         );
       }
 
-      // Write back full merged payload + meta.
+      // 🔥 Write FULL document with computed fields
       txn.update(docRef, {
         ...validation.data,
         id: docId,
         updated: new Date(),
         updatedBy: user,
+        // 🔥 COMPUTED FIELDS (atomic with business data)
+        allTags,
+        totalEarnings: totals.earnings,
+        totalSpends: totals.spends,
       });
     });
 

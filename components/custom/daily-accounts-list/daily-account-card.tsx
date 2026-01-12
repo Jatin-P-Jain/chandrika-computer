@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DailyAccount } from "@/types/daily-account";
 import { formatINR } from "@/lib/utils";
@@ -23,49 +23,15 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   const textSmCls = isHi ? "text-sm! lg:text-base!" : "";
   const {
     id,
+    totalEarnings,
+    totalSpends,
     totalCashCollected,
+    allTags,
     created,
     updated,
-    earnings,
     createdBy,
     updatedBy,
-    businessExpenses,
-    dailySpends,
-    fixed,
   } = dailyAccount as DailyAccount;
-
-  const totalExpenses = [
-    fixed.fs || 0,
-    fixed.sc || 0,
-    fixed.sd || 0,
-    Array.isArray(businessExpenses)
-      ? businessExpenses.reduce(
-          (sum: number, expense: any) => sum + Number(expense?.amount || 0),
-          0
-        )
-      : 0,
-    Array.isArray(dailySpends)
-      ? dailySpends.reduce(
-          (sum: number, spend: any) => sum + Number(spend?.amount || 0),
-          0
-        )
-      : 0,
-  ].reduce((sum: number, value: number) => sum + value, 0);
-
-  const totalEarnings =
-    Number(earnings?.netIncome || 0) +
-    (Array.isArray(earnings?.otherIncomes)
-      ? earnings.otherIncomes.reduce(
-          (sum: number, x: any) => sum + Number(x?.amount || 0),
-          0
-        )
-      : 0);
-
-  const tags = [
-    ...earnings.otherIncomes.map((x) => x.tags || []),
-    ...businessExpenses.map((x) => x.tags || []),
-    ...dailySpends.map((x) => x.tags || []),
-  ].flat();
 
   return (
     <Card className="cursor-pointer w-full flex p-1 lg:p-0 shadow-md border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]">
@@ -104,7 +70,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                 <span
                   className={`font-medium! tabular-nums text-red-600 ${textHeadCls}`}
                 >
-                  {formatINR(Number(totalExpenses || 0))}
+                  {formatINR(Number(totalSpends || 0))}
                 </span>
               </div>
 
@@ -124,7 +90,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
             <div className="flex flex-col lg:flex-row w-full justify-between items-start lg:items-end gap-1 lg:gap-0">
               <div className="flex flex-col lg:flex-row w-full justify-end gap-1">
                 <div className="flex flex-wrap gap-1 lg:justify-end w-full items-center lg:items-end">
-                  {tags.slice(0, 3).map((tag, index) => (
+                  {allTags.slice(0, 3).map((tag, index) => (
                     <span
                       key={index}
                       className={`bg-primary/20 text-primary font-semibold text-xs px-2 py-1 rounded-full`}
@@ -132,11 +98,11 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                       {tag}
                     </span>
                   ))}
-                  {tags.length > 3 && (
+                  {allTags.length > 3 && (
                     <span
                       className={`text-muted-foreground font-semibold text-xs ${textSmCls}`}
                     >
-                      +{tags.length - 3} more
+                      +{allTags.length - 3} more
                     </span>
                   )}
                 </div>

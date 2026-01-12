@@ -25,6 +25,9 @@ export type DailyAccount = {
     amount: number;
     tags?: string[];
   }[];
+  allTags: string[];
+  totalEarnings: number;
+  totalSpends: number;
   totalCashCollected: number;
   createdBy: UserData;
   updatedBy: UserData;
