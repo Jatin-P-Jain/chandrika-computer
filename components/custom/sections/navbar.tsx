@@ -4,12 +4,13 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Preferences } from "../preferences";
+import { UserAccount } from "../user-account";
 
 export function Navbar() {
   const tCommon = useTranslations("Common");
   return (
     <header className="fixed w-full bg-card z-20">
-      <div className="mx-auto flex h-18 items-center justify-between px-4 sm:px-6 lg:px-8 text-primary">
+      <div className="mx-auto flex h-18 items-center justify-between px-4 sm:px-6 lg:px-8 text-primary py-4">
         {/* Left: logo + name */}
         <Link href="/" className="flex items-center gap-2 md:gap-4">
           {/* Replace with <Image> or svg logo as needed */}
@@ -20,8 +21,7 @@ export function Navbar() {
             {tCommon("ChandrikaComputer")}
           </span>
         </Link>
-
-        <Preferences />
+        <UserAccount />
       </div>
     </header>
   );

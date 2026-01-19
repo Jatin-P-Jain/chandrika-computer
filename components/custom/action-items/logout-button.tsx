@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LogOutIcon } from "lucide-react";
+import { LogOutIcon, Power } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 interface LogoutButtonProps {
@@ -12,10 +12,12 @@ export function LogoutButton({ onLogout }: LogoutButtonProps) {
     <Button
       variant="outline"
       onClick={onLogout}
-      className="flex items-center! border-red-600 bg-red-600 text-white hover:text-white font-bold dark:border-red-500 dark:bg-red-500 hover:bg-red-600 hover:shadow-md hover:translate-x-0.5 transition-all duration-300"
+      size={"sm"}
+      className="flex items-center! text-red-600 border-red-600 hover:bg-transparent hover:text-red-600 font-bold dark:border-red-500 dark:bg-red-500 hover:shadow-md hover:translate-x-0.5 transition-all duration-300"
     >
-      <span className="">{tCommon("Logout")}</span>
-      <LogOutIcon className="" />
+      <span className="hidden md:flex">{tCommon("Logout")}</span>
+      <LogOutIcon className="hidden md:flex size-4" />
+      <Power className="flex md:hidden size-4 font-semibold" />
     </Button>
   );
 }

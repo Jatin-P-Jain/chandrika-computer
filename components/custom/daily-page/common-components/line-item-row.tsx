@@ -21,7 +21,6 @@ import type { DailyFormValues } from "@/schema/dailay-page.schema";
 import { AmountInput } from "./amount-input";
 import { TagInput } from "./tag-input";
 import { formatINR } from "@/lib/utils";
-import { useKeyboard } from "@/context/keyboard-context";
 
 type RowPrefix =
   | `earnings.otherIncomes.${number}`
@@ -43,10 +42,8 @@ export function LineItemRow({
   const textBodyCls = clsx(isHi && "text-base! font-medium! font-[inherit]");
 
   // UI-only state (doesn't affect RHF values)
-  const [isEditing, setIsEditing] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
   // const inputRef = useRef<HTMLInputElement>(null);
-
-  const { setActiveElement } = useKeyboard();
 
   // read current values for view mode (keeps submit logic unchanged)
   const amount = Number(getValues(`${namePrefix}.amount` as any)) || 0;
@@ -58,7 +55,7 @@ export function LineItemRow({
 
   return (
     <div
-      className="flex flex-col items-center rounded-md border w-full p-2 gap-2"
+      className="flex flex-col items-center rounded-md border w-full p-2 gap-2 cursor-pointer shadow-sm"
       onClick={() => {
         if (!isEditing) {
           setIsEditing(true);
@@ -114,7 +111,7 @@ export function LineItemRow({
                 <FormLabel className={textBodyCls}>
                   {tCommon("Amount")}
                 </FormLabel>
-                <FormControl>
+                <FormControl onFocus={(e) => e.stopPropagation()}>
                   <AmountInput
                     value={Number(field.value) || 0}
                     onChange={(n) => field.onChange(n)}
@@ -137,7 +134,7 @@ export function LineItemRow({
                   <Input
                     {...field}
                     ref={(el) => field.ref(el)}
-                    onFocus={(e) => setActiveElement(e.currentTarget)}
+                    onFocus={(e) => e.stopPropagation()}
                     placeholder={tCommon("EnterHere")}
                     className={textBodyCls}
                   />
@@ -159,7 +156,7 @@ export function LineItemRow({
                   </span>
                 </FormLabel>
 
-                <FormControl>
+                <FormControl onFocus={(e) => e.stopPropagation()}>
                   <TagInput
                     label=""
                     values={(field.value as string[] | undefined) ?? []}

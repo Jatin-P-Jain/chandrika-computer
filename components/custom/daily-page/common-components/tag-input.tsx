@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, XCircleIcon } from "lucide-react";
 import { capitalizePhrase } from "@/lib/utils";
-import { useKeyboard } from "@/context/keyboard-context";
 
 interface TagInputProps {
   label: string;
@@ -24,7 +23,6 @@ export const TagInput: React.FC<TagInputProps> = ({
   disabled = false,
   placeholder = "Type and press Enter",
 }) => {
-  const { setActiveElement } = useKeyboard();
   const [inputValue, setInputValue] = useState("");
 
   const addTag = () => {
@@ -46,7 +44,6 @@ export const TagInput: React.FC<TagInputProps> = ({
       </label>
       <div className="flex gap-2">
         <Input
-          onFocus={(el) => setActiveElement(el.currentTarget)}
           autoComplete="on"
           value={inputValue}
           disabled={disabled}
