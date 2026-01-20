@@ -14,10 +14,10 @@ export function Navbar() {
         {/* Left: logo + name */}
         <Link href="/" className="flex items-center gap-2 md:gap-4">
           {/* Replace with <Image> or svg logo as needed */}
-          <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold border-2">
+          <div className="flex size-8 md:size-10  items-center justify-center rounded-full bg-primary/10 text-primary font-semibold border-2">
             Ch
           </div>
-          <span className="text-lg md:text-xl font-semibold md:font-bold underline underline-offset-3">
+          <span className="text-base md:text-xl font-semibold md:font-bold underline underline-offset-3">
             {tCommon("ChandrikaComputer")}
           </span>
         </Link>

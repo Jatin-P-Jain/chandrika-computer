@@ -41,10 +41,12 @@ export function UserAccount({}: {}) {
   const user: UserData | null = buildUser(clientUser, currentUser);
   return (
     <div className="">
-      <div className="flex justify-center items-center md:gap-4">
+      <div className="flex justify-center items-center gap-2 md:gap-4">
         <div className="min-w-0">
           {userStatus === "loading" ? (
             <AccountDetailsSkeleton />
+          ) : userStatus === "no-user" ? (
+            <></>
           ) : (
             <AccountDropdown user={user} userStatus={userStatus} />
           )}
