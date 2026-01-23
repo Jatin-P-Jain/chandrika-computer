@@ -12,7 +12,6 @@ import {
 interface KeyboardContextType {
   isHindiActive: boolean;
   setIsHindiActive: (value: boolean) => void;
-  setActiveElement: (el: HTMLInputElement | null) => void;
   activeElement: HTMLInputElement | null;
 }
 
@@ -51,15 +50,15 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
     "(": "त्र",
     ")": "ऋ",
 
-    "1": "१",
-    "2": "२",
-    "3": "३",
-    "4": "४",
-    "5": "५",
-    "6": "६",
-    "7": "७",
-    "8": "८",
-    "9": "९",
+    "1": "1",
+    "2": "2",
+    "3": "3",
+    "4": "4",
+    "5": "5",
+    "6": "6",
+    "7": "7",
+    "8": "8",
+    "9": "9",
     "0": "0",
 
     q: "ु",
@@ -136,9 +135,25 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
     " ": " ",
   };
 
-  const setActiveElement = (el: HTMLInputElement | null) => {
-    activeElementRef.current = el;
-  };
+  useEffect(() => {
+    const handleFocusIn = (evt: FocusEvent) => {
+      const target = evt.target as HTMLInputElement | null;
+      if (target?.tagName === "INPUT") {
+        activeElementRef.current = target;
+      }
+    };
+
+    const handleFocusOut = () => {
+      activeElementRef.current = null;
+    };
+
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+    };
+  }, []);
 
   // ----------------- Script rules -----------------
   const VIRAMA = "\u094D"; // ् [web:165][web:174]
@@ -296,7 +311,7 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
       value={{
         isHindiActive,
         setIsHindiActive,
-        setActiveElement,
+
         activeElement: activeElementRef.current,
       }}
     >

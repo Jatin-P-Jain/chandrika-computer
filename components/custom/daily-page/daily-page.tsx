@@ -33,7 +33,7 @@ import {
   updateDailyAccountItem,
 } from "@/app/daily-accounts/actions";
 import { DailyAccount } from "@/types/daily-account";
-import { AuditPills } from "../audit-pills";
+import CreatedOrUpdated from "../created-or-updated";
 
 type DailyPageMode = "create" | "view" | "edit";
 
@@ -253,23 +253,35 @@ export default function DailyPage({
           {/* Final input / read-only display */}
           <div className="flex gap-4 w-full justify-center items-center mt-auto flex-col">
             {isReadOnly ? (
-              <div className="flex gap-4 items-center justify-center">
-                <span
-                  className={clsx(
-                    "text-base text-center w-full font-semibold text-muted-foreground",
-                    textBodyCls
-                  )}
-                >
-                  {tDailyAccount("TotalCashCollected")}:
-                </span>
-                <span
-                  className={clsx(
-                    "text-xl font-semibold text-center text-primary",
-                    textHeadCls
-                  )}
-                >
-                  {formatINR(totalCashCollected)}
-                </span>
+              <div className="flex flex-col md:flex-row justify-center w-full">
+                <div className="flex gap-4 items-center justify-center w-full lg:pl-42">
+                  <span
+                    className={clsx(
+                      "text-base text-center font-semibold text-muted-foreground",
+                      textBodyCls
+                    )}
+                  >
+                    {tDailyAccount("TotalCashCollected")}:
+                  </span>
+                  <span
+                    className={clsx(
+                      "text-xl font-semibold text-center text-primary",
+                      textHeadCls
+                    )}
+                  >
+                    {formatINR(totalCashCollected)}
+                  </span>
+                </div>
+                <div className="flex justify-end items-center mt-3 md:mt-0">
+                  <div className="flex ">
+                    <CreatedOrUpdated
+                      createdBy={dailyItemData?.createdBy}
+                      updatedBy={dailyItemData?.updatedBy}
+                      created={dailyItemData?.created}
+                      updated={dailyItemData?.updated}
+                    />
+                  </div>
+                </div>
               </div>
             ) : (
               <FormField
@@ -310,17 +322,6 @@ export default function DailyPage({
                   <span>{tCommon("Edit")}</span>
                   {<PencilIcon className="size-4" />}
                 </Button>
-                <AuditPills
-                  createdBy={dailyItemData?.createdBy}
-                  createdAtText={
-                    dailyItemData?.created?.toLocaleString() || "-"
-                  }
-                  updatedBy={dailyItemData?.updatedBy}
-                  updatedAtText={
-                    dailyItemData?.updated?.toLocaleString() || "-"
-                  }
-                  textBodyCls={textBodyCls}
-                />
               </>
             ) : (
               <div className="flex gap-2 items-center justify-center lg:absolute lg:top-4 lg:right-4">

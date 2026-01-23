@@ -7,7 +7,8 @@ import { useAuth } from "@/context/useAuth";
 import { buildUser } from "@/lib/utils";
 import GoogleLoginButton from "./google-login-button";
 import { LogoutButton } from "./action-items/logout-button";
-import { AccountDetails } from "./account-details";
+import { AccountDropdown } from "./account-dropdown";
+import { Separator } from "../ui/separator";
 
 type UserStatus =
   | "loading"
@@ -28,7 +29,7 @@ function AuthAction({
   return <LogoutButton onLogout={onLogout} />;
 }
 
-export function AccountFooter({}: {}) {
+export function UserAccount({}: {}) {
   const auth = useAuth();
   const { authState, logout } = auth;
   const userStatus = authState.status;
@@ -39,13 +40,15 @@ export function AccountFooter({}: {}) {
   const clientUser = userStatus === "ready" ? authState.clientUser : null;
   const user: UserData | null = buildUser(clientUser, currentUser);
   return (
-    <div className=" rounded-t-2xl justify-center max-w-2xl fixed bottom-0 left-[50%] -translate-x-[50%] w-full bg-background z-50 border-t border-border shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.25)] dark:shadow-primary/10">
-      <div className="grid grid-cols-[2fr_1fr] px-4 py-3 items-center gap-3">
+    <div className="">
+      <div className="flex justify-center items-center gap-2 md:gap-4">
         <div className="min-w-0">
           {userStatus === "loading" ? (
             <AccountDetailsSkeleton />
+          ) : userStatus === "no-user" ? (
+            <></>
           ) : (
-            <AccountDetails user={user} userStatus={userStatus} />
+            <AccountDropdown user={user} userStatus={userStatus} />
           )}
         </div>
         <div className="flex justify-end">

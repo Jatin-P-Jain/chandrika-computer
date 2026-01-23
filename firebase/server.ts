@@ -18,7 +18,6 @@ const serviceAccount = {
   client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL,
   universe_domain: "googleapis.com",
 };
-console.log({ serviceAccount });
 
 let messaging: Messaging;
 let fireStore: Firestore;

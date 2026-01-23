@@ -25,7 +25,6 @@ import { MoreFiltersPopover } from "./more-filters";
 import { enUS, hi } from "date-fns/locale";
 
 const PRESET_FILTERS = [
-  { id: "3days", label: "Last3Days", value: "3days" },
   { id: "week", label: "PastWeek", value: "week" },
 ];
 

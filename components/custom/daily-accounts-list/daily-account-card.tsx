@@ -1,6 +1,4 @@
 "use client";
-
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DailyAccount } from "@/types/daily-account";
@@ -9,6 +7,7 @@ import { ChevronsRight } from "lucide-react";
 import { DateDisplay } from "../date-display";
 import CreatedOrUpdated from "../created-or-updated";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 
 type DailyAccountCardProps = {
   dailyAccount: DailyAccount;
@@ -33,8 +32,15 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
     updatedBy,
   } = dailyAccount as DailyAccount;
 
+  const router = useRouter();
+
   return (
-    <Card className="cursor-pointer w-full flex p-1 lg:p-0 shadow-md border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]">
+    <Card
+      onClick={() => {
+        router.push(`/daily-accounts/${id}`);
+      }}
+      className="cursor-pointer w-full flex p-1 lg:p-0 shadow-md border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]"
+    >
       <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-0 justify-center p-1 lg:pl-4">
         <div className="flex flex-col md:col-span-5 gap-1 lg:gap-2 p-2">
           <div className="flex items-center gap-2 justify-start">
@@ -118,13 +124,8 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
         </div>
 
         <div className="col-span-1">
-          <Button
-            asChild
-            className="w-full md:h-full lg:rounded-l-none! text-base sm:flex-row md:flex-col lg:flex-row"
-          >
-            <Link href={`/daily-accounts/${id}`}>
-              View Details <ChevronsRight className="size-6 lg:size-8" />
-            </Link>
+          <Button className="w-full md:h-full lg:rounded-l-none! text-base sm:flex-row md:flex-col lg:flex-row">
+            View Details <ChevronsRight className="size-6 lg:size-8" />
           </Button>
         </div>
       </CardContent>

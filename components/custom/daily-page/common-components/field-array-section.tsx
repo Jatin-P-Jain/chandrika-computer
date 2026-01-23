@@ -77,7 +77,7 @@ export function FieldArraySection({
           </div>
         )}
 
-        <div className="flex flex-col gap-2 overflow-auto max-h-120 no-scrollbar">
+        <div className="flex flex-col gap-2 overflow-auto max-h-120 no-scrollbar p-1">
           {fa.fields.map((f, idx) =>
             readOnly ? (
               <ReadOnlyLineItem

@@ -17,7 +17,6 @@ import { LanguageFontWrapper } from "@/components/custom/wrappers/language-font-
 import { AuthProvider } from "@/context/useAuth";
 import { Toaster } from "sonner";
 import { DateTimeDisplay } from "@/components/custom/date-time-display";
-import { AccountFooter } from "@/components/custom/account-footer";
 import { KeyboardProvider } from "@/context/keyboard-context";
 
 const amita = Amita({
@@ -77,7 +76,7 @@ export default async function RootLayout({
                   <main className="flex w-full max-w-7xl flex-col items-center justify-between overflow-auto p-3 md:p-12 no-scrollbar! mx-auto">
                     {children}
                   </main>
-                  <AccountFooter />
+                  {/* <AccountFooter /> */}
                   <div className="flex md:hidden">
                     <Toaster
                       closeButton

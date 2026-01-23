@@ -101,7 +101,6 @@ export async function getDailyAccountItem(docId?: string) {
         .doc(docId)
         .get();
       if (!docSnap.exists) return { data: null, error: "Not found" };
-      console.log(docSnap.data());
 
       return { data: normalizeDailyAccount(docSnap.data()), error: null };
     }
