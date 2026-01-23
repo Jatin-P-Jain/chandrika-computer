@@ -18,6 +18,7 @@ import { AuthProvider } from "@/context/useAuth";
 import { Toaster } from "sonner";
 import { DateTimeDisplay } from "@/components/custom/date-time-display";
 import { KeyboardProvider } from "@/context/keyboard-context";
+import { Metadata } from "next";
 
 const amita = Amita({
   variable: "--font-amita",
@@ -53,6 +54,18 @@ const poppins = Poppins({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
   subsets: ["latin"],
 });
+
+export const metadata: Metadata = {
+  title: "Chandrika Computer",
+  description: "",
+  icons: {
+    icon: "/icons/favicon.ico",
+    shortcut: "/icons/favicon.ico",
+    apple: "/icons/apple-touch-icon.png", // Added /icons/
+    other: [{ rel: "apple-touch-icon", url: "/icons/apple-touch-icon.png" }], // Added /icons/
+  },
+  manifest: "/site.webmanifest",
+};
 
 export default async function RootLayout({
   children,
