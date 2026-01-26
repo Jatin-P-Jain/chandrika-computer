@@ -44,11 +44,11 @@ type AuthContextType = {
   }) => Promise<User | undefined>;
   handleSendOTP: (
     mobile: string,
-    appVerifier: RecaptchaVerifier
+    appVerifier: RecaptchaVerifier,
   ) => Promise<ConfirmationResult | null>;
   verifyOTP: (
     otp: string,
-    confirmationResult: ConfirmationResult
+    confirmationResult: ConfirmationResult,
   ) => Promise<User | undefined>;
 };
 
@@ -97,11 +97,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             phoneVerifiedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
-          { merge: true }
+          { merge: true },
         );
 
         console.log(
-          `✅ First-time setup complete: phone=${phoneNumber}, role=${role}`
+          `✅ First-time setup complete: phone=${phoneNumber}, role=${role}`,
         );
       }
 
@@ -168,7 +168,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           role: claims.admin ? "admin" : null,
           photoUrl: user.photoURL,
         };
-        await createUserIfNotExists(safeUser);
+        const userCreated = await createUserIfNotExists(safeUser);
+        console.log("User Created", userCreated);
 
         // Read Firestore profile for phoneVerified + client user
         const snap = await getDoc(doc(firestore, "users", user.uid));
@@ -202,7 +203,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const limit = parseInt(
-          process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0"
+          process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0",
         );
 
         setInactivityLimit(limit);
@@ -217,7 +218,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useMonitorInactivity(
     authState.status === "ready" ? authState.currentUser : null,
-    inactivityLimit
+    inactivityLimit,
   );
 
   return (
