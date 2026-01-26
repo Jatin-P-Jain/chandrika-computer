@@ -17,9 +17,7 @@ export const createUserIfNotExists = async (user: UserData) => {
         createdAt: new Date().toISOString(),
       };
 
-      const userCreated = await userRef.set(newUserData);
-      console.log("User Created in Server Action -- ", userCreated);
-      return userCreated;
+      await userRef.set(newUserData);
     }
   } catch (error) {
     console.error("Error in createUserIfNotExists:", error);

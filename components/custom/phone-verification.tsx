@@ -48,6 +48,8 @@ export function PhoneVerification({
   onVerified: () => void;
   currentUser: User | null;
 }) {
+  console.log({ currentUser });
+
   // 👈 ONLY show for phone verification states
   if (
     !authStateStatus ||
@@ -56,6 +58,7 @@ export function PhoneVerification({
   ) {
     return null;
   }
+  console.log({ authStateStatus });
 
   const locale = useLocale();
   const tToast = useTranslations("Toast");
@@ -103,7 +106,7 @@ export function PhoneVerification({
   const [canResend, setCanResend] = useState(false);
   const [hasResentOnce, setHasResentOnce] = useState(false);
   const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "done">(
-    "idle"
+    "idle",
   );
   const [expiryTimer, setExpiryTimer] = useState(300); // 5 min = 300s
   const [otpEpoch, setOtpEpoch] = useState(0);
@@ -233,7 +236,7 @@ export function PhoneVerification({
                 <p
                   className={clsx(
                     "text-sm text-muted-foreground gap-1 md:gap-2 flex flex-col md:flex-row items-start justify-start md:items-center w-full",
-                    locale === "hi" && "text-base!"
+                    locale === "hi" && "text-base!",
                   )}
                 >
                   {otpSent
@@ -244,7 +247,7 @@ export function PhoneVerification({
                   <span
                     className={clsx(
                       "text-base font-semibold",
-                      locale === "hi" && "text-xl"
+                      locale === "hi" && "text-xl",
                     )}
                   >
                     +91 -{" "}
