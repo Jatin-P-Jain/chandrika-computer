@@ -200,8 +200,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           role: claims.admin ? "admin" : null,
           photoUrl: user.photoURL,
         };
-        const userCreated = await createUserIfNotExists(safeUser);
-        console.log("User Created", userCreated);
+        await createUserIfNotExists(safeUser);
 
         // Read Firestore profile for phoneVerified + client user
         const snap = await getDoc(doc(firestore, "users", user.uid));

@@ -8,7 +8,6 @@ import { buildUser } from "@/lib/utils";
 import GoogleLoginButton from "./google-login-button";
 import { LogoutButton } from "./action-items/logout-button";
 import { AccountDropdown } from "./account-dropdown";
-import { Separator } from "../ui/separator";
 
 type UserStatus =
   | "loading"
@@ -32,7 +31,6 @@ function AuthAction({
 export function UserAccount({}: {}) {
   const auth = useAuth();
   const { authState, logout } = auth;
-  console.log("Auth State in UserAccount:", authState);
   const userStatus = authState.status;
   const isPhoneVerification =
     userStatus === "first-time-setup" ||
@@ -40,7 +38,6 @@ export function UserAccount({}: {}) {
   const currentUser = isPhoneVerification ? authState.currentUser : null;
   const clientUser = userStatus === "ready" ? authState.clientUser : null;
   const user: UserData | null = buildUser(clientUser, currentUser);
-  console.log("User in UserAccount:", user);
   return (
     <div className="">
       <div className="flex justify-center items-center gap-2 md:gap-4">

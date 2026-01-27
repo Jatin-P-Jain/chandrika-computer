@@ -39,8 +39,6 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
     authState.status === "phone-verification-required";
   const currentUser = isPhoneVerification ? authState.currentUser : null;
 
-  console.log("Home Page Auth State:", authState);
-
   const [sessionExpiredPopupShown, setSessionExpiredPopupShown] = useState(
     sessionExpired === "1"
   );
