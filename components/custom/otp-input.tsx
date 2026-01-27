@@ -40,9 +40,47 @@ const OTPInput: FC<OTPInputProps> = ({ length = 6, value, onChange }) => {
     e: React.KeyboardEvent<HTMLInputElement>,
     idx: number,
   ) => {
+    // Allow control keys
+    const allowedKeys = [
+      "Backspace",
+      "Delete",
+      "Tab",
+      "Escape",
+      "Enter",
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowUp",
+      "ArrowDown",
+      "Home",
+      "End",
+    ];
+
+    // Allow Ctrl/Cmd shortcuts
+    if (e.ctrlKey || e.metaKey) {
+      return;
+    }
+
+    // Allow numeric keys
+    const isNumeric = /^[0-9]$/.test(e.key);
+
+    // Block everything else
+    if (!allowedKeys.includes(e.key) && !isNumeric) {
+      e.preventDefault();
+      return;
+    }
+
+    // Handle backspace navigation
     if (e.key === "Backspace" && !e.currentTarget.value && idx > 0) {
       inputsRef.current[idx - 1]?.focus();
     }
+  };
+
+  // 👇 Optional: Handle paste to only accept digits
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text/plain");
+    const digits = pastedData.replace(/\D/g, "").slice(0, length);
+    onChange(digits);
   };
 
   return (
@@ -60,6 +98,7 @@ const OTPInput: FC<OTPInputProps> = ({ length = 6, value, onChange }) => {
           }}
           onChange={(e) => handleInput(e, i)}
           onKeyDown={(e) => handleKeyDown(e, i)}
+          onPaste={(e) => handlePaste(e)}
         />
       ))}
     </div>
