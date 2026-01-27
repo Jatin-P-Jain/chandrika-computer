@@ -44,12 +44,13 @@ type AuthContextType = {
   }) => Promise<User | undefined>;
   handleSendOTP: (
     mobile: string,
-    appVerifier: RecaptchaVerifier
+    appVerifier: RecaptchaVerifier,
   ) => Promise<ConfirmationResult | null>;
   verifyOTP: (
     otp: string,
-    confirmationResult: ConfirmationResult
+    confirmationResult: ConfirmationResult,
   ) => Promise<User | undefined>;
+  startPhoneVerificationFlow: () => void;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -68,6 +69,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return currentUser.getIdToken();
   };
 
+  const startPhoneVerificationFlow = () => {
+    setAuthState((prev) => {
+      if (prev.status === "first-time-setup") {
+        return {
+          status: "phone-verification-required",
+          currentUser: prev.currentUser,
+        };
+      }
+      return prev;
+    });
+  };
+
   const completePhoneVerification = async () => {
     try {
       const { currentUser } =
@@ -78,37 +91,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!currentUser) throw new Error("No current user for verification");
 
-      // 👈 FIRST-TIME: Update Firestore with phone & role
-      if (authState.status === "first-time-setup") {
+      // 👇 Reload to get the latest phone number
+      await currentUser.reload();
+
+      // Fetch current Firestore doc
+      const snap = await getDoc(doc(firestore, "users", currentUser.uid));
+
+      if (!snap.exists()) {
+        throw new Error("User document not found");
+      }
+
+      const dbUser = snap.data();
+      const phoneVerified = dbUser.phoneVerified === true;
+
+      // 👇 Update Firestore ONLY if phone wasn't verified before
+      if (!phoneVerified) {
         const idTokenResult = await currentUser.getIdTokenResult(true);
         const claims = idTokenResult.claims as any;
         const phoneNumber = currentUser.phoneNumber
           ? currentUser.phoneNumber.slice(3)
           : null;
-        const role = claims.admin ? "admin" : null;
+        const role = claims.admin ? "admin" : "user";
         const userDocRef = doc(firestore, "users", currentUser.uid);
 
         await setDoc(
           userDocRef,
           {
-            phoneNumber, // 👈 Save verified phone
-            role: role || "user", // 👈 Set role (default: user)
+            phoneNumber,
+            role,
             phoneVerified: true,
             phoneVerifiedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
-          { merge: true }
+          { merge: true },
         );
 
         console.log(
-          `✅ First-time setup complete: phone=${phoneNumber}, role=${role}`
+          `✅ First-time setup complete: phone=${phoneNumber}, role=${role}`,
         );
       }
 
+      // 👇 Set session storage flag for returning users
+      const phoneVerifiedKey = `phone_verified:${currentUser.uid}`;
+      sessionStorage.setItem(phoneVerifiedKey, "1");
+
       // Fetch updated client user from Firestore
-      const snap = await getDoc(doc(firestore, "users", currentUser.uid));
-      if (snap.exists()) {
-        const clientUser = mapDbUserToClientUser(snap.data());
+      const updatedSnap = await getDoc(
+        doc(firestore, "users", currentUser.uid),
+      );
+      if (updatedSnap.exists()) {
+        const clientUser = mapDbUserToClientUser(updatedSnap.data());
         setAuthState({
           status: "ready",
           clientUser,
@@ -118,7 +150,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Refresh FCM token
         await refreshAndSaveFcmToken();
 
-        window.location.href = "/"; // Redirect to home or desired page
+        window.location.href = "/"; // Redirect to home
       } else {
         throw new Error("User document not found after update");
       }
@@ -202,7 +234,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const limit = parseInt(
-          process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0"
+          process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0",
         );
 
         setInactivityLimit(limit);
@@ -217,7 +249,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useMonitorInactivity(
     authState.status === "ready" ? authState.currentUser : null,
-    inactivityLimit
+    inactivityLimit,
   );
 
   return (
@@ -244,6 +276,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         handleSendOTP: (mobile, appVerifier) => sendOTP(mobile, appVerifier),
         verifyOTP: (otp, confirmationResult) =>
           verifyOTP(otp, confirmationResult),
+        startPhoneVerificationFlow,
       }}
     >
       {children}

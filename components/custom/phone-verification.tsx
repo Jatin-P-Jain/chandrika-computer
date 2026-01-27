@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Check,
   Loader2,
   Loader2Icon,
   Redo2Icon,
@@ -32,7 +31,6 @@ interface PhoneAuthState {
   phoneNumber: string;
   otp: string;
   error: string;
-  confirmationResult: any;
 }
 
 export function PhoneVerification({
@@ -59,29 +57,30 @@ export function PhoneVerification({
 
   const locale = useLocale();
   const tToast = useTranslations("Toast");
-
-  const showPhoneInput = authStateStatus === "first-time-setup";
-  const phoneVerification = authStateStatus === "phone-verification-required";
-
   const tMobileNumber = useTranslations("MobileNumber");
+
+  // const showPhoneInput = authStateStatus === "first-time-setup";
+  // const phoneVerification = authStateStatus === "phone-verification-required";
+
+ 
+
+  // 👇 Use ref to persist phone number across state switches
+  const phoneNumberRef = useRef<string>("");
+
   const [phoneAuthState, setPhoneAuthState] = useState<PhoneAuthState>({
     phoneNumber: "",
     otp: "",
     error: "",
-    confirmationResult: null,
   });
 
-  // Reset on unmount (fresh state for every login)
-  useEffect(() => {
-    return () => {
-      setPhoneAuthState({
-        phoneNumber: "",
-        otp: "",
-        error: "",
-        confirmationResult: null,
-      });
-    };
-  }, []);
+  const [timer, setTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
+  const [hasResentOnce, setHasResentOnce] = useState(false);
+  const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "done">(
+    "idle",
+  );
+  const [expiryTimer, setExpiryTimer] = useState(300);
+  const [otpEpoch, setOtpEpoch] = useState(0);
 
   const recaptchaVerifier = useRecaptcha();
   const { isVerifying, otpSent, sendingOtp, sendOtp, verifyOtp, resetOtp } =
@@ -91,23 +90,48 @@ export function PhoneVerification({
       currentUser: currentUser!,
     });
 
-  const handleSendOTP = async () => {
-    await sendOtp(phoneAuthState.phoneNumber);
-    setOtpEpoch((x) => x + 1);
-  };
+   const showPhoneInput = authStateStatus === "first-time-setup" && !otpSent;
+  const phoneVerification =
+    authStateStatus === "phone-verification-required" ||
+    (authStateStatus === "first-time-setup" && otpSent);
 
-  const handleVerifyOTP = async () => {
-    await verifyOtp(phoneAuthState.otp);
-  };
-  const [timer, setTimer] = useState(30); // countdown
-  const [canResend, setCanResend] = useState(false);
-  const [hasResentOnce, setHasResentOnce] = useState(false);
-  const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "done">(
-    "idle"
-  );
-  const [expiryTimer, setExpiryTimer] = useState(300); // 5 min = 300s
-  const [otpEpoch, setOtpEpoch] = useState(0);
+  // 👇 Sync phoneNumber to ref whenever it changes (for persistence)
+  useEffect(() => {
+    if (phoneAuthState.phoneNumber) {
+      phoneNumberRef.current = phoneAuthState.phoneNumber;
+    }
+  }, [phoneAuthState.phoneNumber]);
 
+  // 👇 Restore phone number when switching to phone-verification-required
+  useEffect(() => {
+    if (authStateStatus === "phone-verification-required") {
+      setPhoneAuthState((prev) => ({
+        ...prev,
+        phoneNumber:
+          prev.phoneNumber || // Keep current value
+          phoneNumberRef.current || // Restore from ref
+          currentUser?.phoneNumber || // Fallback to currentUser
+          "",
+      }));
+    }
+  }, [authStateStatus, currentUser?.phoneNumber]);
+
+  // 👇 Initialize phone number for returning users
+  useEffect(() => {
+    if (
+      phoneVerification &&
+      currentUser?.phoneNumber &&
+      !phoneAuthState.phoneNumber
+    ) {
+      setPhoneAuthState((s) => ({
+        ...s,
+        phoneNumber: currentUser.phoneNumber!,
+      }));
+      phoneNumberRef.current = currentUser.phoneNumber!;
+    }
+  }, [phoneVerification, currentUser?.phoneNumber]);
+
+  // 👇 Expiry timer
   useEffect(() => {
     if (!otpSent) return;
     const interval = setInterval(() => {
@@ -123,8 +147,12 @@ export function PhoneVerification({
     return () => clearInterval(interval);
   }, [otpSent, otpEpoch]);
 
+  // 👇 Resend timer
   useEffect(() => {
     if (!otpSent) return;
+    setTimer(30);
+    setCanResend(false);
+
     const interval = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
@@ -137,7 +165,20 @@ export function PhoneVerification({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [otpSent]);
+  }, [otpSent, otpEpoch]);
+
+  const handleSendOTP = async () => {
+    if (!phoneAuthState.phoneNumber) {
+      toast.error(tToast("PleaseEnterPhoneNumber"));
+      return;
+    }
+    await sendOtp(phoneAuthState.phoneNumber);
+    setOtpEpoch((x) => x + 1);
+  };
+
+  const handleVerifyOTP = async () => {
+    await verifyOtp(phoneAuthState.otp);
+  };
 
   const handleResend = async () => {
     if (hasResentOnce || sendingOtp) return;
@@ -147,9 +188,10 @@ export function PhoneVerification({
       setResendStatus("done");
       setHasResentOnce(true);
       toast.success(tToast("OtpResentSuccessfully"));
-      setExpiryTimer(300); // Reset expiry timer to 5 minutes
-      setTimer(30);
-      setCanResend(false);
+      setExpiryTimer(300);
+      setOtpEpoch((x) => x + 1);
+      // Clear OTP input on resend
+      setPhoneAuthState((s) => ({ ...s, otp: "" }));
     } catch (err) {
       console.error("Error resending OTP:", err);
       toast.error(tToast("FailedToResendOtp"));
@@ -157,23 +199,11 @@ export function PhoneVerification({
     }
   };
 
-  useEffect(() => {
-    if (
-      authStateStatus === "phone-verification-required" &&
-      currentUser?.phoneNumber
-    ) {
-      setPhoneAuthState((s) => ({
-        ...s,
-        phoneNumber: currentUser.phoneNumber!,
-      }));
-    }
-  }, [authStateStatus, currentUser?.phoneNumber]);
-
   return (
     <section className="flex items-center justify-center">
       <Card className="w-full">
         <CardHeader className="flex flex-col items-center text-center gap-1">
-          <div className="">
+          <div>
             <MobileFriendlyIcon className="size-8! md:size-10! text-primary" />
           </div>
           <CardTitle className="text-lg md:text-2xl text-primary">
@@ -212,7 +242,11 @@ export function PhoneVerification({
                   {phoneAuthState.error}
                 </p>
               )}
-              <Button onClick={handleSendOTP} className="md:w-1/4">
+              <Button
+                onClick={handleSendOTP}
+                className="md:w-1/4"
+                disabled={sendingOtp || !phoneAuthState.phoneNumber}
+              >
                 <div className="flex items-center gap-2">
                   {sendingOtp
                     ? tMobileNumber("SendingOTP")
@@ -233,35 +267,27 @@ export function PhoneVerification({
                 <p
                   className={clsx(
                     "text-sm text-muted-foreground gap-1 md:gap-2 flex flex-col md:flex-row items-start justify-start md:items-center w-full",
-                    locale === "hi" && "text-base!"
+                    locale === "hi" && "text-base!",
                   )}
                 >
                   {otpSent
-                    ? tMobileNumber("OTPSentTo", {
-                        phone: "",
-                      })
+                    ? tMobileNumber("OTPSentTo", { phone: "" })
                     : tMobileNumber("OTPWillSendTo", { phone: "" })}
                   <span
                     className={clsx(
                       "text-base font-semibold",
-                      locale === "hi" && "text-xl"
+                      locale === "hi" && "text-xl",
                     )}
                   >
                     +91 -{" "}
                     {phoneAuthState.phoneNumber.startsWith("+91")
                       ? phoneAuthState.phoneNumber.slice(3)
-                      : currentUser?.phoneNumber?.slice(3)}
+                      : phoneAuthState.phoneNumber.startsWith("+")
+                        ? phoneAuthState.phoneNumber.slice(3)
+                        : phoneAuthState.phoneNumber ||
+                          currentUser?.phoneNumber?.slice(3)}
                   </span>
                 </p>
-                {/* <Button
-                  disabled
-                  variant="link"
-                  onClick={() =>
-                    setPhoneAuthState({ ...phoneAuthState, phoneNumber: "" })
-                  }
-                >
-                  {tMobileNumber("ChangeNumber")}
-                </Button> */}
               </div>
 
               {otpSent ? (

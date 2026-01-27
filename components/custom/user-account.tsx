@@ -8,7 +8,6 @@ import { buildUser } from "@/lib/utils";
 import GoogleLoginButton from "./google-login-button";
 import { LogoutButton } from "./action-items/logout-button";
 import { AccountDropdown } from "./account-dropdown";
-import { Separator } from "../ui/separator";
 
 type UserStatus =
   | "loading"

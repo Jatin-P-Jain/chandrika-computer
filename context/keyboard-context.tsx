@@ -16,7 +16,7 @@ interface KeyboardContextType {
 }
 
 const KeyboardContext = createContext<KeyboardContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function KeyboardProvider({ children }: { children: ReactNode }) {
@@ -295,11 +295,23 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
       if (!isHindiActive || !activeElementRef.current) return;
       if (evt.ctrlKey || evt.altKey || evt.metaKey) return;
 
+      const target = activeElementRef.current;
+
+      // 👇 Skip OTP inputs and numeric inputs
+      if (
+        target.dataset.disableHindiKeyboard === "true" ||
+        target.type === "tel" ||
+        target.type === "number" ||
+        target.inputMode === "numeric"
+      ) {
+        return;
+      }
+
       const mapped = hindiMap[evt.key];
       if (!mapped) return;
 
       evt.preventDefault();
-      insertHindiSmart(activeElementRef.current, mapped);
+      insertHindiSmart(target, mapped);
     };
 
     document.addEventListener("keydown", handleKeyDown);

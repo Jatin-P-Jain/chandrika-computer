@@ -30,7 +30,7 @@ export function useMobileOtp({
   const [sendingOtp, setSendingOtp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(
-    null
+    null,
   );
 
   const resetOtp = () => {
@@ -49,11 +49,17 @@ export function useMobileOtp({
       setSendingOtp(true);
       const confirmation = await auth?.handleSendOTP(
         mobileFormatted,
-        appVerifier
+        appVerifier,
       );
       setConfirmation(confirmation || null);
       setMobileNumber(mobile);
       setOtpSent(true);
+      // if (
+      //   auth.authState.status === "first-time-setup" &&
+      //   auth.authState.currentUser
+      // ) {
+      //   auth.startPhoneVerificationFlow();
+      // }
       if (!isResent) {
         toast.success(tToast("OTPSent"), {
           description: tToast("OTPSentDesc"),
@@ -71,41 +77,50 @@ export function useMobileOtp({
     try {
       setIsVerifying(true);
       if (!confirmation) throw new Error("No confirmation result");
-      await auth.verifyOTP(otp, confirmation);
 
-      // 👈 ALWAYS link to current Google user (your 2FA flow)
+      // 👇 Create credential directly - DON'T call auth.verifyOTP()
       const credential = PhoneAuthProvider.credential(
         confirmation.verificationId,
-        otp
+        otp,
       );
 
       if (!currentUser) {
         throw new Error("No active Google session. Please login first.");
       }
 
-      // 👈 LINK PHONE CREDENTIAL TO GOOGLE USER
       try {
+        // Refresh token to ensure session is valid
+        await currentUser.getIdToken(true);
+
+        // Link directly - this verifies OTP and links in one step
         await linkWithCredential(currentUser, credential);
+
+        // Reload user to get updated phoneNumber
+        await currentUser.reload();
 
         // Refresh token after successful linking
         const token = await currentUser.getIdToken(true);
         await setToken(token, currentUser.refreshToken);
         await setUserClaims(token, mobileNumber);
-
         console.log("✅ Phone linked to Google account:", currentUser.uid);
+        console.log("✅ Updated phone number:", currentUser.phoneNumber);
       } catch (linkError: unknown) {
-        // Handle linking errors gracefully
         if (linkError instanceof Error) {
           const errorCode = (linkError as any).code;
 
           if (errorCode === "auth/provider-already-linked") {
             console.log("✅ Phone already linked to this Google account");
-            // Still refresh token even if already linked
+            await currentUser.reload();
             const token = await currentUser.getIdToken(true);
             await setToken(token, currentUser.refreshToken);
           } else if (errorCode === "auth/credential-already-in-use") {
             console.error("Phone linked to different account");
             handleFirebaseAuthError(linkError, tToast);
+            return;
+          } else if (errorCode === "auth/user-token-expired") {
+            toast.error(tToast("SessionExpired"));
+            console.error("User token expired during linking");
+            await auth.logout();
             return;
           } else {
             handleFirebaseAuthError(linkError, tToast);
@@ -114,7 +129,6 @@ export function useMobileOtp({
         }
       }
 
-      // 👈 SUCCESS - clear state and trigger next step
       onSuccess?.();
       toast.success(tToast("MobileVerified"), {
         description: tToast("MobileVerifiedDesc"),
