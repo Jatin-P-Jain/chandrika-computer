@@ -44,8 +44,6 @@ export function UserAccount({}: {}) {
         <div className="min-w-0">
           {userStatus === "loading" ? (
             <AccountDetailsSkeleton />
-          ) : userStatus === "no-user" ? (
-            <></>
           ) : (
             <AccountDropdown user={user} userStatus={userStatus} />
           )}
