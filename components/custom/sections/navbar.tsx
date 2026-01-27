@@ -24,7 +24,10 @@ export function Navbar() {
               priority={true}
             />
           </div>
-          <span className="text-base md:text-xl font-semibold md:font-bold underline underline-offset-3">
+          <span className="flex md:hidden text-base md:text-xl font-semibold md:font-bold underline underline-offset-3">
+            {tCommon("Computer")}
+          </span>
+          <span className="hidden md:flex text-base md:text-xl font-semibold md:font-bold underline underline-offset-3">
             {tCommon("ChandrikaComputer")}
           </span>
         </Link>

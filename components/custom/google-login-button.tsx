@@ -36,7 +36,7 @@ export default function GoogleLoginButton({
   const combinedClassName = `flex ${
     signingIn
       ? ""
-      : "text-sm px-2 py-1 md:px-3 md:py-2 md:text-base font-semibold items-center justify-center min-h-0 h-fit dark:bg-white! dark:text-black! hover:shadow-md hover:translate-x-0 transition-all duration-300 translate-x-0.5"
+      : "text-sm px-2 py-1.5 md:px-3 md:py-2 md:text-base font-semibold items-center justify-center min-h-0 h-fit dark:bg-white! dark:text-black! hover:shadow-md hover:translate-x-0 transition-all duration-300 translate-x-0.5"
   } ${className ? className : ""}`;
   return (
     <Button

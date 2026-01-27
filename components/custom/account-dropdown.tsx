@@ -32,7 +32,7 @@ export function AccountDropdown({
 
   const userReady = userStatus === "ready";
   const guest = userStatus === "no-user";
-  const profileImage = user?.photoUrl || "/default-profile.png";
+  const profileImage = user?.photoUrl || "";
   const name = user?.displayName || "Guest User";
   const email = user?.email || "No Email";
   const phoneNumber = user?.phoneNumber;
@@ -66,7 +66,7 @@ export function AccountDropdown({
             <p
               className={clsx(
                 "font-semibold text-primary text-sm",
-                locale === "hi" ? "text-base font-en" : ""
+                locale === "hi" ? "text-base font-en" : "",
               )}
             >
               {name}
@@ -74,7 +74,7 @@ export function AccountDropdown({
             <p
               className={clsx(
                 "text-xs text-muted-foreground",
-                locale === "hi" ? "text-base font-en" : ""
+                locale === "hi" ? "text-base font-en" : "",
               )}
             >
               {email}
@@ -106,7 +106,7 @@ export function AccountDropdown({
               <p
                 className={clsx(
                   "font-semibold text-primary",
-                  locale === "hi" ? "text-base font-en" : "text-sm"
+                  locale === "hi" ? "text-base font-en" : "text-sm",
                 )}
               >
                 {name}
@@ -114,7 +114,7 @@ export function AccountDropdown({
               <p
                 className={clsx(
                   "text-xs text-muted-foreground",
-                  locale === "hi" ? "text-base font-en" : ""
+                  locale === "hi" ? "text-base font-en" : "",
                 )}
               >
                 {email}
@@ -122,7 +122,7 @@ export function AccountDropdown({
               <p
                 className={clsx(
                   "text-xs text-muted-foreground",
-                  locale === "hi" ? "text-base font-en" : ""
+                  locale === "hi" ? "text-base font-en" : "",
                 )}
               >
                 {phoneNumberDisplay}
