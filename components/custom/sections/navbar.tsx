@@ -3,7 +3,6 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Preferences } from "../preferences";
 import { UserAccount } from "../user-account";
 import Image from "next/image";
 
