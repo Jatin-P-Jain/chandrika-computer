@@ -43,6 +43,7 @@
   },
   "DailyAccount": {
     "AddExpense": "Add Expense",
+    "AddFixedExpense": "Add Fixed Expense",
     "AddIncome": "Add Income",
     "AddSpend": "Add Spend",
     "AllDailyAccounts": "All Daily Accounts",

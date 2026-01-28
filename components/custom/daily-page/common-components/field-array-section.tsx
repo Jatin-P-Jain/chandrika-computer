@@ -10,13 +10,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
 import type { DailyFormValues } from "@/schema/dailay-page.schema";
 import { LineItemRow } from "./line-item-row";
 import { SectionTotalBar } from "./section-total-bar";
 import { formatINR } from "@/lib/utils";
-import { ListPlus } from "lucide-react";
 import { ReadOnlyLineItem } from "./read-line-item-row";
+import { AddLineItemButton } from "./add-line-item-button";
 
 export function FieldArraySection({
   readOnly,
@@ -30,11 +29,7 @@ export function FieldArraySection({
   netForDay,
 }: {
   readOnly: boolean;
-  value:
-    | "fixed.otherFixedExpenses"
-    | "earnings.otherIncomes"
-    | "businessExpenses"
-    | "dailySpends";
+  value: "earnings.otherIncomes" | "businessExpenses" | "dailySpends";
   title: string;
   addButtonText: string;
   totalLabel?: string;
@@ -102,18 +97,10 @@ export function FieldArraySection({
 
         <div className="flex items-center justify-between">
           {!readOnly && (
-            <Button
-              type="button"
-              size={"sm"}
-              variant="outline"
-              onClick={() =>
-                fa.append({ label: "", amount: 0, tags: [] } as any)
-              }
-              className="w-full flex justify-center items-center gap-2 shadow-md"
-            >
-              {addButtonText}
-              <ListPlus />
-            </Button>
+            <AddLineItemButton
+              onAdd={() => fa.append({ label: "", amount: 0, tags: [] })}
+              buttonText={addButtonText}
+            />
           )}
         </div>
       </AccordionContent>

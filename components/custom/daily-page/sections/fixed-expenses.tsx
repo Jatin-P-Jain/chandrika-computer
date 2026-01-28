@@ -3,7 +3,7 @@
 
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import {
   AccordionContent,
@@ -23,7 +23,7 @@ import { AmountInput } from "../common-components/amount-input";
 import { SectionTotalBar } from "../common-components/section-total-bar";
 import { formatINR } from "@/lib/utils";
 import { useEffect } from "react";
-import { FieldArraySection } from "../common-components/field-array-section";
+import { AddLineItemButton } from "../common-components/add-line-item-button";
 
 export function FixedExpensesSection({
   readOnly,
@@ -67,6 +67,8 @@ export function FixedExpensesSection({
       shouldDirty: !readOnly,
     });
   }, [surchargeValue, setValue, readOnly]);
+
+  const fa = useFieldArray({ control, name: "fixed.otherFixedExpenses" });
 
   return (
     <AccordionItem
@@ -227,6 +229,11 @@ export function FixedExpensesSection({
                 </FormItem>
               </>
             )}
+          />
+
+          <AddLineItemButton
+            onAdd={() => fa.append({ label: "", amount: 0, tags: [] })}
+            buttonText={tDailyAccount("AddFixedExpense")}
           />
         </div>
       </AccordionContent>

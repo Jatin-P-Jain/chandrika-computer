@@ -43,6 +43,7 @@
   },
   "DailyAccount": {
     "AddExpense": "खर्च जोड़ें",
+    "AddFixedExpense": "अन्य व्यय जोड़ें",
     "AddIncome": "आय जोड़ें",
     "AddSpend": "खर्च जोड़ें",
     "AllDailyAccounts": "सभी दैनिक खाते",
