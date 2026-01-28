@@ -75,6 +75,8 @@ export const normalizeDailyAccount = (raw: any): DailyAccount => {
       sd: toNumber(raw?.fixed?.sd, 0),
       sc: toNumber(raw?.fixed?.sc, 0),
       fs: toNumber(raw?.fixed?.fs, 0),
+      flexnCard: toNumber(raw?.fixed?.flexnCard, 0),
+      otherFixedExpenses: toLineItems(raw?.earnings?.otherFixedExpenses),
     },
     earnings: {
       netIncome: toNumber(raw?.earnings?.netIncome, 0),

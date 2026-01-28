@@ -3,7 +3,7 @@
 
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
-import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import { useFieldArray, useFormContext } from "react-hook-form";
 
 import {
   AccordionContent,
@@ -18,7 +18,6 @@ import { formatINR } from "@/lib/utils";
 import { ListPlus } from "lucide-react";
 import { ReadOnlyLineItem } from "./read-line-item-row";
 
-
 export function FieldArraySection({
   readOnly,
   value,
@@ -31,11 +30,15 @@ export function FieldArraySection({
   netForDay,
 }: {
   readOnly: boolean;
-  value: "earnings.otherIncomes" | "businessExpenses" | "dailySpends";
+  value:
+    | "fixed.otherFixedExpenses"
+    | "earnings.otherIncomes"
+    | "businessExpenses"
+    | "dailySpends";
   title: string;
   addButtonText: string;
-  totalLabel: string;
-  totalValue: React.ReactNode;
+  totalLabel?: string;
+  totalValue?: React.ReactNode;
   totalBarClassName?: string;
   showNet?: boolean;
   netForDay?: number;
@@ -57,7 +60,7 @@ export function FieldArraySection({
       <AccordionTrigger
         className={clsx(
           "py-2 text-base font-semibold text-primary justify-center lg:border-b items-center",
-          textHeadCls
+          textHeadCls,
         )}
       >
         {title}
@@ -93,7 +96,7 @@ export function FieldArraySection({
                 namePrefix={`${value}.${idx}`}
                 onRemove={() => fa.remove(idx)}
               />
-            )
+            ),
           )}
         </div>
 
@@ -103,7 +106,9 @@ export function FieldArraySection({
               type="button"
               size={"sm"}
               variant="outline"
-              onClick={() => fa.append({ label: "", amount: 0, tags: [] } as any)}
+              onClick={() =>
+                fa.append({ label: "", amount: 0, tags: [] } as any)
+              }
               className="w-full flex justify-center items-center gap-2 shadow-md"
             >
               {addButtonText}

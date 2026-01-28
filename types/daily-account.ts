@@ -6,6 +6,12 @@ export type DailyAccount = {
     sd: number;
     sc: number;
     fs: number;
+    flexnCard: number;
+    otherFixedExpenses: {
+      label: string;
+      amount: number;
+      tags?: string[];
+    }[];
   };
   earnings: {
     netIncome: number;

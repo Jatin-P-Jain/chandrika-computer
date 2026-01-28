@@ -23,6 +23,7 @@ import { AmountInput } from "../common-components/amount-input";
 import { SectionTotalBar } from "../common-components/section-total-bar";
 import { formatINR } from "@/lib/utils";
 import { useEffect } from "react";
+import { FieldArraySection } from "../common-components/field-array-section";
 
 export function FixedExpensesSection({
   readOnly,
@@ -51,6 +52,11 @@ export function FixedExpensesSection({
       control,
       name: "fixed.fs",
     }) || 0;
+  const flexCardValue =
+    useWatch({
+      control,
+      name: "fixed.flexnCard",
+    }) || 0;
 
   const surchargeValue = Number(stampDutyValue * 0.3) || 0;
 
@@ -70,7 +76,7 @@ export function FixedExpensesSection({
       <AccordionTrigger
         className={clsx(
           "text-base font-semibold text-primary justify-center py-2 lg:border-b",
-          textHeadCls
+          textHeadCls,
         )}
       >
         {tDailyAccount("FixedExpenses")}
@@ -93,7 +99,7 @@ export function FixedExpensesSection({
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",
-                          textHeadCls
+                          textHeadCls,
                         )}
                       >
                         {formatINR(Number(field.value) || 0)}
@@ -133,7 +139,7 @@ export function FixedExpensesSection({
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",
-                          textHeadCls
+                          textHeadCls,
                         )}
                       >
                         {formatINR(Number(surchargeValue) || 0)}
@@ -169,10 +175,44 @@ export function FixedExpensesSection({
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",
-                          textHeadCls
+                          textHeadCls,
                         )}
                       >
                         {formatINR(Number(photocopyValue) || 0)}
+                      </div>
+                    ) : (
+                      <AmountInput
+                        value={Number(field.value) || 0}
+                        onChange={(n) => field.onChange(n)}
+                        inputClassName={textHeadCls}
+                      />
+                    )}
+                  </FormControl>
+
+                  {!readOnly && <FormMessage />}
+                </FormItem>
+              </>
+            )}
+          />
+          <FormField
+            control={control}
+            name="fixed.flexnCard"
+            render={({ field }) => (
+              <>
+                <FormItem className="flex">
+                  <FormLabel className={clsx("w-full", textBodyCls)}>
+                    {tDailyAccount("FlexAndCard")}
+                  </FormLabel>
+
+                  <FormControl>
+                    {readOnly ? (
+                      <div
+                        className={clsx(
+                          "font-semibold tabular-nums",
+                          textHeadCls,
+                        )}
+                      >
+                        {formatINR(Number(flexCardValue) || 0)}
                       </div>
                     ) : (
                       <AmountInput

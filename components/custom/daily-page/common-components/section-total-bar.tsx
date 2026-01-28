@@ -20,15 +20,19 @@ export function SectionTotalBar({
     <div
       className={clsx(
         "flex items-center justify-between rounded-md bg-muted/50 dark:bg-muted-foreground/10 p-1 px-3",
-        className
+        className,
       )}
     >
-      <span className={clsx("text-sm text-muted-foreground", labelClassName)}>
-        {label}
-      </span>
-      <span className={clsx("text-base font-semibold", valueClassName)}>
-        {value}
-      </span>
+      {label && (
+        <span className={clsx("text-sm text-muted-foreground", labelClassName)}>
+          {label}
+        </span>
+      )}
+      {value && (
+        <span className={clsx("text-base font-semibold", valueClassName)}>
+          {value}
+        </span>
+      )}
     </div>
   );
 }

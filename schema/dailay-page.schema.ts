@@ -2,9 +2,7 @@ import { z } from "zod";
 type TFunction = (key: string) => string;
 
 export const makeDailySchema = (t?: TFunction) => {
-  const money = z
-    .number()
-    .min(1, t ? t("Required") : "Errors.moneyMin1");
+  const money = z.number().min(0, t ? t("Required") : "Errors.moneyMin1");
 
   const lineItemSchema = z.object({
     label: z.string().min(1, t ? t("Required") : "Errors.required"),
@@ -17,11 +15,11 @@ export const makeDailySchema = (t?: TFunction) => {
       sd: money,
       sc: z.number().min(0, t ? t("Required") : "Errors.nonNegative"),
       fs: money,
+      flexnCard: money,
+      otherFixedExpenses: z.array(lineItemSchema),
     }),
     earnings: z.object({
-      netIncome: z
-        .number()
-        .min(1, t ? t("Required") : "Errors.moneyMin1"),
+      netIncome: z.number().min(1, t ? t("Required") : "Errors.moneyMin1"),
       otherIncomes: z.array(lineItemSchema),
     }),
     businessExpenses: z.array(lineItemSchema),

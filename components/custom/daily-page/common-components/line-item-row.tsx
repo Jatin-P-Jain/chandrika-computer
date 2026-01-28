@@ -23,6 +23,7 @@ import { TagInput } from "./tag-input";
 import { formatINR } from "@/lib/utils";
 
 type RowPrefix =
+  | `fixed.otherFixedExpenses.${number}`
   | `earnings.otherIncomes.${number}`
   | `businessExpenses.${number}`
   | `dailySpends.${number}`;
@@ -75,7 +76,7 @@ export function LineItemRow({
               <div
                 className={clsx(
                   "text-right text-medium wrap-break-word flex-3",
-                  textBodyCls
+                  textBodyCls,
                 )}
               >
                 {label || "—"}
@@ -194,7 +195,7 @@ export function LineItemRow({
               aria-label="Mark done"
               className={clsx(
                 "w-[45%] border-green-600 bg-green-100 text-green-700 hover:bg-green-200 hover:border-green-700",
-                !isRowValid ? "opacity-30! cursor-not-allowed" : ""
+                !isRowValid ? "opacity-30! cursor-not-allowed" : "",
               )}
             >
               <Check className="size-4" />
