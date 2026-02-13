@@ -289,7 +289,7 @@ export default function DailyPage({
                 name="totalCashCollected"
                 render={({ field }) => (
                   <div className="flex flex-col">
-                    <FormItem className="flex flex-col w-full items-center justify-center">
+                    <FormItem className="flex w-full items-center justify-center">
                       <FormLabel
                         className={clsx("text-base text-center", textBodyCls)}
                       >
