@@ -83,7 +83,7 @@ export function sumAmounts(items?: { amount?: number }[]) {
 }
 
 export function formatINR(value: number, prefix = true, suffix = true) {
-  const n = Number(value) || 0;
+  const n = Number(value.toFixed(0)) || 0;
   if (prefix === false && suffix === false) {
     return new Intl.NumberFormat("en-IN").format(n);
   }

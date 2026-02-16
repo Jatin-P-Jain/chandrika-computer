@@ -8,6 +8,8 @@ import { buildUser } from "@/lib/utils";
 import GoogleLoginButton from "./google-login-button";
 import { LogoutButton } from "./action-items/logout-button";
 import { AccountDropdown } from "./account-dropdown";
+import { Separator } from "../ui/separator";
+import { SettingsDropdown } from "./settings-dropdown";
 
 type UserStatus =
   | "loading"
@@ -28,7 +30,7 @@ function AuthAction({
   return <LogoutButton onLogout={onLogout} />;
 }
 
-export function UserAccount({}: {}) {
+export function UserAccount() {
   const auth = useAuth();
   const { authState, logout } = auth;
   const userStatus = authState.status;
@@ -44,13 +46,18 @@ export function UserAccount({}: {}) {
         <div className="min-w-0">
           {userStatus === "loading" ? (
             <AccountDetailsSkeleton />
-          ) : (
+          ) : userStatus === "ready" ? (
             <AccountDropdown user={user} userStatus={userStatus} />
-          )}
+          ) : null}
         </div>
-        <div className="flex justify-end">
+        <div className="flex mr-1">
           <AuthAction userStatus={userStatus} onLogout={logout} />
         </div>
+        <Separator
+          orientation="vertical"
+          className="border border-muted h-10!"
+        />
+        <SettingsDropdown />
       </div>
     </div>
   );

@@ -5,7 +5,6 @@ import clsx from "clsx";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
 import { formatINR, parseINR } from "@/lib/utils";
-import { useLocale } from "next-intl";
 
 type AmountInputProps = {
   value: number;
@@ -32,7 +31,7 @@ export function AmountInput({
     <InputGroup
       className={clsx(
         "focus-within:ring-1 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
-        className
+        className,
       )}
     >
       <InputGroupAddon>{leftAddon}</InputGroupAddon>
@@ -46,7 +45,7 @@ export function AmountInput({
           "focus-visible:ring-0 focus-visible:ring-offset-0",
           "w-full border-0 shadow-none h-full",
           "dark:bg-transparent",
-          inputClassName
+          inputClassName,
         )}
         value={value === 0 ? "" : formatINR(Number(value), false, false)}
         onChange={(e) => onChange(parseINR(e.target.value))}

@@ -7,16 +7,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { UserData } from "@/types/user";
-import { ThemeModeToggle } from "./action-items/theme-mode-button";
-import { LocaleToggle } from "./action-items/locale-toggle";
-import { KeyboardSwitch } from "./action-items/keyboard-switch";
-import { Separator } from "../ui/separator";
 
 export function AccountDropdown({
   user,
@@ -46,7 +41,7 @@ export function AccountDropdown({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <div className="flex items-center gap-3 p-2 hover:bg-accent rounded-md cursor-pointer h-12">
-          <Avatar className="size-10 ring-1 p-0.5 ring-primary">
+          <Avatar className="size-8 ring-1 p-0.5 ring-primary">
             <AvatarImage
               src={profileImage}
               alt={name}
@@ -129,35 +124,6 @@ export function AccountDropdown({
               </p>
             </div>
           </div>
-        </div>
-        <Separator />
-
-        {/* Preferences Section */}
-        <div className="flex flex-col gap-1">
-          <DropdownMenuLabel className="font-semibold text-muted-foreground p-0 mb-2">
-            {tCommon("Settings")}
-          </DropdownMenuLabel>
-
-          <DropdownMenuItem
-            className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0 mb-2"
-            onSelect={(e) => e.preventDefault()}
-          >
-            <KeyboardSwitch labelClassName={textHiCls} />
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0 mb-2"
-            onSelect={(e) => e.preventDefault()}
-          >
-            <ThemeModeToggle labelClassName={textHiCls} />
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0"
-            onSelect={(e) => e.preventDefault()}
-          >
-            <LocaleToggle labelClassName={textHiCls} />
-          </DropdownMenuItem>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -14,17 +14,17 @@ export function Navbar() {
         {/* Left: logo + name */}
         <Link href="/" className="flex items-center">
           {/* Replace with <Image> or svg logo as needed */}
-          <div className="flex size-24 md:size-28 items-center justify-center">
+          <div className="flex size-20 md:size-28 items-center justify-center">
             <Image
               src="/images/logo.png"
               alt="Chandrika Computer Logo"
-              width={140}
-              height={140}
-              className="rounded-full object-contain p-2"
+              width={80}
+              height={80}
+              className="rounded-full object-contain"
               priority={true}
             />
           </div>
-          <span className="flex md:hidden text-base md:text-xl font-semibold md:font-bold underline underline-offset-3">
+          <span className="flex md:hidden text-base md:text-xl font-semibold md:font-bold underline underline-offset-3 pl-1">
             {tCommon("Computer")}
           </span>
           <span className="hidden md:flex text-base md:text-xl font-semibold md:font-bold underline underline-offset-3">

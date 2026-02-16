@@ -72,8 +72,8 @@ export default function GoogleLoginButton({
       ) : (
         <>
           <div className="hidden md:flex gap-2 items-center justify-center ">
-            <Image src={GoogleIcon} alt="" className="size-6" />
-            <span className="">{tSignIn("SignInWithGoogle")}</span>
+            <Image src={GoogleIcon} alt="" className="size-5" />
+            <span className="text-sm">{tSignIn("SignInWithGoogle")}</span>
             <LogInIcon className="size-5" />
           </div>
           <div className="flex md:hidden gap-1 items-center justify-center ">

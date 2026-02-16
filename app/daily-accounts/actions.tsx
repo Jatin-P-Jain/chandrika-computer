@@ -115,8 +115,8 @@ export async function getDailyAccountItem(docId?: string) {
     if (snap.empty) return { data: null, error: "Not found" };
 
     return { data: normalizeDailyAccount(snap.docs[0].data()), error: null };
-  } catch (e: any) {
-    return { data: null, error: e?.message ?? "Unknown error" };
+  } catch (e: unknown) {
+    return { data: null, error: e instanceof Error ? e.message : "Unknown error" };
   }
 }
 
@@ -162,7 +162,7 @@ export const updateDailyAccountItem = async (
       }
 
       const existingNormalized = normalizeDailyAccount(existingSnap.data());
-      const { updated, ...existingBase } = existingNormalized || {};
+      const {  ...existingBase } = existingNormalized || {};
 
       // 🔥 DEEP MERGE first
       const merged = deepMerge<DailyAccount>(existingBase, patch);

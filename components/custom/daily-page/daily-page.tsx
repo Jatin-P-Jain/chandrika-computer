@@ -34,6 +34,8 @@ import {
 } from "@/app/daily-accounts/actions";
 import { DailyAccount } from "@/types/daily-account";
 import CreatedOrUpdated from "../created-or-updated";
+import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
+import DailyReadingsDialog from "../daily-readings/daily-readings-dialog";
 
 type DailyPageMode = "create" | "view" | "edit";
 
@@ -41,7 +43,11 @@ type DailyPageProps = {
   mode: DailyPageMode;
   initialData?: DailyFormValues;
   dailyItemData?: DailyAccount;
-  docId?: string;
+  docId: string;
+  readings?: {
+    photocopy: PhotocopyReadingDoc | null;
+    stamp: StampReadingDoc | null;
+  };
 };
 
 export default function DailyPage({
@@ -49,6 +55,7 @@ export default function DailyPage({
   initialData,
   dailyItemData,
   docId,
+  readings,
 }: DailyPageProps) {
   const tCommon = useTranslations("Common");
   const tToast = useTranslations("Toast");
@@ -129,7 +136,7 @@ export default function DailyPage({
         data,
         user,
         dirtyFields,
-        token
+        token,
       );
 
       if (res.error) {
@@ -152,7 +159,7 @@ export default function DailyPage({
       user,
       token,
       accountExistsErrorMessage,
-      docId
+      docId,
     );
 
     if (!!saveResponse.error || !saveResponse.docId) {
@@ -176,203 +183,227 @@ export default function DailyPage({
   };
 
   return renderForm ? (
-    <Card
-      className={clsx(
-        "w-full p-2 py-3 shadow-sm border rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",
-        isReadOnly ? "border-0 shadow-lg" : "border-primary"
-      )}
-    >
-      <div
+    <div className="flex flex-col justify-start items-start w-full">
+      <DailyReadingsDialog
+        readings={readings}
+        todayDateYmd={docId}
+        onSaved={(saved) => {
+          if (saved.photocopy) {
+            form.setValue("fixed.fs", saved.photocopy.amount, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }
+          if (saved.stamp) {
+            form.setValue("fixed.sd", saved.stamp.totalAmount, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }
+
+          // Keep server-prop readings in sync for view/reload correctness
+          router.refresh();
+        }}
+      />
+      <Card
         className={clsx(
-          "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col",
-          textBodyCls
+          "w-full p-2 py-3 shadow-sm border rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",
+          isReadOnly ? "border-0 shadow-lg" : "border-primary",
         )}
       >
-        <span className="text-base text-yellow-700">ॐ</span>
-        <span className="text-orange-600"> श्री गणेशाय नमः</span>
-      </div>
-
-      {/* You can still wrap in Form, even for read-only, to reuse watch() logic */}
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col flex-1 gap-4"
+        <div
+          className={clsx(
+            "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col",
+            textBodyCls,
+          )}
         >
-          <Accordion
-            defaultValue={[
-              "fixed",
-              "earnings.otherIncomes",
-              "businessExpenses",
-              "dailySpends",
-            ]}
-            orientation="horizontal"
-            type="multiple"
-            className="grow min-h-0 lg:grid lg:grid-cols-4 gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-2"
+          <span className="text-base text-yellow-700">ॐ</span>
+          <span className="text-orange-600"> श्री गणेशाय नमः</span>
+        </div>
+
+        {/* You can still wrap in Form, even for read-only, to reuse watch() logic */}
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex flex-col flex-1 gap-4"
           >
-            <FixedExpensesSection
-              totalBarClassName="p-2"
-              totalFixed={
-                Number(formatINR(totalFixed)) ? totalFixed : totalFixed
-              }
-              readOnly={isReadOnly}
-            />
-
-            <FieldArraySection
-              value="earnings.otherIncomes"
-              title={tDailyAccount("Income")}
-              addButtonText={tDailyAccount("AddIncome")}
-              totalLabel={tDailyAccount("TotalIncome")}
-              totalValue={formatINR(totalEarnings)}
-              totalBarClassName="bg-green-100! text-green-900! p-2"
-              showNet={true}
-              netForDay={netForDay}
-              readOnly={isReadOnly}
-            />
-
-            <FieldArraySection
-              value="businessExpenses"
-              title={tDailyAccount("BusinessExpense")}
-              addButtonText={tDailyAccount("AddExpense")}
-              totalLabel={tDailyAccount("TotalBusinessExpense")}
-              totalValue={formatINR(totalBusiness)}
-              totalBarClassName="p-2"
-              readOnly={isReadOnly}
-            />
-
-            <FieldArraySection
-              value="dailySpends"
-              title={tDailyAccount("DailySpends")}
-              addButtonText={tDailyAccount("AddSpend")}
-              totalLabel={tDailyAccount("TotalDailySpends")}
-              totalValue={formatINR(totalSpends)}
-              totalBarClassName="p-2"
-              readOnly={isReadOnly}
-            />
-          </Accordion>
-
-          {/* Final input / read-only display */}
-          <div className="flex gap-4 w-full justify-center items-center mt-auto flex-col">
-            {isReadOnly ? (
-              <div className="flex flex-col md:flex-row justify-center w-full">
-                <div className="flex gap-4 items-center justify-center w-full lg:pl-42">
-                  <span
-                    className={clsx(
-                      "text-base text-center font-semibold text-muted-foreground",
-                      textBodyCls
-                    )}
-                  >
-                    {tDailyAccount("TotalCashCollected")}:
-                  </span>
-                  <span
-                    className={clsx(
-                      "text-xl font-semibold text-center text-primary",
-                      textHeadCls
-                    )}
-                  >
-                    {formatINR(totalCashCollected)}
-                  </span>
-                </div>
-                <div className="flex justify-end items-center mt-3 md:mt-0">
-                  <div className="flex ">
-                    <CreatedOrUpdated
-                      createdBy={dailyItemData?.createdBy}
-                      updatedBy={dailyItemData?.updatedBy}
-                      created={dailyItemData?.created}
-                      updated={dailyItemData?.updated}
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <FormField
-                control={form.control}
-                name="totalCashCollected"
-                render={({ field }) => (
-                  <div className="flex flex-col">
-                    <FormItem className="flex w-full items-center justify-center">
-                      <FormLabel
-                        className={clsx("text-base text-center", textBodyCls)}
-                      >
-                        {tDailyAccount("TotalCashCollected")}:
-                      </FormLabel>
-                      <FormControl>
-                        <div className="w-1/2 md:w/full">
-                          <AmountInput
-                            value={Number(field.value) || 0}
-                            onChange={(n) => field.onChange(n)}
-                            inputClassName="h-full text-xl! font-semibold w-full border-0 shadow-none"
-                          />
-                        </div>
-                      </FormControl>
-                    </FormItem>
-                    <FormMessage className="text-xs" />
-                  </div>
-                )}
+            <Accordion
+              defaultValue={[
+                "fixed",
+                "earnings.otherIncomes",
+                "businessExpenses",
+                "dailySpends",
+              ]}
+              orientation="horizontal"
+              type="multiple"
+              className="grow min-h-0 lg:grid lg:grid-cols-4 gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-2"
+            >
+              <FixedExpensesSection
+                totalBarClassName="p-2"
+                totalFixed={
+                  Number(formatINR(totalFixed)) ? totalFixed : totalFixed
+                }
+                readings={readings}
+                readOnly={isReadOnly}
               />
-            )}
 
-            {isReadOnly ? (
-              <>
-                <Button
-                  variant={"outline"}
-                  type="button"
-                  onClick={handleEditClick}
-                  className="text-primary border-primary flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
-                >
-                  <span>{tCommon("Edit")}</span>
-                  {<PencilIcon className="size-4" />}
-                </Button>
-              </>
-            ) : (
-              <div className="flex gap-2 items-center justify-center lg:absolute lg:top-4 lg:right-4">
-                <Button
-                  disabled={!canSubmit || isSubmitting}
-                  type="submit"
-                  className="flex gap-2 font-semibold text-sm w-full lg:w-fit justify-center items-center"
-                >
-                  <span>
-                    {updateMode
-                      ? isSubmitting
-                        ? tCommon("Updating")
-                        : tCommon("Update")
-                      : isSubmitting
-                      ? tCommon("Saving")
-                      : tCommon("Save")}
-                  </span>
-                  {updateMode ? (
-                    isSubmitting ? (
+              <FieldArraySection
+                value="earnings.otherIncomes"
+                title={tDailyAccount("Income")}
+                addButtonText={tDailyAccount("AddIncome")}
+                totalLabel={tDailyAccount("TotalIncome")}
+                totalValue={formatINR(totalEarnings)}
+                totalBarClassName="bg-green-100! text-green-900! p-2"
+                showNet={true}
+                netForDay={netForDay}
+                readOnly={isReadOnly}
+              />
+
+              <FieldArraySection
+                value="businessExpenses"
+                title={tDailyAccount("BusinessExpense")}
+                addButtonText={tDailyAccount("AddExpense")}
+                totalLabel={tDailyAccount("TotalBusinessExpense")}
+                totalValue={formatINR(totalBusiness)}
+                totalBarClassName="p-2"
+                readOnly={isReadOnly}
+              />
+
+              <FieldArraySection
+                value="dailySpends"
+                title={tDailyAccount("DailySpends")}
+                addButtonText={tDailyAccount("AddSpend")}
+                totalLabel={tDailyAccount("TotalDailySpends")}
+                totalValue={formatINR(totalSpends)}
+                totalBarClassName="p-2"
+                readOnly={isReadOnly}
+              />
+            </Accordion>
+
+            {/* Final input / read-only display */}
+            <div className="flex gap-4 w-full justify-center items-center mt-auto flex-col">
+              {isReadOnly ? (
+                <div className="flex flex-col md:flex-row justify-center w-full">
+                  <div className="flex gap-4 items-center justify-center w-full lg:pl-42">
+                    <span
+                      className={clsx(
+                        "text-base text-center font-semibold text-muted-foreground",
+                        textBodyCls,
+                      )}
+                    >
+                      {tDailyAccount("TotalCashCollected")}:
+                    </span>
+                    <span
+                      className={clsx(
+                        "text-xl font-semibold text-center text-primary",
+                        textHeadCls,
+                      )}
+                    >
+                      {formatINR(totalCashCollected)}
+                    </span>
+                  </div>
+                  <div className="flex justify-end items-center mt-3 md:mt-0">
+                    <div className="flex ">
+                      <CreatedOrUpdated
+                        createdBy={dailyItemData?.createdBy}
+                        updatedBy={dailyItemData?.updatedBy}
+                        created={dailyItemData?.created}
+                        updated={dailyItemData?.updated}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="totalCashCollected"
+                  render={({ field }) => (
+                    <div className="flex flex-col">
+                      <FormItem className="flex w-full items-center justify-center">
+                        <FormLabel
+                          className={clsx("text-base text-center", textBodyCls)}
+                        >
+                          {tDailyAccount("TotalCashCollected")}:
+                        </FormLabel>
+                        <FormControl>
+                          <div className="w-1/2 md:w/full">
+                            <AmountInput
+                              value={Number(field.value) || 0}
+                              onChange={(n) => field.onChange(n)}
+                              inputClassName="h-full text-xl! font-semibold w-full border-0 shadow-none"
+                            />
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                      <FormMessage className="text-xs" />
+                    </div>
+                  )}
+                />
+              )}
+
+              {isReadOnly ? (
+                <>
+                  <Button
+                    variant={"outline"}
+                    type="button"
+                    onClick={handleEditClick}
+                    className="text-primary border-primary flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
+                  >
+                    <span>{tCommon("Edit")}</span>
+                    {<PencilIcon className="size-4" />}
+                  </Button>
+                </>
+              ) : (
+                <div className="flex gap-2 items-center justify-center lg:absolute lg:top-4 lg:right-4">
+                  <Button
+                    disabled={!canSubmit || isSubmitting}
+                    type="submit"
+                    className="flex gap-2 font-semibold text-sm w-full lg:w-fit justify-center items-center"
+                  >
+                    <span>
+                      {updateMode
+                        ? isSubmitting
+                          ? tCommon("Updating")
+                          : tCommon("Update")
+                        : isSubmitting
+                          ? tCommon("Saving")
+                          : tCommon("Save")}
+                    </span>
+                    {updateMode ? (
+                      isSubmitting ? (
+                        <Loader2 className="animate-spin size-4" />
+                      ) : (
+                        <Repeat className="size-4" />
+                      )
+                    ) : isSubmitting ? (
                       <Loader2 className="animate-spin size-4" />
                     ) : (
-                      <Repeat className="size-4" />
-                    )
-                  ) : isSubmitting ? (
-                    <Loader2 className="animate-spin size-4" />
-                  ) : (
-                    <SaveIcon className="size-4" />
-                  )}
-                </Button>
-                {updateMode && (
-                  <Button
-                    variant="outline"
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() =>
-                      router.replace(`/daily-accounts/${docId}`, {
-                        scroll: false,
-                      })
-                    }
-                    className="border-red-700 text-red-700 gap-1"
-                  >
-                    {tCommon("Cancel")}
-                    <X className="size-4" />
+                      <SaveIcon className="size-4" />
+                    )}
                   </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </form>
-      </Form>
-    </Card>
+                  {updateMode && (
+                    <Button
+                      variant="outline"
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() =>
+                        router.replace(`/daily-accounts/${docId}`, {
+                          scroll: false,
+                        })
+                      }
+                      className="border-red-700 text-red-700 gap-1"
+                    >
+                      {tCommon("Cancel")}
+                      <X className="size-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </form>
+        </Form>
+      </Card>
+    </div>
   ) : (
     <div className=" gap-4 rounded-sm text-center text-muted-foreground flex flex-col justify-center items-center bg-background h-full lg:w-1/2 mx-auto p-4">
       {tDailyAccount("NoDailyAccountFound")}

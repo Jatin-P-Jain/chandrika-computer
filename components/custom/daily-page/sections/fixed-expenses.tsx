@@ -24,15 +24,22 @@ import { SectionTotalBar } from "../common-components/section-total-bar";
 import { formatINR } from "@/lib/utils";
 import { useEffect } from "react";
 import { AddLineItemButton } from "../common-components/add-line-item-button";
+import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
+import { InfoIcon } from "lucide-react";
 
 export function FixedExpensesSection({
   readOnly,
   totalFixed,
   totalBarClassName,
+  readings,
 }: {
   readOnly: boolean;
   totalFixed: number;
   totalBarClassName?: string;
+  readings?: {
+    photocopy: PhotocopyReadingDoc | null;
+    stamp: StampReadingDoc | null;
+  };
 }) {
   const tDailyAccount = useTranslations("DailyAccount");
   const { control, setValue } = useFormContext<DailyFormValues>();
@@ -41,17 +48,8 @@ export function FixedExpensesSection({
   const textHeadCls = clsx(isHi && "font-[inherit] text-lg!");
   const textBodyCls = clsx(isHi && "font-[inherit] text-base");
 
-  const stampDutyValue =
-    useWatch({
-      control,
-      name: "fixed.sd",
-    }) || 0;
-
-  const photocopyValue =
-    useWatch({
-      control,
-      name: "fixed.fs",
-    }) || 0;
+  const stampDutyValue = readings?.stamp?.totalAmount || 0;
+  const photocopyValue = readings?.photocopy?.amount || 0;
   const flexCardValue =
     useWatch({
       control,
@@ -61,12 +59,22 @@ export function FixedExpensesSection({
   const surchargeValue = Number(stampDutyValue * 0.3) || 0;
 
   useEffect(() => {
+    setValue("fixed.sd", stampDutyValue, {
+      shouldValidate: true,
+      // Prevent view-mode from marking the form dirty just because SD is derived.
+      shouldDirty: !readOnly,
+    });
     setValue("fixed.sc", surchargeValue, {
       shouldValidate: true,
       // Prevent view-mode from marking the form dirty just because SC is derived.
       shouldDirty: !readOnly,
     });
-  }, [surchargeValue, setValue, readOnly]);
+    setValue("fixed.fs", photocopyValue, {
+      shouldValidate: true,
+      // Prevent view-mode from marking the form dirty just because FS is derived.
+      shouldDirty: !readOnly,
+    });
+  }, [surchargeValue, stampDutyValue, photocopyValue, setValue, readOnly]);
 
   const fa = useFieldArray({ control, name: "fixed.otherFixedExpenses" });
 
@@ -86,14 +94,18 @@ export function FixedExpensesSection({
 
       <AccordionContent className="p-2 flex flex-col gap-4 justify-between">
         <div className="grid grid-cols-1 gap-2 ">
+          <span className="flex text-xs text-muted-foreground italic gap-1 items-center">
+            <InfoIcon className="size-3" />
+            SD & FS are auto-calculated from the readings.
+          </span>
           <FormField
             control={control}
             name="fixed.sd"
-            render={({ field }) => (
+            render={() => (
               <>
                 <FormItem className="flex">
                   <FormLabel className={clsx("w-full", textBodyCls)}>
-                    {tDailyAccount("StampDuty")}
+                    {tDailyAccount("StampDuty")}:
                   </FormLabel>
 
                   <FormControl>
@@ -104,13 +116,15 @@ export function FixedExpensesSection({
                           textHeadCls,
                         )}
                       >
-                        {formatINR(Number(field.value) || 0)}
+                        {formatINR(stampDutyValue)}
                       </div>
                     ) : (
                       <AmountInput
-                        value={Number(field.value) || 0}
-                        onChange={(n) => field.onChange(n)}
+                        readOnly={true}
+                        value={stampDutyValue}
+                        onChange={() => {}}
                         inputClassName={textHeadCls}
+                        className="border-0 shadow-none"
                       />
                     )}
                   </FormControl>
@@ -129,7 +143,7 @@ export function FixedExpensesSection({
                 <FormItem className="flex">
                   <FormLabel className={clsx("w-full", textBodyCls)}>
                     <p className="flex flex-col gap-0">
-                      <span>{tDailyAccount("SurCharge")}</span>
+                      <span>{tDailyAccount("SurCharge")}:</span>
                       <span className="text-xs text-muted-foreground">
                         (SC = SD X 30%)
                       </span>
@@ -152,6 +166,7 @@ export function FixedExpensesSection({
                         value={Number(surchargeValue) || 0}
                         onChange={() => {}}
                         inputClassName={textHeadCls}
+                        className="border-0 shadow-none"
                       />
                     )}
                   </FormControl>
@@ -165,11 +180,11 @@ export function FixedExpensesSection({
           <FormField
             control={control}
             name="fixed.fs"
-            render={({ field }) => (
+            render={() => (
               <>
                 <FormItem className="flex">
                   <FormLabel className={clsx("w-full", textBodyCls)}>
-                    {tDailyAccount("Photocopy")}
+                    {tDailyAccount("Photocopy")}:
                   </FormLabel>
 
                   <FormControl>
@@ -184,9 +199,11 @@ export function FixedExpensesSection({
                       </div>
                     ) : (
                       <AmountInput
-                        value={Number(field.value) || 0}
-                        onChange={(n) => field.onChange(n)}
+                        readOnly={true}
+                        value={photocopyValue}
+                        onChange={() => {}}
                         inputClassName={textHeadCls}
+                        className="border-0 shadow-none"
                       />
                     )}
                   </FormControl>
@@ -203,7 +220,7 @@ export function FixedExpensesSection({
               <>
                 <FormItem className="flex">
                   <FormLabel className={clsx("w-full", textBodyCls)}>
-                    {tDailyAccount("FlexAndCard")}
+                    {tDailyAccount("FlexAndCard")}:
                   </FormLabel>
 
                   <FormControl>

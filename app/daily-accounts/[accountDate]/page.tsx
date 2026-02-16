@@ -1,11 +1,12 @@
 // app/daily-account/page.tsx
-import DailyPage from "@/components/custom/daily-page/daily-page";
 import { DailyFormValues } from "@/schema/dailay-page.schema";
 import { getDailyAccountItem } from "../actions";
 import DailyAccountHeader from "../daily-account-header";
 import { clsx } from "clsx";
 import { DailyAccountDayNavigator } from "@/components/custom/daily-account-day-navigator";
 import { DailyAccount } from "@/types/daily-account";
+import { getReadings } from "../readings-actions";
+import DailyPage from "@/components/custom/daily-page/daily-page";
 
 type Props = {
   params: Promise<{
@@ -26,13 +27,16 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
   if (docId) {
     const { data } = await getDailyAccountItem(docId);
     if (data) {
-      // if you later want explicit edit mode via query, you can use searchParams.mode
       const { mode: modeParam } = await searchParams;
       mode = modeParam === "edit" ? "edit" : "view";
       initialData = data;
       dailyItemData = data;
     }
   }
+
+  const readings = docId
+    ? await getReadings(docId)
+    : { photocopy: null, stamp: null };
 
   return (
     <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 mb-20 md:mb-16 gap-2 max-w-7xl mx-auto">
@@ -41,14 +45,15 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
       <div
         className={clsx(
           "flex w-full overflow-auto max-h-[calc(100vh-14rem-5rem)] no-scrollbar rounded-md",
-          mode === "view" ? "p-0 shadow-md" : "p-2"
+          mode === "view" ? "p-0 shadow-md" : "p-2",
         )}
       >
         <DailyPage
+          docId={docId}
           mode={mode}
           initialData={initialData}
           dailyItemData={dailyItemData}
-          docId={docId}
+          readings={readings}
         />
       </div>
     </div>
