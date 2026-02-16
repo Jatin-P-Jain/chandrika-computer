@@ -27,7 +27,7 @@ export function ReadingInput({
       placeholder={placeholder}
       className={clsx(
         "font-semibold py-2",
-        "w-full shadow-none",
+        "shadow-none",
         "dark:bg-transparent",
         inputClassName,
       )}

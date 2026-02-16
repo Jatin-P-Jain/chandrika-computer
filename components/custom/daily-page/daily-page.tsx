@@ -24,7 +24,16 @@ import { formatINR, sumAmounts } from "@/lib/utils";
 import { FixedExpensesSection } from "./sections/fixed-expenses";
 import { FieldArraySection } from "./common-components/field-array-section";
 import { AmountInput } from "./common-components/amount-input";
-import { Loader2, PencilIcon, Repeat, SaveIcon, X } from "lucide-react";
+import {
+  Bell,
+  BellIcon,
+  ListTodo,
+  Loader2,
+  PencilIcon,
+  Repeat,
+  SaveIcon,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/useAuth";
 import { toast } from "sonner";
@@ -66,6 +75,7 @@ export default function DailyPage({
   const textHeadCls = clsx(isHi && "text-2xl! font-[inherit]");
 
   const tErrors = useTranslations("Validation");
+  const tNotes = useTranslations("Notes");
   const dailySchema = useMemo(() => makeDailySchema(tErrors), [tErrors]);
 
   const isReadOnly = mode === "view";
@@ -188,27 +198,32 @@ export default function DailyPage({
 
   return renderForm ? (
     <div className="flex flex-col justify-start items-start w-full">
-      <DailyReadingsDialog
-        readings={readings}
-        todayDateYmd={docId}
-        onSaved={(saved) => {
-          if (saved.photocopy) {
-            form.setValue("fixed.fs", saved.photocopy.amount, {
-              shouldDirty: true,
-              shouldValidate: true,
-            });
-          }
-          if (saved.stamp) {
-            form.setValue("fixed.sd", saved.stamp.totalAmount, {
-              shouldDirty: true,
-              shouldValidate: true,
-            });
-          }
+      <div className="flex w-full justify-between items-center mb-2">
+        <DailyReadingsDialog
+          readings={readings}
+          todayDateYmd={docId}
+          onSaved={(saved) => {
+            if (saved.photocopy) {
+              form.setValue("fixed.fs", saved.photocopy.amount, {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+            }
+            if (saved.stamp) {
+              form.setValue("fixed.sd", saved.stamp.totalAmount, {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+            }
 
-          // Keep server-prop readings in sync for view/reload correctness
-          router.refresh();
-        }}
-      />
+            // Keep server-prop readings in sync for view/reload correctness
+            router.refresh();
+          }}
+        />
+        <Button variant="outline" className={clsx("shadow-md mr-1")}>
+          <ListTodo className="size-4" /> {tNotes("Notes")}
+        </Button>
+      </div>
       <Card
         className={clsx(
           "w-full p-2 py-3 shadow-sm border rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",

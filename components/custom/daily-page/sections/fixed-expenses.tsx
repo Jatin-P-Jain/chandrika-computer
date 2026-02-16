@@ -42,11 +42,13 @@ export function FixedExpensesSection({
   };
 }) {
   const tDailyAccount = useTranslations("DailyAccount");
+  const tReadings = useTranslations("Readings");
   const { control, setValue } = useFormContext<DailyFormValues>();
   const locale = useLocale();
   const isHi = locale === "hi";
   const textHeadCls = clsx(isHi && "font-[inherit] text-lg!");
   const textBodyCls = clsx(isHi && "font-[inherit] text-base");
+  const textSmCls = clsx(isHi && "font-[inherit] text-sm!");
 
   const stampDutyValue = readings?.stamp?.totalAmount || 0;
   const photocopyValue = readings?.photocopy?.amount || 0;
@@ -85,7 +87,7 @@ export function FixedExpensesSection({
     >
       <AccordionTrigger
         className={clsx(
-          "text-base font-semibold text-primary justify-between p-2 lg:border-b",
+          "text-base font-semibold text-primary justify-between p-2 pb-0 lg:border-b",
           textHeadCls,
         )}
       >
@@ -94,9 +96,14 @@ export function FixedExpensesSection({
 
       <AccordionContent className="p-2 flex flex-col gap-4 justify-between">
         <div className="grid grid-cols-1 gap-2 ">
-          <span className="flex text-xs text-muted-foreground italic gap-1 items-center">
+          <span
+            className={clsx(
+              "flex text-xs text-muted-foreground italic gap-1 items-center",
+              textSmCls,
+            )}
+          >
             <InfoIcon className="size-3" />
-            SD & FS are auto-calculated from the readings.
+            {tReadings("Info")}
           </span>
           <FormField
             control={control}

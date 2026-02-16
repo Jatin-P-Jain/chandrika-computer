@@ -54,7 +54,7 @@ export function FieldArraySection({
     >
       <AccordionTrigger
         className={clsx(
-          "p-2 text-base font-semibold text-primary justify-between lg:border-b items-center",
+          "p-2 text-base font-semibold text-primary justify-between lg:border-b items-center pb-0",
           textHeadCls,
         )}
       >

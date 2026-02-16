@@ -2,9 +2,11 @@
   "Common": {
     "Account": "You are logged in with",
     "Amount": "Amount",
+    "Back": "Back",
     "Cancel": "Cancel",
     "ChandrikaComputer": "Chandrika Computer",
     "Computer": "Computer",
+    "ConfirmAndSave": "Confirm & Save",
     "ContinueOnTheTab": "Continue in new tab",
     "Create": "Create",
     "CreatedAt": "Created By",
@@ -24,6 +26,7 @@
     "LightMode": "Light Mode",
     "Login": "Login",
     "Logout": "Logout",
+    "Next": "Next",
     "NoDataFound": "You do not have any Daily Accounts yet. You can create one by clicking on \"Create\" button.",
     "NoDataFoundWithFilters": "No results for these filters. It looks like no items match your criteria. Try removing a few filters or resetting the filters",
     "Optional": "Optional",
@@ -120,6 +123,29 @@
     "VerificationDesc": "Please verify your mobile number to access secure services",
     "Verifying": "Verifying",
     "VerifyOTP": "Verify OTP"
+  },
+  "Notes": {
+    "Notes": "Notes"
+  },
+  "Readings": {
+    "ClosingStampSerialNumbers": "Closing Stamp Serial Numbers",
+    "Copies": "Copies",
+    "EnterReadings": "Enter Readings",
+    "FSRate": "@ ₹1.5 / copy",
+    "Info": "SD & FS are auto-calculated from the readings.",
+    "NoteValuesUsedDirectly": "Note: This final amount will directly be used in today's daily\n                  account.",
+    "Photocopy": "Photocopy",
+    "PhotocopyMachineReading": "Photocopy Machine Reading",
+    "PhotocopyStampReadings": "Photocopy & Stamp Readings",
+    "Review": "Review",
+    "SD&FSReadings": "SD/FS Readings",
+    "Stamp": "Stamp",
+    "StampsSold": "Stamps Sold",
+    "Today": "Today",
+    "TotalAmount": "Total Amount",
+    "TotalCopies": "Total Copies",
+    "TotalStampDuty": "Total Stamp Duty",
+    "Yesterday": "Yesterday"
   },
   "StampStock": {
     "Desc": "Track your stamp stock and ledger movements.",

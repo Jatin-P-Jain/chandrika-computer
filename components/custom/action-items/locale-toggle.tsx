@@ -1,13 +1,14 @@
 "use client";
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "../../ui/button";
+import { Loader2 } from "lucide-react";
 
 const COOKIE_NAME = "CHANDRIKA_COMPUTER_LOCALE";
 
 function getCookieValue(name: string) {
-  // If duplicates exist, collect all and pick the last one found (more stable than .find()).
   const matches = document.cookie
     .split("; ")
     .filter((c) => c.startsWith(`${name}=`))
@@ -17,37 +18,39 @@ function getCookieValue(name: string) {
 }
 
 function setLocaleCookie(locale: string) {
-  // Path=/ ensures a single cookie is used across all routes. [web:77][web:76]
+  // Keep SameSite=Lax (good default for a locale preference cookie)
   document.cookie = `${COOKIE_NAME}=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
+}
+
+function getInitialLocale(): "en" | "hi" {
+  const v = getCookieValue(COOKIE_NAME);
+  if (v === "en" || v === "hi") return v;
+
+  const browser = navigator.language.slice(0, 2);
+  return browser === "hi" ? "hi" : "en";
 }
 
 export function LocaleToggle({ labelClassName }: { labelClassName: string }) {
   const router = useRouter();
-  const [locale, setLocale] = useState("");
   const tCommon = useTranslations("Common");
 
-  const toggleLocale = (localeString: string) => {
-    setLocale(localeString);
-    setLocaleCookie(localeString);
+  const [locale, setLocale] = useState<"en" | "hi">(() => getInitialLocale());
+  const [isPending, startTransition] = useTransition();
 
-    router.refresh();
+  const toggleLocale = (nextLocale: "en" | "hi") => {
+    if (nextLocale === locale) return;
+
+    // 1) Write cookie synchronously so refresh sees the new locale immediately
+    setLocaleCookie(nextLocale);
+
+    // 2) Update button UI state immediately
+    setLocale(nextLocale);
+
+    // 3) Refresh in a transition so we can show loading feedback [web:321][web:330]
+    startTransition(() => {
+      router.refresh();
+    });
   };
-
-  useEffect(() => {
-    const cookieLocale = getCookieValue(COOKIE_NAME);
-
-    if (cookieLocale) {
-      setLocale(cookieLocale);
-      // Ensure it exists at Path=/ (normalize to one cookie). [web:76][web:77]
-      setLocaleCookie(cookieLocale);
-      return;
-    }
-
-    const browserLocale = navigator.language.slice(0, 2);
-    setLocale(browserLocale);
-    setLocaleCookie(browserLocale);
-    router.refresh();
-  }, [router]);
 
   return (
     <div
@@ -55,14 +58,23 @@ export function LocaleToggle({ labelClassName }: { labelClassName: string }) {
       aria-label="Toggle language"
     >
       <span className={labelClassName}>{tCommon("Language")}: </span>
-      <div className="flex gap-2 md:gap-4">
+      {isPending ? (
+        <span className="text-xs text-muted-foreground flex items-center gap-2">
+          <Loader2 className="size-4 animate-spin" />
+        </span>
+      ) : null}
+
+      <div className="flex gap-2 md:gap-4 items-center">
         <Button
+          disabled={isPending}
           variant={locale === "hi" ? "default" : "outline"}
           onClick={() => toggleLocale("hi")}
         >
           {tCommon("Hindi")}
         </Button>
+
         <Button
+          disabled={isPending}
           variant={locale === "en" ? "default" : "outline"}
           onClick={() => toggleLocale("en")}
         >
