@@ -70,6 +70,7 @@ export default function DailyPage({
 
   const isReadOnly = mode === "view";
   const updateMode = mode === "edit";
+  const areReadingsDone = !!readings?.photocopy || !!readings?.stamp;
 
   const form = useForm<DailyFormValues>({
     resolver: zodResolver(dailySchema),
@@ -102,10 +103,13 @@ export default function DailyPage({
   const netForDay =
     totalCashCollected - (totalFixed + totalBusiness + totalSpends);
   const totalEarnings = earnings.netIncome + sumAmounts(earnings.otherIncomes);
+  console.log({ readings });
 
   const { user, getUserToken } = useAuth();
   const router = useRouter();
-  const [renderForm, setRenderForm] = useState(isReadOnly || updateMode);
+  const [renderForm, setRenderForm] = useState(
+    isReadOnly || updateMode || areReadingsDone,
+  );
 
   // Keep this even in edit mode so netIncome is auto‑derived
   useEffect(() => {
@@ -319,7 +323,7 @@ export default function DailyPage({
                   name="totalCashCollected"
                   render={({ field }) => (
                     <div className="flex flex-col">
-                      <FormItem className="flex w-full items-center justify-center">
+                      <FormItem className="flex w-full items-center justify-center md:flex-row md:gap-4 flex-col">
                         <FormLabel
                           className={clsx("text-base text-center", textBodyCls)}
                         >
@@ -354,7 +358,7 @@ export default function DailyPage({
                   </Button>
                 </>
               ) : (
-                <div className="flex gap-2 items-center justify-center lg:absolute lg:top-4 lg:right-4">
+                <div className="flex gap-2 items-center justify-center lg:absolute lg:top-4 lg:right-4 w-full lg:w-fit">
                   <Button
                     disabled={!canSubmit || isSubmitting}
                     type="submit"

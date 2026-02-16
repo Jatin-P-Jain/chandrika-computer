@@ -30,7 +30,15 @@ import {
   photocopyReadingSchema,
   stampReadingSchema,
 } from "@/schema/readings.schema";
-import { ChevronsRight, Loader2Icon } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+  Loader2Icon,
+  Pencil,
+  SaveIcon,
+  X,
+} from "lucide-react";
 import { ReadingInput } from "../daily-page/common-components/reading-input";
 import { formatINR } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
@@ -328,14 +336,16 @@ export default function DailyReadingsDialog({
                   variant="secondary"
                   onClick={() => setOpen(false)}
                   disabled={saving}
+                  className="gap-1"
                 >
-                  Cancel
+                  <X className="size-4" /> Cancel
                 </Button>
                 <Button
                   onClick={goNextFromPhotocopy}
                   disabled={saving || loadingPrev}
+                  className="gap-0"
                 >
-                  Next
+                  Next <ChevronRight className="size-4" />
                 </Button>
               </div>
             </div>
@@ -524,14 +534,20 @@ export default function DailyReadingsDialog({
 
               {/* Stepper controls */}
               <div className="flex justify-end gap-2">
-                <Button variant="secondary" onClick={goBack} disabled={saving}>
-                  Back
+                <Button
+                  variant="secondary"
+                  onClick={goBack}
+                  disabled={saving}
+                  className="gap-0"
+                >
+                  <ChevronLeft className="size-4" /> Back
                 </Button>
                 <Button
                   onClick={goNextFromStamp}
                   disabled={saving || loadingPrev}
+                  className="gap-0"
                 >
-                  Next
+                  Next <ChevronRight className="size-4" />
                 </Button>
               </div>
             </div>
@@ -539,33 +555,31 @@ export default function DailyReadingsDialog({
 
           {/* STEP 3: Review + editable (jump back to edit) */}
           {step === "review" ? (
-            <div className="space-y-4 w-full">
+            <div className="space-y-4 w-full max-h-[70vh] overflow-auto no-scrollbar">
               {/* Review block (does not change your messaging; just shows unified view) */}
-              <div className="rounded-md border p-3 text-sm flex flex-col gap-3">
+              <div className="rounded-md border p-3 text-sm flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs italic">
-                    Photocopy Machine Reading
-                  </span>
+                  <span className="italic">Photocopy Machine Reading</span>
                   <Button
                     variant="ghost"
                     className="h-auto p-0 text-primary text-xs"
                     onClick={() => setStep("photocopy")}
                     disabled={saving}
                   >
-                    Edit
+                    Edit <Pencil className="size-3" />
                   </Button>
                 </div>
 
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs">
                   Yesterday: <b>{photoPrev}</b>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs">
                   Today: <b>{photoToday ?? 0}</b>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs">
                   Total Copies: <b>{photoDiff}</b>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="">
                   Total Amount (FS): <b>{formatINR(photoAmount)}</b>
                 </div>
 
@@ -575,29 +589,27 @@ export default function DailyReadingsDialog({
                 </span>
               </div>
 
-              <div className="rounded-md border p-3 text-sm flex flex-col gap-3">
+              <div className="rounded-md border p-3 text-sm flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs italic">
-                    Closing Stamp Serial Numbers
-                  </span>
+                  <span className=" italic">Closing Stamp Serial Numbers</span>
                   <Button
                     variant="ghost"
                     className="h-auto p-0 text-primary text-xs"
                     onClick={() => setStep("stamp")}
                     disabled={saving}
                   >
-                    Edit
+                    Edit <Pencil className="size-3" />
                   </Button>
                 </div>
 
-                <div className="grid md:grid-cols-4 grid-cols-2 gap-2">
+                <div className="grid md:grid-cols-4 grid-cols-1 gap-1">
                   {DENOMS.map((d) => (
                     <div key={d} className="rounded-md border p-2">
-                      <div className="text-xs font-medium">₹ {d}</div>
-                      <div className="text-[11px] text-muted-foreground">
+                      <div className="font-medium mb-1">₹ {d}</div>
+                      <div className="text-xs text-muted-foreground flex items-center justify-between">
                         Yesterday: <b>{stampPrev[d]}</b>
                       </div>
-                      <div className="text-[11px] text-muted-foreground">
+                      <div className="text-xs text-muted-foreground flex items-center justify-between">
                         Today:{" "}
                         <b>
                           {d === 50
@@ -609,17 +621,17 @@ export default function DailyReadingsDialog({
                                 : r1000}
                         </b>
                       </div>
-                      <div className="text-[11px] text-muted-foreground">
-                        Sold: <b>{stampSold[d]}</b>
+                      <div className="text-xs text-muted-foreground flex items-center justify-between">
+                        Sold Quantity: <b>{stampSold[d]}</b>
                       </div>
-                      <div className="text-[11px] text-muted-foreground">
+                      <div className=" flex items-center justify-between mt-1">
                         Amount: <b>{formatINR(stampAmounts[d])}</b>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="text-xs text-muted-foreground">
+                <div className="flex items-center justify-between gap-1">
                   Total Stamp Duty (SD): <b>{formatINR(stampTotal)}</b>
                 </div>
 
@@ -631,8 +643,13 @@ export default function DailyReadingsDialog({
 
               {/* Final controls: only here we save */}
               <div className="flex justify-end gap-2">
-                <Button variant="secondary" onClick={goBack} disabled={saving}>
-                  Back
+                <Button
+                  variant="secondary"
+                  onClick={goBack}
+                  disabled={saving}
+                  className="gap-0"
+                >
+                  <ChevronLeft className="size-4" /> Back
                 </Button>
                 <Button
                   onClick={onConfirmSave}
@@ -646,6 +663,7 @@ export default function DailyReadingsDialog({
                   ) : (
                     "Confirm & Save"
                   )}
+                  <SaveIcon className="size-4" />
                 </Button>
               </div>
             </div>

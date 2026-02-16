@@ -85,7 +85,7 @@ export function FixedExpensesSection({
     >
       <AccordionTrigger
         className={clsx(
-          "text-base font-semibold text-primary justify-center py-2 lg:border-b",
+          "text-base font-semibold text-primary justify-between p-2 lg:border-b",
           textHeadCls,
         )}
       >

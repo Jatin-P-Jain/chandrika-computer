@@ -39,13 +39,13 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
     : { photocopy: null, stamp: null };
 
   return (
-    <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 mb-20 md:mb-16 gap-2 max-w-7xl mx-auto">
+    <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 gap-1 max-w-7xl mx-auto">
       <DailyAccountHeader />
       <DailyAccountDayNavigator docId={docId} />
       <div
         className={clsx(
-          "flex w-full overflow-auto max-h-[calc(100vh-14rem-5rem)] no-scrollbar rounded-md",
-          mode === "view" ? "p-0 shadow-md" : "p-2",
+          "flex w-full overflow-auto max-h-[calc(100vh-14rem)] no-scrollbar rounded-md p-0",
+          mode === "view" ? "shadow-md" : "",
         )}
       >
         <DailyPage
