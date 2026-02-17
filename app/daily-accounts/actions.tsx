@@ -10,7 +10,7 @@ import {
   getDirtyValues,
   normalizeDailyAccount,
 } from "@/lib/server-utils";
-import { dailySchema } from "@/schema/dailay-page.schema";
+import { dailySchema } from "@/schema/daily-page.schema";
 import { DailyAccount } from "@/types/daily-account";
 import { UserData } from "@/types/user";
 import { toDocId } from "@/lib/utils";
@@ -32,7 +32,7 @@ export const createDailyAccountItem = async (
   user: UserData | null,
   authtoken: string,
   accountExistsErrorMessage: string,
-  docId?: string
+  docId?: string,
 ) => {
   if (!user) {
     return {
@@ -116,7 +116,10 @@ export async function getDailyAccountItem(docId?: string) {
 
     return { data: normalizeDailyAccount(snap.docs[0].data()), error: null };
   } catch (e: unknown) {
-    return { data: null, error: e instanceof Error ? e.message : "Unknown error" };
+    return {
+      data: null,
+      error: e instanceof Error ? e.message : "Unknown error",
+    };
   }
 }
 
@@ -136,7 +139,7 @@ export const updateDailyAccountItem = async (
   user: UserData | null,
   dirtyFields: DirtyFields,
   authtoken: string,
-  notFoundErrorMessage = "Daily account not found"
+  notFoundErrorMessage = "Daily account not found",
 ) => {
   try {
     if (!user) {
@@ -162,7 +165,7 @@ export const updateDailyAccountItem = async (
       }
 
       const existingNormalized = normalizeDailyAccount(existingSnap.data());
-      const {  ...existingBase } = existingNormalized || {};
+      const { ...existingBase } = existingNormalized || {};
 
       // 🔥 DEEP MERGE first
       const merged = deepMerge<DailyAccount>(existingBase, patch);
@@ -175,7 +178,7 @@ export const updateDailyAccountItem = async (
       const validation = dailySchema.safeParse(merged);
       if (!validation.success) {
         throw new Error(
-          validation.error.issues[0]?.message || "An error occurred"
+          validation.error.issues[0]?.message || "An error occurred",
         );
       }
 
@@ -260,5 +263,5 @@ export const getFilterOptions = cache(
       console.error("Filter fetch error:", error);
       return { creators: [], updaters: [], tags: [] };
     }
-  }
+  },
 );

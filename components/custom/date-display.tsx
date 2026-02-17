@@ -37,7 +37,7 @@ export function DateDisplay({
 
   if (type === "docId") {
     const dayName = format(date, "EEEE", { locale: dfLocale });
-    let formatted = format(date, "dd MMMM, yyyy", { locale: dfLocale });
+    const formatted = format(date, "dd MMMM, yyyy", { locale: dfLocale });
 
     return (
       <span className={className}>

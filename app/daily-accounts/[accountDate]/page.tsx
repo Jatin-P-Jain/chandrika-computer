@@ -1,5 +1,5 @@
 // app/daily-account/page.tsx
-import { DailyFormValues } from "@/schema/dailay-page.schema";
+import { DailyFormValues } from "@/schema/daily-page.schema";
 import { getDailyAccountItem } from "../actions";
 import DailyAccountHeader from "../daily-account-header";
 import { clsx } from "clsx";

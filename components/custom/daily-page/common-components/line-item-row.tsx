@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import type { DailyFormValues } from "@/schema/dailay-page.schema";
+import type { DailyFormValues } from "@/schema/daily-page.schema";
 import { AmountInput } from "./amount-input";
 import { TagInput } from "./tag-input";
 import { formatINR } from "@/lib/utils";
@@ -47,10 +47,10 @@ export function LineItemRow({
   // const inputRef = useRef<HTMLInputElement>(null);
 
   // read current values for view mode (keeps submit logic unchanged)
-  const amount = Number(getValues(`${namePrefix}.amount` as any)) || 0;
-  const label = (getValues(`${namePrefix}.label` as any) as string) || "";
+  const amount = Number(getValues(`${namePrefix}.amount` as const) || 0);
+  const label = (getValues(`${namePrefix}.label` as const) as string) || "";
   const tags =
-    (getValues(`${namePrefix}.tags` as any) as string[] | undefined) ?? [];
+    (getValues(`${namePrefix}.tags` as const) as string[] | undefined) ?? [];
 
   const isRowValid = amount > 0 && label.trim().length > 0;
 
@@ -127,7 +127,7 @@ export function LineItemRow({
           <FormField
             control={control}
             name={`${namePrefix}.label`}
-            render={({ field, fieldState }) => (
+            render={({ field }) => (
               <FormItem className="w-full gap-1">
                 <FormLabel className={textBodyCls}>{tCommon("For")}</FormLabel>
                 <FormControl>
@@ -203,9 +203,6 @@ export function LineItemRow({
           </div>
         </>
       )}
-
-      {/* Hidden fields (optional safety) */}
-      {/* If you ever unmount edit fields completely, keep these to preserve registration. [web:149] */}
     </div>
   );
 }

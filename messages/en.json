@@ -125,6 +125,11 @@
     "VerifyOTP": "Verify OTP"
   },
   "Notes": {
+    "AddMemoryItem": "Add Memory Item",
+    "Dismissed": "Dismissed",
+    "LoadingMemoryItems": "Loading Memory Items",
+    "MemoryItemPlaceholder": "Write here...",
+    "NoMemoryItems": "No Memory Items yet.",
     "Notes": "Notes"
   },
   "Readings": {

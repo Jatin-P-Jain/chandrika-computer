@@ -10,7 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import type { DailyFormValues } from "@/schema/dailay-page.schema";
+import type { DailyFormValues } from "@/schema/daily-page.schema";
 import { LineItemRow } from "./line-item-row";
 import { SectionTotalBar } from "./section-total-bar";
 import { formatINR } from "@/lib/utils";

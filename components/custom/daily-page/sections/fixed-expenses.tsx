@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import type { DailyFormValues } from "@/schema/dailay-page.schema";
+import type { DailyFormValues } from "@/schema/daily-page.schema";
 import { AmountInput } from "../common-components/amount-input";
 import { SectionTotalBar } from "../common-components/section-total-bar";
 import { formatINR } from "@/lib/utils";

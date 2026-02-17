@@ -1,4 +1,3 @@
-// components/custom/daily-readings/daily-readings-dialog.tsx
 "use client";
 
 import * as React from "react";
@@ -74,7 +73,6 @@ export default function DailyReadingsDialog({
   const tReadings = useTranslations("Readings");
   const locale = useLocale();
   const isHi = locale === "hi";
-  const textHeadCls = clsx(isHi && "text-lg font-[inherit]");
   const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
   const textSmCls = clsx(isHi && "text-sm! font-[inherit]");
   const textXsCls = clsx(isHi && "text-xs! font-[inherit]");

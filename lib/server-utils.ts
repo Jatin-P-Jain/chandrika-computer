@@ -1,5 +1,5 @@
 import { DailyAccount } from "@/types/daily-account";
-import { DocumentData, Timestamp } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 
 export type DirtyFields =
   | boolean
@@ -30,7 +30,7 @@ export function getDirtyValues<T>(dirty: DirtyFields, values: T): Partial<T> {
   return out;
 }
 
-function toMillis(ts: Timestamp): number | null {
+export function toMillis(ts: Timestamp): number | null {
   if (!ts) return null;
 
   // Firestore Timestamp has toMillis()

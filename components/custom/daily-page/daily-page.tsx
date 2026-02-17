@@ -19,21 +19,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { DailyFormValues, makeDailySchema } from "@/schema/dailay-page.schema";
+import { DailyFormValues, makeDailySchema } from "@/schema/daily-page.schema";
 import { formatINR, sumAmounts } from "@/lib/utils";
 import { FixedExpensesSection } from "./sections/fixed-expenses";
 import { FieldArraySection } from "./common-components/field-array-section";
 import { AmountInput } from "./common-components/amount-input";
-import {
-  Bell,
-  BellIcon,
-  ListTodo,
-  Loader2,
-  PencilIcon,
-  Repeat,
-  SaveIcon,
-  X,
-} from "lucide-react";
+import { Loader2, PencilIcon, Repeat, SaveIcon, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/useAuth";
 import { toast } from "sonner";
@@ -45,6 +36,7 @@ import { DailyAccount } from "@/types/daily-account";
 import CreatedOrUpdated from "../created-or-updated";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import DailyReadingsDialog from "../daily-readings/daily-readings-dialog";
+import DailyNotesDialog from "../daily-notes/daily-notes-dialog";
 
 type DailyPageMode = "create" | "view" | "edit";
 
@@ -75,7 +67,6 @@ export default function DailyPage({
   const textHeadCls = clsx(isHi && "text-2xl! font-[inherit]");
 
   const tErrors = useTranslations("Validation");
-  const tNotes = useTranslations("Notes");
   const dailySchema = useMemo(() => makeDailySchema(tErrors), [tErrors]);
 
   const isReadOnly = mode === "view";
@@ -220,9 +211,7 @@ export default function DailyPage({
             router.refresh();
           }}
         />
-        <Button variant="outline" className={clsx("shadow-md mr-1")}>
-          <ListTodo className="size-4" /> {tNotes("Notes")}
-        </Button>
+        <DailyNotesDialog docId={docId} readOnly={mode === "view"} />
       </div>
       <Card
         className={clsx(

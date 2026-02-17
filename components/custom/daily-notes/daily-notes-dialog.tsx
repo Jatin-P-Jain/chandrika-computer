@@ -1,0 +1,464 @@
+"use client";
+
+import * as React from "react";
+import clsx from "clsx";
+import { toast } from "sonner";
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  ListTodo,
+  Loader2,
+  Plus,
+  Trash2,
+  Undo2,
+  X,
+} from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
+import type {
+  DailyNoteDoc,
+  NoteItem,
+  NoteItemStatus,
+} from "@/types/daily-notes";
+import {
+  addNoteItem,
+  dismissNoteItem,
+  getDailyNote,
+  setNoteItemStatus,
+} from "@/app/daily-accounts/notes-actions";
+import { noteItemTextSchema } from "@/schema/daily-notes-schema";
+import { useTranslations } from "next-intl";
+
+type Props = {
+  docId: string;
+
+  readOnly?: boolean;
+  title?: string;
+};
+
+function sortItems(items: NoteItem[]) {
+  const rank = (s: NoteItemStatus) => (s === "open" ? 0 : s === "done" ? 1 : 2);
+  return [...items].sort((a, b) => {
+    const r = rank(a.status) - rank(b.status);
+    if (r !== 0) return r;
+    return a.createdAt.getTime() - b.createdAt.getTime();
+  });
+}
+
+export default function DailyNotesDialog({
+  docId,
+
+  readOnly = false,
+}: Props) {
+  const tNotes = useTranslations("Notes");
+  const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  const [note, setNote] = React.useState<DailyNoteDoc | null>(null);
+
+  // add-item composer
+  const [composerOpen, setComposerOpen] = React.useState(false);
+  const [draft, setDraft] = React.useState("");
+
+  // dismissed collapsible
+  const [dismissedOpen, setDismissedOpen] = React.useState(false);
+
+  const load = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await getDailyNote(docId);
+      setNote(res.data);
+    } catch (e) {
+      toast.error("Failed to load notes", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [docId]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    setComposerOpen(false);
+    setDraft("");
+    setDismissedOpen(false);
+    load();
+  }, [open, load]);
+
+  const items = React.useMemo(
+    () => sortItems(note?.items ?? []),
+    [note?.items],
+  );
+
+  const startAdd = () => {
+    if (readOnly) return;
+    setComposerOpen(true);
+    setDraft("");
+  };
+
+  const discardAdd = () => {
+    setComposerOpen(false);
+    setDraft("");
+  };
+
+  const commitAdd = async () => {
+    if (readOnly) return;
+
+    const parsed = noteItemTextSchema.safeParse(draft);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Invalid");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await addNoteItem(docId, parsed.data);
+
+      setNote((prev) => {
+        const now = new Date();
+        const base: DailyNoteDoc = prev ?? {
+          docId,
+          items: [],
+          createdAt: now,
+          updatedAt: now,
+        };
+        return {
+          ...base,
+          items: [...base.items, res.data],
+          updatedAt: new Date(),
+        };
+      });
+
+      setComposerOpen(false);
+      setDraft("");
+    } catch (e) {
+      toast.error("Failed to add", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleCheckbox = async (item: NoteItem) => {
+    if (readOnly) return;
+    const nextStatus: NoteItemStatus =
+      item.status === "dismissed"
+        ? "open"
+        : item.status === "open"
+          ? "done"
+          : "open";
+
+    // optimistic
+    setNote((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map((x) =>
+          x.id === item.id ? { ...x, status: nextStatus } : x,
+        ),
+        updatedAt: new Date(),
+      };
+    });
+
+    try {
+      await setNoteItemStatus(docId, item.id, nextStatus);
+    } catch (e) {
+      // rollback
+      setNote((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.map((x) =>
+            x.id === item.id ? { ...x, status: item.status } : x,
+          ),
+          updatedAt: new Date(),
+        };
+      });
+
+      toast.error("Failed to update", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
+    }
+  };
+
+  const dismiss = async (item: NoteItem) => {
+    if (readOnly) return;
+
+    const prevStatus = item.status;
+
+    // optimistic
+    setNote((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map((x) =>
+          x.id === item.id ? { ...x, status: "dismissed" } : x,
+        ),
+        updatedAt: new Date(),
+      };
+    });
+
+    try {
+      await dismissNoteItem(docId, item.id);
+    } catch (e) {
+      // rollback
+      setNote((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.map((x) =>
+            x.id === item.id ? { ...x, status: prevStatus } : x,
+          ),
+          updatedAt: new Date(),
+        };
+      });
+      toast.error("Dismiss failed", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
+    }
+  };
+
+  const undoDismiss = async (item: NoteItem) => {
+    if (readOnly) return;
+
+    // optimistic: set to open
+    setNote((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map((x) =>
+          x.id === item.id ? { ...x, status: "open" } : x,
+        ),
+        updatedAt: new Date(),
+      };
+    });
+
+    try {
+      await setNoteItemStatus(docId, item.id, "open");
+    } catch (e) {
+      // rollback: back to dismissed
+      setNote((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.map((x) =>
+            x.id === item.id ? { ...x, status: "dismissed" } : x,
+          ),
+          updatedAt: new Date(),
+        };
+      });
+
+      toast.error("Undo failed", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
+    }
+  };
+
+  const activeItems = React.useMemo(
+    () => items.filter((i) => i.status !== "dismissed"),
+    [items],
+  );
+
+  const dismissedItems = React.useMemo(
+    () => items.filter((i) => i.status === "dismissed"),
+    [items],
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className={clsx("shadow-md mr-1")}>
+          <ListTodo className="size-4" /> {tNotes("Notes")}
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between gap-3">
+            <span>{tNotes("Notes")}</span>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {/* Add item */}
+          {!readOnly ? (
+            !composerOpen ? (
+              <div className="flex justify-end">
+                <Button
+                  variant="secondary"
+                  className="gap-2 text-sm!"
+                  onClick={startAdd}
+                  disabled={loading}
+                  size={"sm"}
+                >
+                  <Plus className="size-4" /> {tNotes("AddMemoryItem")}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col md:flex-row gap-2">
+                <Textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder={tNotes("MemoryItemPlaceholder")}
+                  className="min-h-22.5 max-h-80"
+                  disabled={loading}
+                />
+                <div className="flex flex-row justify-end md:flex-col md:justify-between items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={discardAdd}
+                    disabled={loading}
+                    className="gap-2"
+                    size={"icon-sm"}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                  <Button
+                    onClick={commitAdd}
+                    disabled={loading}
+                    className="gap-2"
+                    size={"icon-sm"}
+                  >
+                    <Check className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            )
+          ) : null}
+
+          {/* Active list (open + done) */}
+          <div className="space-y-2 max-h-[45vh] overflow-auto no-scrollbar">
+            {loading ? (
+              <div className="text-sm text-muted-foreground flex gap-2 items-center">
+                {tNotes("LoadingMemoryItems")}
+                <Loader2 className="size-4 animate-spin" />
+              </div>
+            ) : activeItems.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                {tNotes("NoMemoryItems")}
+              </div>
+            ) : (
+              activeItems.map((item) => {
+                const isDone = item.status === "done";
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-md border px-2 flex items-start justify-between gap-3"
+                  >
+                    <label className="flex items-start py-2 justify-center gap-3 w-full">
+                      <Checkbox
+                        checked={isDone}
+                        disabled={readOnly}
+                        onCheckedChange={() => toggleCheckbox(item)}
+                        className=""
+                      />
+                      <span
+                        className={clsx(
+                          "text-sm leading-5 w-full",
+                          isDone && "text-muted-foreground",
+                        )}
+                      >
+                        {item.text}
+                      </span>
+                    </label>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Dismiss"
+                      onClick={() => dismiss(item)}
+                      disabled={readOnly}
+                      className="shrink-0"
+                      title={readOnly ? undefined : "Dismiss"}
+                    >
+                      <Trash2 className="size-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Dismissed collapsible */}
+          {dismissedItems.length > 0 ? (
+            <Collapsible open={dismissedOpen} onOpenChange={setDismissedOpen}>
+              <div className="flex items-center justify-between">
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-pointer justify-between w-full">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-muted-foreground text-xs! p-0!"
+                      size={"sm"}
+                    >
+                      {tNotes("Dismissed")} ({dismissedItems.length})
+                    </Button>
+                    <span className="text-muted-foreground text-xs">
+                      {dismissedOpen ? (
+                        <ChevronUp className="size-4" />
+                      ) : (
+                        <ChevronDown className="size-4" />
+                      )}
+                    </span>
+                  </div>
+                </CollapsibleTrigger>
+              </div>
+
+              <CollapsibleContent>
+                <div className="mt-2 space-y-2 max-h-40 overflow-auto no-scrollbar">
+                  {dismissedItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-md border px-2 flex items-start justify-between gap-3"
+                    >
+                      <label className="flex items-start py-2 justify-center gap-3 w-full">
+                        <Checkbox
+                          checked={false}
+                          disabled={readOnly}
+                          onCheckedChange={() => toggleCheckbox(item)} // dismissed -> open (revive)
+                        />
+                        <span className="text-sm leading-5 w-full line-through text-muted-foreground">
+                          {item.text}
+                        </span>
+                      </label>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Undo Dismiss"
+                        onClick={() => undoDismiss(item)}
+                        disabled={readOnly}
+                        className="shrink-0"
+                        title={readOnly ? undefined : "Undo Dismiss"}
+                      >
+                        <Undo2 className="size-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

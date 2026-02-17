@@ -125,6 +125,11 @@
     "VerifyOTP": "ओटीपी वेरीफाई करें"
   },
   "Notes": {
+    "AddMemoryItem": "मेमोरी आइटम जोड़ें",
+    "Dismissed": "ख़ारिज किए गए",
+    "LoadingMemoryItems": "मेमोरी आइटम लोड हो रहे हैं",
+    "MemoryItemPlaceholder": "यहाँ लिखें...",
+    "NoMemoryItems": "अभी तक कोई मेमोरी आइटम नहीं हैं।",
     "Notes": "नोट्स"
   },
   "Readings": {
