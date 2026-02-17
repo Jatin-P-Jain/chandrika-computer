@@ -43,7 +43,7 @@ export function LineItemRow({
   const textBodyCls = clsx(isHi && "text-base! font-medium! font-[inherit]");
 
   // UI-only state (doesn't affect RHF values)
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
   // const inputRef = useRef<HTMLInputElement>(null);
 
   // read current values for view mode (keeps submit logic unchanged)

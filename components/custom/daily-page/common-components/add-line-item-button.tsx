@@ -7,17 +7,20 @@ interface AddLineItemButtonProps {
   onAdd: () => void;
   buttonText: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function AddLineItemButton({
   onAdd,
   buttonText,
   className,
+  disabled = false,
 }: AddLineItemButtonProps) {
   return (
     <Button
       type="button"
       size="sm"
+      disabled={disabled}
       variant="outline"
       onClick={onAdd}
       className={

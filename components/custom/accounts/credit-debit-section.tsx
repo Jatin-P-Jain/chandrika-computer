@@ -67,7 +67,10 @@ export function CreditDebitCardsSection({ disabled }: Props) {
             variant="secondary"
             disabled={disableAddCredit}
             onClick={() =>
-              credit.append({ accountId: "", label: "", amount: 0 })
+              credit.append(
+                { accountId: "", label: "", amount: 0 },
+                { shouldFocus: false },
+              )
             }
           >
             <Plus className="h-4 w-4" />
@@ -94,7 +97,10 @@ export function CreditDebitCardsSection({ disabled }: Props) {
             variant="secondary"
             disabled={disableAddDebit}
             onClick={() =>
-              debit.append({ accountId: "", label: "", amount: 0 })
+              debit.append(
+                { accountId: "", label: "", amount: 0 },
+                { shouldFocus: false },
+              )
             }
           >
             <Plus className="h-4 w-4" />

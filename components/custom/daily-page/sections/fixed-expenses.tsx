@@ -81,6 +81,21 @@ export function FixedExpensesSection({
   }, [surchargeValue, stampDutyValue, photocopyValue, setValue, readOnly]);
 
   const fa = useFieldArray({ control, name: "fixed.otherFixedExpenses" });
+  const otherFixedExpenses = useWatch({
+    control: control, // or "control" if you already have it
+    name: "fixed.otherFixedExpenses",
+  });
+
+  const last =
+    Array.isArray(otherFixedExpenses) && otherFixedExpenses.length
+      ? otherFixedExpenses[otherFixedExpenses.length - 1]
+      : undefined;
+
+  const disableAdd =
+    readOnly ||
+    (last
+      ? !(String(last.label ?? "").trim().length > 0 && Number(last.amount) > 0)
+      : false);
 
   return (
     <AccordionItem
@@ -261,7 +276,6 @@ export function FixedExpensesSection({
               readOnly ? (
                 <ReadOnlyLineItem
                   key={f.id}
-                  control={control}
                   namePrefix={`fixed.otherFixedExpenses.${idx}`}
                   textHeadCls={textHeadCls}
                   textBodyCls={textBodyCls}
@@ -279,9 +293,13 @@ export function FixedExpensesSection({
           <AddLineItemButton
             onAdd={() => {
               console.log(fa.fields);
-              fa.append({ label: "", amount: 0, tags: [] });
+              fa.append(
+                { label: "", amount: 0, tags: [] },
+                { shouldFocus: false },
+              );
             }}
             buttonText={tDailyAccount("AddFixedExpense")}
+            disabled={disableAdd}
           />
         </div>
       </AccordionContent>

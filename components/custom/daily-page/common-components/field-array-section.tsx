@@ -3,7 +3,7 @@
 
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import {
   AccordionContent,
@@ -46,6 +46,21 @@ export function FieldArraySection({
   const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
 
   const fa = useFieldArray({ control, name: value });
+  const otherFixedExpenses = useWatch({
+    control: control, // or "control" if you already have it
+    name: value,
+  });
+
+  const last =
+    Array.isArray(otherFixedExpenses) && otherFixedExpenses.length
+      ? otherFixedExpenses[otherFixedExpenses.length - 1]
+      : undefined;
+
+  const disableAdd =
+    readOnly ||
+    (last
+      ? !(String(last.label ?? "").trim().length > 0 && Number(last.amount) > 0)
+      : false);
 
   return (
     <AccordionItem
@@ -97,8 +112,14 @@ export function FieldArraySection({
         <div className="flex items-center justify-between">
           {!readOnly && (
             <AddLineItemButton
-              onAdd={() => fa.append({ label: "", amount: 0, tags: [] })}
+              onAdd={() =>
+                fa.append(
+                  { label: "", amount: 0, tags: [] },
+                  { shouldFocus: false },
+                )
+              }
               buttonText={addButtonText}
+              disabled={disableAdd}
             />
           )}
         </div>

@@ -283,7 +283,11 @@ export default function DailyReadingsDialog({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="min-w-[50%] p-0 px-3 py-4 md:px-4 md:py-6">
+      <DialogContent
+        className="min-w-[50%] p-0 px-3 py-4 md:px-4 md:py-6"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{tReadings("EnterReadings")}</DialogTitle>
         </DialogHeader>
