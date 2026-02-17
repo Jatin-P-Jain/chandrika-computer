@@ -32,25 +32,15 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-import type {
-  DailyNoteDoc,
-  NoteItem,
-  NoteItemStatus,
-} from "@/types/daily-notes";
-import {
-  addNoteItem,
-  dismissNoteItem,
-  getDailyNote,
-  setNoteItemStatus,
-} from "@/app/daily-accounts/notes-actions";
-import { noteItemTextSchema } from "@/schema/daily-notes-schema";
 import { useTranslations } from "next-intl";
+import { UseFormReturn, useWatch } from "react-hook-form";
+import { DailyFormValues } from "@/schema/daily-page.schema";
+import type { NoteItem, NoteItemStatus } from "@/types/daily-notes";
+import { noteItemTextSchema } from "@/schema/daily-notes-schema";
 
 type Props = {
-  docId: string;
-
+  form: UseFormReturn<DailyFormValues>;
   readOnly?: boolean;
-  title?: string;
 };
 
 function sortItems(items: NoteItem[]) {
@@ -62,16 +52,18 @@ function sortItems(items: NoteItem[]) {
   });
 }
 
-export default function DailyNotesDialog({
-  docId,
+function makeId() {
+  // simple stable id; fine for client-only draft items
+  return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
 
-  readOnly = false,
-}: Props) {
+export default function DailyNotesDialog({ form, readOnly = false }: Props) {
   const tNotes = useTranslations("Notes");
   const [open, setOpen] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
 
-  const [note, setNote] = React.useState<DailyNoteDoc | null>(null);
+  const { control, setValue } = form;
+  const watchedNotes = useWatch({ control, name: "notes" });
+  const notes = React.useMemo(() => watchedNotes ?? [], [watchedNotes]);
 
   // add-item composer
   const [composerOpen, setComposerOpen] = React.useState(false);
@@ -80,32 +72,17 @@ export default function DailyNotesDialog({
   // dismissed collapsible
   const [dismissedOpen, setDismissedOpen] = React.useState(false);
 
-  const load = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await getDailyNote(docId);
-      setNote(res.data);
-    } catch (e) {
-      toast.error("Failed to load notes", {
-        description: e instanceof Error ? e.message : "Unknown error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [docId]);
+  // purely local "loading" (no DB calls now), keep to avoid UI changes
+  const loading = false;
 
   React.useEffect(() => {
     if (!open) return;
     setComposerOpen(false);
     setDraft("");
     setDismissedOpen(false);
-    load();
-  }, [open, load]);
+  }, [open]);
 
-  const items = React.useMemo(
-    () => sortItems(note?.items ?? []),
-    [note?.items],
-  );
+  const items = React.useMemo(() => sortItems(notes), [notes]);
 
   const startAdd = () => {
     if (readOnly) return;
@@ -127,38 +104,27 @@ export default function DailyNotesDialog({
       return;
     }
 
-    try {
-      setLoading(true);
-      const res = await addNoteItem(docId, parsed.data);
+    const now = new Date();
+    const newItem: NoteItem = {
+      id: makeId(),
+      text: parsed.data,
+      status: "open",
+      createdAt: now,
+      updatedAt: now,
+    };
 
-      setNote((prev) => {
-        const now = new Date();
-        const base: DailyNoteDoc = prev ?? {
-          docId,
-          items: [],
-          createdAt: now,
-          updatedAt: now,
-        };
-        return {
-          ...base,
-          items: [...base.items, res.data],
-          updatedAt: new Date(),
-        };
-      });
+    setValue("notes", [...notes, newItem], {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
 
-      setComposerOpen(false);
-      setDraft("");
-    } catch (e) {
-      toast.error("Failed to add", {
-        description: e instanceof Error ? e.message : "Unknown error",
-      });
-    } finally {
-      setLoading(false);
-    }
+    setComposerOpen(false);
+    setDraft("");
   };
 
   const toggleCheckbox = async (item: NoteItem) => {
     if (readOnly) return;
+
     const nextStatus: NoteItemStatus =
       item.status === "dismissed"
         ? "open"
@@ -166,110 +132,38 @@ export default function DailyNotesDialog({
           ? "done"
           : "open";
 
-    // optimistic
-    setNote((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        items: prev.items.map((x) =>
-          x.id === item.id ? { ...x, status: nextStatus } : x,
-        ),
-        updatedAt: new Date(),
-      };
-    });
+    const now = new Date();
+    const next = notes.map((x) =>
+      x.id === item.id ? { ...x, status: nextStatus, updatedAt: now } : x,
+    );
 
-    try {
-      await setNoteItemStatus(docId, item.id, nextStatus);
-    } catch (e) {
-      // rollback
-      setNote((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          items: prev.items.map((x) =>
-            x.id === item.id ? { ...x, status: item.status } : x,
-          ),
-          updatedAt: new Date(),
-        };
-      });
-
-      toast.error("Failed to update", {
-        description: e instanceof Error ? e.message : "Unknown error",
-      });
-    }
+    setValue("notes", next, { shouldDirty: true, shouldValidate: true });
   };
 
   const dismiss = async (item: NoteItem) => {
     if (readOnly) return;
 
-    const prevStatus = item.status;
+    const now = new Date();
+    const next = notes.map((x) =>
+      x.id === item.id
+        ? { ...x, status: "dismissed" as NoteItemStatus, updatedAt: now }
+        : x,
+    );
 
-    // optimistic
-    setNote((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        items: prev.items.map((x) =>
-          x.id === item.id ? { ...x, status: "dismissed" } : x,
-        ),
-        updatedAt: new Date(),
-      };
-    });
-
-    try {
-      await dismissNoteItem(docId, item.id);
-    } catch (e) {
-      // rollback
-      setNote((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          items: prev.items.map((x) =>
-            x.id === item.id ? { ...x, status: prevStatus } : x,
-          ),
-          updatedAt: new Date(),
-        };
-      });
-      toast.error("Dismiss failed", {
-        description: e instanceof Error ? e.message : "Unknown error",
-      });
-    }
+    setValue("notes", next, { shouldDirty: true, shouldValidate: true });
   };
 
   const undoDismiss = async (item: NoteItem) => {
     if (readOnly) return;
 
-    // optimistic: set to open
-    setNote((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        items: prev.items.map((x) =>
-          x.id === item.id ? { ...x, status: "open" } : x,
-        ),
-        updatedAt: new Date(),
-      };
-    });
+    const now = new Date();
+    const next = notes.map((x) =>
+      x.id === item.id
+        ? { ...x, status: "open" as NoteItemStatus, updatedAt: now }
+        : x,
+    );
 
-    try {
-      await setNoteItemStatus(docId, item.id, "open");
-    } catch (e) {
-      // rollback: back to dismissed
-      setNote((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          items: prev.items.map((x) =>
-            x.id === item.id ? { ...x, status: "dismissed" } : x,
-          ),
-          updatedAt: new Date(),
-        };
-      });
-
-      toast.error("Undo failed", {
-        description: e instanceof Error ? e.message : "Unknown error",
-      });
-    }
+    setValue("notes", next, { shouldDirty: true, shouldValidate: true });
   };
 
   const activeItems = React.useMemo(
@@ -433,7 +327,7 @@ export default function DailyNotesDialog({
                         <Checkbox
                           checked={false}
                           disabled={readOnly}
-                          onCheckedChange={() => toggleCheckbox(item)} // dismissed -> open (revive)
+                          onCheckedChange={() => toggleCheckbox(item)}
                         />
                         <span className="text-sm leading-5 w-full line-through text-muted-foreground">
                           {item.text}

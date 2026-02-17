@@ -83,6 +83,7 @@ export default function DailyPage({
       dailySpends: [],
       creditItems: [],
       debitItems: [],
+      notes: [],
       totalCashCollected: 0,
     },
     mode: "onChange",
@@ -213,7 +214,7 @@ export default function DailyPage({
             router.refresh();
           }}
         />
-        <DailyNotesDialog docId={docId} readOnly={mode === "view"} />
+        <DailyNotesDialog form={form} readOnly={mode === "view"} />
       </div>
       <Card
         className={clsx(

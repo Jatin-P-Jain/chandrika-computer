@@ -28,6 +28,43 @@ type UserShape = {
 };
 
 type TimestampLike = { toMillis: () => number };
+type NoteItemStatus = "open" | "done" | "dismissed";
+
+type NoteItem = {
+  id: string;
+  text: string;
+  status: NoteItemStatus;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function isNoteStatus(v: unknown): v is NoteItemStatus {
+  return v === "open" || v === "done" || v === "dismissed";
+}
+
+function toDateFromFirestoreLike(v: unknown): Date {
+  const ms = toMillis(v);
+  return ms ? new Date(ms) : new Date(0);
+}
+
+function toNoteItem(v: unknown): NoteItem {
+  const r = getObj(v);
+  const statusRaw = getNested(r, "status");
+  const status: NoteItemStatus = isNoteStatus(statusRaw) ? statusRaw : "open";
+
+  return {
+    id: toStringSafe(getNested(r, "id")),
+    text: toStringSafe(getNested(r, "text")),
+    status,
+    createdAt: toDateFromFirestoreLike(getNested(r, "createdAt")),
+    updatedAt: toDateFromFirestoreLike(getNested(r, "updatedAt")),
+  };
+}
+
+function toNoteItems(arr: unknown): NoteItem[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(toNoteItem);
+}
 
 function isRecord(v: unknown): v is UnknownRecord {
   return (
@@ -174,6 +211,8 @@ export const normalizeDailyAccount = (raw: unknown): DailyAccount => {
 
     creditItems: toAccountAttachedLineItems(getNested(r, "creditItems")),
     debitItems: toAccountAttachedLineItems(getNested(r, "debitItems")),
+
+    notes: toNoteItems(getNested(r, "notes")),
 
     allTags: extractAllTags(r),
 

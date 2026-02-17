@@ -1,4 +1,5 @@
 import { UserData } from "./user";
+import { NoteItem } from "./daily-notes";
 
 export type DailyAccountLineItem = {
   label: string;
@@ -26,9 +27,11 @@ export type DailyAccount = {
   businessExpenses: DailyAccountLineItem[];
   dailySpends: DailyAccountLineItem[];
 
-  // NEW:
   creditItems: AccountAttachedLineItem[];
   debitItems: AccountAttachedLineItem[];
+
+  // NEW:
+  notes: NoteItem[];
 
   allTags: string[];
   totalEarnings: number;

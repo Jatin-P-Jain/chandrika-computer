@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { noteItemSchema } from "./daily-notes-schema";
+
 type TFunction = (key: string) => string;
 
 export const makeDailySchema = (t?: TFunction) => {
@@ -10,7 +12,6 @@ export const makeDailySchema = (t?: TFunction) => {
     tags: z.array(z.string()).optional(),
   });
 
-  // NEW: credit/debit line item (lineItem + accountId)
   const accountLineItemSchema = lineItemSchema.extend({
     accountId: z.string().min(1, t ? t("Required") : "Errors.required"),
   });
@@ -30,9 +31,11 @@ export const makeDailySchema = (t?: TFunction) => {
     businessExpenses: z.array(lineItemSchema),
     dailySpends: z.array(lineItemSchema),
 
-    // NEW:
     creditItems: z.array(accountLineItemSchema),
     debitItems: z.array(accountLineItemSchema),
+
+    // NEW:
+    notes: z.array(noteItemSchema),
 
     totalCashCollected: money,
   });

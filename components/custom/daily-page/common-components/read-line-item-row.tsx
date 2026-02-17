@@ -1,21 +1,20 @@
-import { useWatch } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import clsx from "clsx";
 import { formatINR } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 type ReadOnlyLineItemProps = {
-  control: any;
   namePrefix: string;
   textHeadCls: string;
   textBodyCls: string;
 };
 
 export function ReadOnlyLineItem({
-  control,
   namePrefix,
   textHeadCls,
   textBodyCls,
 }: ReadOnlyLineItemProps) {
+  const { control } = useFormContext();
   const label =
     useWatch({
       control,
@@ -40,7 +39,7 @@ export function ReadOnlyLineItem({
         <div
           className={clsx(
             "text-sm font-medium wrap-break-word text-right",
-            textBodyCls
+            textBodyCls,
           )}
         >
           {label || "-"}

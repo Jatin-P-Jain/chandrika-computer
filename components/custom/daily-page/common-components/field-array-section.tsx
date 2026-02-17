@@ -80,7 +80,6 @@ export function FieldArraySection({
             readOnly ? (
               <ReadOnlyLineItem
                 key={f.id}
-                control={control}
                 namePrefix={`${value}.${idx}`}
                 textHeadCls={textHeadCls}
                 textBodyCls={textBodyCls}
