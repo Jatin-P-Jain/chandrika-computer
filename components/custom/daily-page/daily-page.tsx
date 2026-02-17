@@ -218,7 +218,7 @@ export default function DailyPage({
       </div>
       <Card
         className={clsx(
-          "w-full p-4 py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",
+          "w-full p-2 md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",
         )}
       >
         <div
@@ -235,7 +235,7 @@ export default function DailyPage({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col flex-1 gap-4"
+            className="flex flex-col flex-1"
           >
             <Accordion
               defaultValue={[
@@ -246,7 +246,7 @@ export default function DailyPage({
               ]}
               orientation="horizontal"
               type="multiple"
-              className="grow min-h-0 lg:grid lg:grid-cols-4 gap-4 flex flex-col w-full overflow-auto no-scrollbar"
+              className="grow min-h-0 lg:grid lg:grid-cols-4 gap-3 md:gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-3"
             >
               <FixedExpensesSection
                 totalBarClassName="p-2"
@@ -292,7 +292,7 @@ export default function DailyPage({
             <CreditDebitCardsSection disabled={isReadOnly} />
 
             {/* Final input / read-only display */}
-            <div className="flex gap-4 w-full justify-center items-center mt-auto flex-col">
+            <div className="flex gap-4 w-full justify-center items-center mt-4 flex-col">
               {isReadOnly ? (
                 <div className="flex flex-col md:flex-row justify-center w-full">
                   <div className="flex flex-col gap-4 items-center justify-center w-full lg:pl-42">

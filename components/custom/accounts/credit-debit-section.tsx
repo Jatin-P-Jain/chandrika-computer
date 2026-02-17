@@ -57,7 +57,7 @@ export function CreditDebitCardsSection({ disabled }: Props) {
   const disableAddDebit = !!disabled || isLastRowIncomplete(lastDebit);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 md:gap-16">
+    <div className="grid grid-cols-1 md:grid-cols-2 md:gap-16 gap-4">
       <Card className="p-3 gap-2 shadow-none">
         <div className="flex items-center justify-between gap-2">
           <div className="text-sm font-medium">Credits</div>
@@ -108,16 +108,14 @@ export function CreditDebitCardsSection({ disabled }: Props) {
           </Button>
         </div>
 
-        <div className="space-y-1">
-          {debit.fields.map((f, index) => (
-            <AccountLineItemRow
-              key={f.id}
-              namePrefix={`debitItems.${index}`}
-              disabled={disabled}
-              onRemove={() => debit.remove(index)}
-            />
-          ))}
-        </div>
+        {debit.fields.map((f, index) => (
+          <AccountLineItemRow
+            key={f.id}
+            namePrefix={`debitItems.${index}`}
+            disabled={disabled}
+            onRemove={() => debit.remove(index)}
+          />
+        ))}
       </Card>
     </div>
   );
