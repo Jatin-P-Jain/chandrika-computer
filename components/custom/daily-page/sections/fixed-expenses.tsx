@@ -26,6 +26,8 @@ import { useEffect } from "react";
 import { AddLineItemButton } from "../common-components/add-line-item-button";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import { InfoIcon } from "lucide-react";
+import { ReadOnlyLineItem } from "../common-components/read-line-item-row";
+import { LineItemRow } from "../common-components/line-item-row";
 
 export function FixedExpensesSection({
   readOnly,
@@ -254,9 +256,31 @@ export function FixedExpensesSection({
               </>
             )}
           />
+          <div className="flex flex-col gap-2 overflow-auto max-h-120 no-scrollbar p-1">
+            {fa.fields.map((f, idx) =>
+              readOnly ? (
+                <ReadOnlyLineItem
+                  key={f.id}
+                  control={control}
+                  namePrefix={`fixed.otherFixedExpenses.${idx}`}
+                  textHeadCls={textHeadCls}
+                  textBodyCls={textBodyCls}
+                />
+              ) : (
+                <LineItemRow
+                  key={f.id}
+                  namePrefix={`fixed.otherFixedExpenses.${idx}`}
+                  onRemove={() => fa.remove(idx)}
+                />
+              ),
+            )}
+          </div>
 
           <AddLineItemButton
-            onAdd={() => fa.append({ label: "", amount: 0, tags: [] })}
+            onAdd={() => {
+              console.log(fa.fields);
+              fa.append({ label: "", amount: 0, tags: [] });
+            }}
             buttonText={tDailyAccount("AddFixedExpense")}
           />
         </div>

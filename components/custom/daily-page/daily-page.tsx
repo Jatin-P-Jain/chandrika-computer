@@ -104,7 +104,6 @@ export default function DailyPage({
   const netForDay =
     totalCashCollected - (totalFixed + totalBusiness + totalSpends);
   const totalEarnings = earnings.netIncome + sumAmounts(earnings.otherIncomes);
-  console.log({ readings });
 
   const { user, getUserToken } = useAuth();
   const router = useRouter();

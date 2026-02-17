@@ -34,8 +34,6 @@ export async function getDailyNote(
   const data = snap.data() as DailyNoteDoc;
 
   const items: NoteItem[] = (data.items ?? []).map((it) => {
-    console.log({ it });
-
     return {
       id: it.id,
       text: it.text,
@@ -50,7 +48,6 @@ export async function getDailyNote(
           : new Date(toMillis(it.updatedAt) ?? Date.now()),
     };
   });
-  console.log({ items });
 
   return {
     data: {
