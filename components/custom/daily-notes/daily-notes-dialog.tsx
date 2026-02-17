@@ -10,9 +10,9 @@ import {
   ListTodo,
   Loader2,
   Plus,
-  Trash2,
   Undo2,
   X,
+  XCircle,
 } from "lucide-react";
 
 import {
@@ -389,7 +389,7 @@ export default function DailyNotesDialog({
                       className="shrink-0"
                       title={readOnly ? undefined : "Dismiss"}
                     >
-                      <Trash2 className="size-4 text-muted-foreground" />
+                      <XCircle className="size-4 text-muted-foreground" />
                     </Button>
                   </div>
                 );

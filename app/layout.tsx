@@ -95,12 +95,11 @@ export default async function RootLayout({
                       closeButton
                       richColors
                       position="bottom-center"
-                      mobileOffset={"108px"}
                       className="flex justify-center"
                       toastOptions={{
                         classNames: {
                           toast:
-                            "w-[65%]! md:w-fit! flex items-center p-2! px-4! md:p-4!",
+                            "md:w-fit! flex items-center p-2! px-4! md:p-4!",
                           title: "font-semibold w-full",
                           description: "",
                         },

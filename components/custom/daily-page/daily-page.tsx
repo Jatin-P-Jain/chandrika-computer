@@ -9,7 +9,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Accordion } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormField,
@@ -214,8 +219,7 @@ export default function DailyPage({
       </div>
       <Card
         className={clsx(
-          "w-full p-2 py-3 shadow-sm border rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",
-          isReadOnly ? "border-0 shadow-lg" : "border-primary",
+          "w-full p-4 py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",
         )}
       >
         <div
@@ -243,7 +247,7 @@ export default function DailyPage({
               ]}
               orientation="horizontal"
               type="multiple"
-              className="grow min-h-0 lg:grid lg:grid-cols-4 gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-2"
+              className="grow min-h-0 lg:grid lg:grid-cols-4 gap-4 flex flex-col w-full overflow-auto no-scrollbar"
             >
               <FixedExpensesSection
                 totalBarClassName="p-2"
@@ -286,6 +290,34 @@ export default function DailyPage({
                 readOnly={isReadOnly}
               />
             </Accordion>
+            <div className="flex flex-col md:flex-row justify-between items-start gap-12">
+              <Card className="w-full p-2 gap-1 px-4">
+                <CardTitle
+                  className={clsx("text-base font-medium p-0!", textBodyCls)}
+                >
+                  Credit Items
+                </CardTitle>
+                <CardDescription className={clsx("text-sm p-0!", textBodyCls)}>
+                  Your credit items for the day (like cash collected) will be
+                  shown here.
+                </CardDescription>
+
+                <CardContent></CardContent>
+              </Card>
+              <Card className="w-full p-2 gap-1 px-4">
+                <CardTitle
+                  className={clsx("text-base font-medium p-0!", textBodyCls)}
+                >
+                  Debit Items
+                </CardTitle>
+                <CardDescription className={clsx("text-sm p-0!", textBodyCls)}>
+                  Your debit items for the day (like cash spent) will be shown
+                  here.
+                </CardDescription>
+
+                <CardContent></CardContent>
+              </Card>
+            </div>
 
             {/* Final input / read-only display */}
             <div className="flex gap-4 w-full justify-center items-center mt-auto flex-col">

@@ -44,8 +44,7 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
       <DailyAccountDayNavigator docId={docId} />
       <div
         className={clsx(
-          "flex w-full overflow-auto max-h-[calc(100vh-14rem)] no-scrollbar rounded-md p-0",
-          mode === "view" ? "shadow-md" : "",
+          "flex w-full overflow-auto max-h-[calc(100vh-14rem)] no-scrollbar rounded-md p-3",
         )}
       >
         <DailyPage
