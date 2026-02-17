@@ -35,17 +35,12 @@ export const createDailyAccountItem = async (
   docId?: string,
 ) => {
   if (!user) {
-    return {
-      error: true,
-      message: "Unauthorized",
-    };
+    return { error: true, message: "Unauthorized" };
   }
+
   const verifiedToken = await auth.verifyIdToken(authtoken);
   if (!verifiedToken.admin) {
-    return {
-      error: true,
-      message: "Unauthorized",
-    };
+    return { error: true, message: "Unauthorized" };
   }
 
   const validation = dailySchema.safeParse(data);
@@ -67,22 +62,22 @@ export const createDailyAccountItem = async (
       }
 
       // 🔥 COMPUTE totals and tags BEFORE saving
-      const allTags = extractAllTags(data);
-      const totals = calculateTotals(data);
+      const allTags = extractAllTags(validation.data);
+      const totals = calculateTotals(validation.data);
 
       txn.set(docRef, {
-        ...data,
+        ...validation.data,
         id: documentId,
         createdBy: user,
         created: new Date(),
-        updated: new Date(), // Set initial updated time
-        // 🔥 STORE COMPUTED VALUES DIRECTLY
+        updated: new Date(),
         allTags,
         totalEarnings: totals.earnings,
         totalSpends: totals.spends,
         lastCalculated: new Date(),
       });
     });
+
     return { docId: documentId };
   } catch (e: unknown) {
     return {
@@ -94,18 +89,16 @@ export const createDailyAccountItem = async (
 
 export async function getDailyAccountItem(docId?: string) {
   try {
-    // 1) If docId provided, read that exact document (best option for doc IDs).
     if (docId) {
       const docSnap = await fireStore
         .collection("daily-accounts")
         .doc(docId)
         .get();
-      if (!docSnap.exists) return { data: null, error: "Not found" };
 
+      if (!docSnap.exists) return { data: null, error: "Not found" };
       return { data: normalizeDailyAccount(docSnap.data()), error: null };
     }
 
-    // 2) Otherwise, get the latest document by "created"
     const snap = await fireStore
       .collection("daily-accounts")
       .orderBy("created", "desc")
@@ -113,7 +106,6 @@ export async function getDailyAccountItem(docId?: string) {
       .get();
 
     if (snap.empty) return { data: null, error: "Not found" };
-
     return { data: normalizeDailyAccount(snap.docs[0].data()), error: null };
   } catch (e: unknown) {
     return {
@@ -145,6 +137,7 @@ export const updateDailyAccountItem = async (
     if (!user) {
       return { error: true, message: "Unauthorized" };
     }
+
     const verifiedToken = await auth.verifyIdToken(authtoken);
     if (!verifiedToken.admin) {
       return { error: true, message: "Unauthorized" };
@@ -170,11 +163,7 @@ export const updateDailyAccountItem = async (
       // 🔥 DEEP MERGE first
       const merged = deepMerge<DailyAccount>(existingBase, patch);
 
-      // 🔥 COMPUTE totals/tags from MERGED data
-      const allTags = extractAllTags(merged);
-      const totals = calculateTotals(merged);
-
-      // Validate
+      // Validate merged doc
       const validation = dailySchema.safeParse(merged);
       if (!validation.success) {
         throw new Error(
@@ -182,13 +171,16 @@ export const updateDailyAccountItem = async (
         );
       }
 
+      // 🔥 COMPUTE totals/tags from validated MERGED data
+      const allTags = extractAllTags(validation.data);
+      const totals = calculateTotals(validation.data);
+
       // 🔥 Write FULL document with computed fields
       txn.update(docRef, {
         ...validation.data,
         id: docId,
         updated: new Date(),
         updatedBy: user,
-        // 🔥 COMPUTED FIELDS (atomic with business data)
         allTags,
         totalEarnings: totals.earnings,
         totalSpends: totals.spends,
@@ -214,21 +206,18 @@ export const getFilterOptions = cache(
   }> => {
     try {
       const [creatorsSnap, updatersSnap, tagsSnap] = await Promise.all([
-        // Top 50 creators by count
         fireStore
           .collection("daily_account_creators")
           .orderBy("count", "desc")
           .limit(50)
           .get(),
 
-        // Top 50 updaters by count
         fireStore
           .collection("daily_account_updaters")
           .orderBy("count", "desc")
           .limit(50)
           .get(),
 
-        // Top 100 tags by count
         fireStore
           .collection("daily_account_tags")
           .orderBy("count", "desc")

@@ -1,119 +1,211 @@
 import { DailyAccount } from "@/types/daily-account";
-import { Timestamp } from "firebase/firestore";
 
 export type DirtyFields =
   | boolean
   | { [key: string]: DirtyFields }
   | DirtyFields[];
 
-export function getDirtyValues<T>(dirty: DirtyFields, values: T): Partial<T> {
-  if (dirty === true) return values as any;
-  // If any element in an array is dirty, send the whole array (RHF can't express partial array patches reliably). [web:105]
-  if (Array.isArray(dirty)) return values as any;
+type UnknownRecord = Record<string, unknown>;
 
-  if (!dirty || typeof dirty !== "object") return {};
-
-  const out: any = {};
-  for (const key of Object.keys(dirty)) {
-    const childDirty = (dirty as any)[key];
-    const childValue = (values as any)?.[key];
-
-    const child = getDirtyValues(childDirty, childValue);
-    if (
-      childDirty === true ||
-      (child && Object.keys(child as any).length > 0)
-    ) {
-      out[key] = childDirty === true ? childValue : child;
-    }
-  }
-
-  return out;
-}
-
-export function toMillis(ts: Timestamp): number | null {
-  if (!ts) return null;
-
-  // Firestore Timestamp has toMillis()
-  if (typeof (ts as Timestamp).toMillis === "function")
-    return (ts as Timestamp).toMillis();
-
-  // If it was already a Date for some reason
-  if (ts instanceof Date) return ts.getTime();
-
-  return null;
-}
-
-const toNumber = (v: any, fallback = 0) => {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isFinite(n) ? n : fallback;
+type DailyAccountLineItem = {
+  label: string;
+  amount: number;
+  tags?: string[];
 };
 
-const toLineItems = (arr: any) =>
-  Array.isArray(arr)
-    ? arr.map((x) => ({
-        label: String(x?.label ?? ""),
-        amount: toNumber(x?.amount, 0),
-        tags: Array.isArray(x?.tags) ? x.tags.map(String) : undefined,
-      }))
-    : [];
-const toUser = (user: any) => {
-  return {
-    uid: String(user?.uid ?? ""),
-    displayName: String(user?.displayName ?? ""),
-    email: String(user?.email ?? ""),
-    phoneNumber: String(user?.phoneNumber ?? ""),
-    phoneVerified: Boolean(user?.phoneVerified ?? false),
-    photoUrl: String(user?.photoUrl ?? ""),
-    role: String(user?.role ?? "user"),
-  };
+type AccountAttachedLineItem = DailyAccountLineItem & {
+  accountId: string;
 };
 
-export const normalizeDailyAccount = (raw: any): DailyAccount => {
-  return {
-    id: String(raw?.id ?? ""),
-    fixed: {
-      sd: toNumber(raw?.fixed?.sd, 0),
-      sc: toNumber(raw?.fixed?.sc, 0),
-      fs: toNumber(raw?.fixed?.fs, 0),
-      flexnCard: toNumber(raw?.fixed?.flexnCard, 0),
-      otherFixedExpenses: toLineItems(raw?.earnings?.otherFixedExpenses),
-    },
-    earnings: {
-      netIncome: toNumber(raw?.earnings?.netIncome, 0),
-      otherIncomes: toLineItems(raw?.earnings?.otherIncomes),
-    },
-    businessExpenses: toLineItems(raw?.businessExpenses),
-    dailySpends: toLineItems(raw?.dailySpends),
-    allTags: extractAllTags(raw),
-    totalEarnings: toNumber(raw?.totalEarnings, 0),
-    totalSpends: toNumber(raw?.totalSpends, 0),
-    totalCashCollected: toNumber(raw?.totalCashCollected, 0),
-    created: toMillis(raw?.created)
-      ? new Date(toMillis(raw?.created)!).toISOString()
-      : "",
-    updated: toMillis(raw?.updated)
-      ? new Date(toMillis(raw?.updated)!).toISOString()
-      : "",
-    createdBy: toUser(raw?.createdBy),
-    updatedBy: toUser(raw?.updatedBy),
-  };
+type UserShape = {
+  uid: string;
+  displayName: string;
+  email: string;
+  phoneNumber: string;
+  phoneVerified: boolean;
+  photoUrl: string;
+  role: string;
 };
 
-// --- helpers for update ---
-function isPlainObject(v: unknown): v is Record<string, any> {
+type TimestampLike = { toMillis: () => number };
+
+function isRecord(v: unknown): v is UnknownRecord {
   return (
     !!v && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date)
   );
 }
 
-// Deep merge objects; arrays are replaced (field arrays should be replaced as a whole). [web:168]
-export function deepMerge<T>(base: T, patch: any): T {
-  if (!isPlainObject(base) || !isPlainObject(patch))
-    return (patch ?? base) as T;
+function getObj(v: unknown): UnknownRecord {
+  return isRecord(v) ? v : {};
+}
 
-  const out: any = { ...base };
-  for (const key of Object.keys(patch)) {
-    const pv = patch[key];
+function getNested(obj: UnknownRecord, key: string): unknown {
+  return Object.prototype.hasOwnProperty.call(obj, key) ? obj[key] : undefined;
+}
+
+function toNumber(v: unknown, fallback = 0): number {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function toStringSafe(v: unknown, fallback = ""): string {
+  if (typeof v === "string") return v;
+  if (v == null) return fallback;
+  return String(v);
+}
+
+function toStringArray(v: unknown): string[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  return v.map((x) => toStringSafe(x));
+}
+
+function toDailyLineItem(v: unknown): DailyAccountLineItem {
+  const r = getObj(v);
+  return {
+    label: toStringSafe(getNested(r, "label")),
+    amount: toNumber(getNested(r, "amount"), 0),
+    tags: toStringArray(getNested(r, "tags")),
+  };
+}
+
+function toDailyLineItems(arr: unknown): DailyAccountLineItem[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(toDailyLineItem);
+}
+
+function toAccountAttachedLineItem(v: unknown): AccountAttachedLineItem {
+  const r = getObj(v);
+  return {
+    accountId: toStringSafe(getNested(r, "accountId")),
+    label: toStringSafe(getNested(r, "label")),
+    amount: toNumber(getNested(r, "amount"), 0),
+    tags: toStringArray(getNested(r, "tags")),
+  };
+}
+
+function toAccountAttachedLineItems(arr: unknown): AccountAttachedLineItem[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(toAccountAttachedLineItem);
+}
+
+function toUser(user: unknown): UserShape {
+  const u = getObj(user);
+
+  return {
+    uid: toStringSafe(getNested(u, "uid")),
+    displayName: toStringSafe(getNested(u, "displayName")),
+    email: toStringSafe(getNested(u, "email")),
+    phoneNumber: toStringSafe(getNested(u, "phoneNumber")),
+    phoneVerified: Boolean(getNested(u, "phoneVerified") ?? false),
+    photoUrl: toStringSafe(getNested(u, "photoUrl")),
+    role: toStringSafe(getNested(u, "role") ?? "user"),
+  };
+}
+
+export function getDirtyValues<T>(dirty: DirtyFields, values: T): Partial<T> {
+  if (dirty === true) return values as unknown as Partial<T>;
+  // If any element in an array is dirty, send the whole array (RHF can't express partial array patches reliably).
+  if (Array.isArray(dirty)) return values as unknown as Partial<T>;
+
+  if (!dirty || typeof dirty !== "object") return {};
+
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(dirty)) {
+    const dirtyObj = dirty as Record<string, DirtyFields>;
+    const childDirty = dirtyObj[key];
+    const valueObj = values as unknown as Record<string, unknown>;
+    const childValue = valueObj[key];
+
+    const child = getDirtyValues(childDirty, childValue);
+    if (
+      childDirty === true ||
+      (isRecord(child) && Object.keys(child).length > 0)
+    ) {
+      out[key] = childDirty === true ? childValue : child;
+    }
+  }
+
+  return out as Partial<T>;
+}
+
+export function toMillis(ts: unknown): number | null {
+  if (!ts) return null;
+
+  // Firestore Timestamp has toMillis() [web:553]
+  if (typeof ts === "object" && ts !== null) {
+    const maybe = ts as TimestampLike;
+    if (typeof maybe.toMillis === "function") return maybe.toMillis();
+  }
+
+  if (ts instanceof Date) return ts.getTime();
+
+  return null;
+}
+
+export const normalizeDailyAccount = (raw: unknown): DailyAccount => {
+  const r = getObj(raw);
+
+  const fixed = getObj(getNested(r, "fixed"));
+  const earnings = getObj(getNested(r, "earnings"));
+
+  const createdMillis = toMillis(getNested(r, "created"));
+  const updatedMillis = toMillis(getNested(r, "updated"));
+
+  return {
+    id: toStringSafe(getNested(r, "id")),
+
+    fixed: {
+      sd: toNumber(getNested(fixed, "sd"), 0),
+      sc: toNumber(getNested(fixed, "sc"), 0),
+      fs: toNumber(getNested(fixed, "fs"), 0),
+      flexnCard: toNumber(getNested(fixed, "flexnCard"), 0),
+      otherFixedExpenses: toDailyLineItems(
+        getNested(fixed, "otherFixedExpenses")
+      ),
+    },
+
+    earnings: {
+      netIncome: toNumber(getNested(earnings, "netIncome"), 0),
+      otherIncomes: toDailyLineItems(getNested(earnings, "otherIncomes")),
+    },
+
+    businessExpenses: toDailyLineItems(getNested(r, "businessExpenses")),
+    dailySpends: toDailyLineItems(getNested(r, "dailySpends")),
+
+    creditItems: toAccountAttachedLineItems(getNested(r, "creditItems")),
+    debitItems: toAccountAttachedLineItems(getNested(r, "debitItems")),
+
+    allTags: extractAllTags(r),
+
+    totalEarnings: toNumber(getNested(r, "totalEarnings"), 0),
+    totalSpends: toNumber(getNested(r, "totalSpends"), 0),
+    totalCashCollected: toNumber(getNested(r, "totalCashCollected"), 0),
+
+    created: createdMillis ? new Date(createdMillis).toISOString() : "",
+    updated: updatedMillis ? new Date(updatedMillis).toISOString() : "",
+
+    createdBy: toUser(getNested(r, "createdBy")),
+    updatedBy: toUser(getNested(r, "updatedBy")),
+  };
+};
+
+function isPlainObject(v: unknown): v is UnknownRecord {
+  return (
+    !!v && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date)
+  );
+}
+
+// Deep merge objects; arrays are replaced (field arrays should be replaced as a whole).
+export function deepMerge<T>(base: T, patch: unknown): T {
+  if (!isPlainObject(base) || !isPlainObject(patch)) {
+    return (patch ?? base) as unknown as T;
+  }
+
+  const out: UnknownRecord = { ...(base as unknown as UnknownRecord) };
+  const patchObj = patch as UnknownRecord;
+
+  for (const key of Object.keys(patchObj)) {
+    const pv = patchObj[key];
     if (pv === undefined) continue;
 
     const bv = out[key];
@@ -126,70 +218,78 @@ export function deepMerge<T>(base: T, patch: any): T {
       out[key] = pv;
     }
   }
-  return out as T;
+
+  return out as unknown as T;
 }
 
-// 🔥 HELPER FUNCTIONS (add these)
-export function extractAllTags(data: any): string[] {
+export function extractAllTags(data: unknown): string[] {
+  const d = getObj(data);
   const tags: string[] = [];
 
-  // Earnings → otherIncomes tags
-  if (data.earnings?.otherIncomes?.length) {
-    data.earnings.otherIncomes.forEach((income: any) => {
-      if (Array.isArray(income.tags)) {
-        tags.push(...income.tags);
-      }
-    });
+  const earnings = getObj(getNested(d, "earnings"));
+  const otherIncomes = getNested(earnings, "otherIncomes");
+  if (Array.isArray(otherIncomes)) {
+    for (const income of otherIncomes) {
+      const inc = getObj(income);
+      const t = getNested(inc, "tags");
+      if (Array.isArray(t)) tags.push(...t.map((x) => toStringSafe(x)));
+    }
   }
 
-  // Business Expenses tags
-  if (Array.isArray(data.businessExpenses)) {
-    data.businessExpenses.forEach((expense: any) => {
-      if (Array.isArray(expense.tags)) {
-        tags.push(...expense.tags);
-      }
-    });
+  const businessExpenses = getNested(d, "businessExpenses");
+  if (Array.isArray(businessExpenses)) {
+    for (const expense of businessExpenses) {
+      const ex = getObj(expense);
+      const t = getNested(ex, "tags");
+      if (Array.isArray(t)) tags.push(...t.map((x) => toStringSafe(x)));
+    }
   }
 
-  // Daily Spends tags
-  if (Array.isArray(data.dailySpends)) {
-    data.dailySpends.forEach((spend: any) => {
-      if (Array.isArray(spend.tags)) {
-        tags.push(...spend.tags);
-      }
-    });
+  const dailySpends = getNested(d, "dailySpends");
+  if (Array.isArray(dailySpends)) {
+    for (const spend of dailySpends) {
+      const sp = getObj(spend);
+      const t = getNested(sp, "tags");
+      if (Array.isArray(t)) tags.push(...t.map((x) => toStringSafe(x)));
+    }
   }
 
-  return Array.from(new Set(tags)); // Unique tags
+  return Array.from(new Set(tags));
 }
 
-export function calculateTotals(data: any) {
-  let earnings = data.earnings.netIncome;
+export function calculateTotals(data: unknown): {
+  earnings: number;
+  spends: number;
+} {
+  const d = getObj(data);
+  const earningsObj = getObj(getNested(d, "earnings"));
+
+  let earnings = toNumber(getNested(earningsObj, "netIncome"), 0);
   let spends = 0;
 
-  // Total earnings from otherIncomes
-  if (data.earnings?.otherIncomes?.length) {
-    data.earnings.otherIncomes.forEach((income: any) => {
-      earnings += Number(income.amount) || 0;
-    });
+  const otherIncomes = getNested(earningsObj, "otherIncomes");
+  if (Array.isArray(otherIncomes)) {
+    for (const income of otherIncomes) {
+      const inc = getObj(income);
+      earnings += toNumber(getNested(inc, "amount"), 0);
+    }
   }
 
-  // Total business expenses
-  if (Array.isArray(data.businessExpenses)) {
-    data.businessExpenses.forEach((expense: any) => {
-      spends += Number(expense.amount) || 0;
-    });
+  const businessExpenses = getNested(d, "businessExpenses");
+  if (Array.isArray(businessExpenses)) {
+    for (const expense of businessExpenses) {
+      const ex = getObj(expense);
+      spends += toNumber(getNested(ex, "amount"), 0);
+    }
   }
 
-  // Total daily spends
-  if (Array.isArray(data.dailySpends)) {
-    data.dailySpends.forEach((spend: any) => {
-      spends += Number(spend.amount) || 0;
-    });
+  const dailySpends = getNested(d, "dailySpends");
+  if (Array.isArray(dailySpends)) {
+    for (const spend of dailySpends) {
+      const sp = getObj(spend);
+      spends += toNumber(getNested(sp, "amount"), 0);
+    }
   }
 
-  return {
-    earnings,
-    spends,
-  };
+  return { earnings, spends };
 }

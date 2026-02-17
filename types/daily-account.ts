@@ -1,5 +1,15 @@
 import { UserData } from "./user";
 
+export type DailyAccountLineItem = {
+  label: string;
+  amount: number;
+  tags?: string[];
+};
+
+export type AccountAttachedLineItem = DailyAccountLineItem & {
+  accountId: string;
+};
+
 export type DailyAccount = {
   id: string;
   fixed: {
@@ -7,30 +17,19 @@ export type DailyAccount = {
     sc: number;
     fs: number;
     flexnCard: number;
-    otherFixedExpenses: {
-      label: string;
-      amount: number;
-      tags?: string[];
-    }[];
+    otherFixedExpenses: DailyAccountLineItem[];
   };
   earnings: {
     netIncome: number;
-    otherIncomes: {
-      label: string;
-      amount: number;
-      tags?: string[];
-    }[];
+    otherIncomes: DailyAccountLineItem[];
   };
-  businessExpenses: {
-    label: string;
-    amount: number;
-    tags?: string[];
-  }[];
-  dailySpends: {
-    label: string;
-    amount: number;
-    tags?: string[];
-  }[];
+  businessExpenses: DailyAccountLineItem[];
+  dailySpends: DailyAccountLineItem[];
+
+  // NEW:
+  creditItems: AccountAttachedLineItem[];
+  debitItems: AccountAttachedLineItem[];
+
   allTags: string[];
   totalEarnings: number;
   totalSpends: number;

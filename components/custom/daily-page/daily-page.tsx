@@ -9,12 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Accordion } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Form,
   FormField,
@@ -42,6 +37,7 @@ import CreatedOrUpdated from "../created-or-updated";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import DailyReadingsDialog from "../daily-readings/daily-readings-dialog";
 import DailyNotesDialog from "../daily-notes/daily-notes-dialog";
+import { CreditDebitCardsSection } from "../accounts/credit-debit-section";
 
 type DailyPageMode = "create" | "view" | "edit";
 
@@ -85,6 +81,8 @@ export default function DailyPage({
       earnings: { netIncome: 0, otherIncomes: [] },
       businessExpenses: [],
       dailySpends: [],
+      creditItems: [],
+      debitItems: [],
       totalCashCollected: 0,
     },
     mode: "onChange",
@@ -290,40 +288,13 @@ export default function DailyPage({
                 readOnly={isReadOnly}
               />
             </Accordion>
-            <div className="flex flex-col md:flex-row justify-between items-start gap-12">
-              <Card className="w-full p-2 gap-1 px-4">
-                <CardTitle
-                  className={clsx("text-base font-medium p-0!", textBodyCls)}
-                >
-                  Credit Items
-                </CardTitle>
-                <CardDescription className={clsx("text-sm p-0!", textBodyCls)}>
-                  Your credit items for the day (like cash collected) will be
-                  shown here.
-                </CardDescription>
-
-                <CardContent></CardContent>
-              </Card>
-              <Card className="w-full p-2 gap-1 px-4">
-                <CardTitle
-                  className={clsx("text-base font-medium p-0!", textBodyCls)}
-                >
-                  Debit Items
-                </CardTitle>
-                <CardDescription className={clsx("text-sm p-0!", textBodyCls)}>
-                  Your debit items for the day (like cash spent) will be shown
-                  here.
-                </CardDescription>
-
-                <CardContent></CardContent>
-              </Card>
-            </div>
+            <CreditDebitCardsSection disabled={isReadOnly} />
 
             {/* Final input / read-only display */}
             <div className="flex gap-4 w-full justify-center items-center mt-auto flex-col">
               {isReadOnly ? (
                 <div className="flex flex-col md:flex-row justify-center w-full">
-                  <div className="flex gap-4 items-center justify-center w-full lg:pl-42">
+                  <div className="flex flex-col gap-4 items-center justify-center w-full lg:pl-42">
                     <span
                       className={clsx(
                         "text-base text-center font-semibold text-muted-foreground",
@@ -358,14 +329,14 @@ export default function DailyPage({
                   name="totalCashCollected"
                   render={({ field }) => (
                     <div className="flex flex-col">
-                      <FormItem className="flex w-full items-center justify-center md:flex-row md:gap-4 flex-col">
+                      <FormItem className="flex w-full items-center justify-center flex-col">
                         <FormLabel
                           className={clsx("text-base text-center", textBodyCls)}
                         >
                           {tDailyAccount("TotalCashCollected")}:
                         </FormLabel>
                         <FormControl>
-                          <div className="w-1/2 md:w/full">
+                          <div className="">
                             <AmountInput
                               value={Number(field.value) || 0}
                               onChange={(n) => field.onChange(n)}

@@ -10,6 +10,11 @@ export const makeDailySchema = (t?: TFunction) => {
     tags: z.array(z.string()).optional(),
   });
 
+  // NEW: credit/debit line item (lineItem + accountId)
+  const accountLineItemSchema = lineItemSchema.extend({
+    accountId: z.string().min(1, t ? t("Required") : "Errors.required"),
+  });
+
   return z.object({
     fixed: z.object({
       sd: money,
@@ -24,6 +29,11 @@ export const makeDailySchema = (t?: TFunction) => {
     }),
     businessExpenses: z.array(lineItemSchema),
     dailySpends: z.array(lineItemSchema),
+
+    // NEW:
+    creditItems: z.array(accountLineItemSchema),
+    debitItems: z.array(accountLineItemSchema),
+
     totalCashCollected: money,
   });
 };
