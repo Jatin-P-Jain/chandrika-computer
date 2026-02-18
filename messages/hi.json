@@ -1,6 +1,7 @@
 {
   "Common": {
     "Account": "आपका लॉग इन किया हुआ अकाउंट",
+    "Add": "जोड़े",
     "Amount": "राशि",
     "Back": "पीछे",
     "Cancel": "रद्द करें",
@@ -24,6 +25,7 @@
     "Language": "भाषा",
     "LastUpdated": "आखरी अपडेट",
     "LightMode": "लाइट मोड",
+    "Loading": "लोड हो रहा है...",
     "Login": "लॉग इन करें",
     "Logout": "लॉग आउट",
     "Next": "आगे बढ़े",
@@ -43,6 +45,14 @@
     "Update": "अपडेट",
     "Updating": "अपडेट किया जा रहा है",
     "ViewAll": "सभी देखें"
+  },
+  "CreditsDebits": {
+    "Accounts": "खातें",
+    "Credits": "जमाखाते",
+    "Debits": "नामेखाते",
+    "NoAccountsFound": "कोई खाता नहीं मिला।",
+    "SearchAccount": "खाता खोजें...",
+    "SelectAccount": "एक खाता चुनें"
   },
   "DailyAccount": {
     "AddExpense": "खर्च जोड़ें",

@@ -84,6 +84,8 @@ export default function DailyPage({
       creditItems: [],
       debitItems: [],
       notes: [],
+      accountsCache: {},
+
       totalCashCollected: 0,
     },
     mode: "onChange",
@@ -246,7 +248,7 @@ export default function DailyPage({
               ]}
               orientation="horizontal"
               type="multiple"
-              className="grow min-h-0 lg:grid lg:grid-cols-4 gap-3 md:gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-3"
+              className="grow min-h-0 lg:grid lg:grid-cols-4 gap-3 md:gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-3 md:pb-0"
             >
               <FixedExpensesSection
                 totalBarClassName="p-2"
@@ -337,13 +339,11 @@ export default function DailyPage({
                           {tDailyAccount("TotalCashCollected")}:
                         </FormLabel>
                         <FormControl>
-                          <div className="">
-                            <AmountInput
-                              value={Number(field.value) || 0}
-                              onChange={(n) => field.onChange(n)}
-                              inputClassName="h-full text-xl! font-semibold w-full border-0 shadow-none"
-                            />
-                          </div>
+                          <AmountInput
+                            value={Number(field.value) || 0}
+                            onChange={(n) => field.onChange(n)}
+                            inputClassName="h-full text-xl! font-semibold w-full border-0 shadow-none"
+                          />
                         </FormControl>
                       </FormItem>
                       <FormMessage className="text-xs" />

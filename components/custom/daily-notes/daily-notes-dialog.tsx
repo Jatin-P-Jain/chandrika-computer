@@ -179,7 +179,7 @@ export default function DailyNotesDialog({ form, readOnly = false }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className={clsx("shadow-md")}>
+        <Button variant="outline" className={clsx("shadow-md font-medium!")}>
           <ListTodo className="size-4" /> {tNotes("Notes")}
         </Button>
       </DialogTrigger>

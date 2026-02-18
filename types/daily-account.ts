@@ -30,6 +30,8 @@ export type DailyAccount = {
   creditItems: AccountAttachedLineItem[];
   debitItems: AccountAttachedLineItem[];
 
+  accountsCache?: Record<string, { name: string }>; // NEW: Cache for account names to avoid extra lookups
+
   // NEW:
   notes: NoteItem[];
 

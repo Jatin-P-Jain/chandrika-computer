@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DailyFormValues } from "@/schema/daily-page.schema";
 import { AccountLineItemRow } from "./account-line-item-row";
+import { useLocale, useTranslations } from "next-intl";
+import clsx from "clsx";
 
 type Props = {
   disabled?: boolean;
@@ -29,6 +31,13 @@ function isLastRowIncomplete(v: LineItemLike | undefined): boolean {
 }
 
 export function CreditDebitCardsSection({ disabled }: Props) {
+  const tCommon = useTranslations("Common");
+  const tCreditsDebits = useTranslations("CreditsDebits");
+
+  const locale = useLocale();
+  const isHi = locale === "hi";
+  const textHeadCls = clsx(isHi && "text-base! font-[inherit]");
+
   const { control } = useFormContext<DailyFormValues>();
 
   const credit = useFieldArray({
@@ -57,10 +66,12 @@ export function CreditDebitCardsSection({ disabled }: Props) {
   const disableAddDebit = !!disabled || isLastRowIncomplete(lastDebit);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 md:gap-16 gap-4">
-      <Card className="p-3 gap-2 shadow-none">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-medium">Credits</div>
+    <div className="grid grid-cols-1 md:grid-cols-2 md:gap-36 gap-4">
+      <Card className="p-3 gap-2 shadow-none h-fit border-0">
+        <div className="flex items-center justify-between gap-2 border-b pb-2 rounded-md px-2">
+          <div className={`text-sm font-semibold text-primary ${textHeadCls}`}>
+            {tCreditsDebits("Credits")}
+          </div>
           <Button
             type="button"
             size="sm"
@@ -74,7 +85,7 @@ export function CreditDebitCardsSection({ disabled }: Props) {
             }
           >
             <Plus className="h-4 w-4" />
-            Add
+            {tCommon("Add")}
           </Button>
         </div>
 
@@ -88,9 +99,11 @@ export function CreditDebitCardsSection({ disabled }: Props) {
         ))}
       </Card>
 
-      <Card className="p-3 gap-2 shadow-none">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-medium">Debits</div>
+      <Card className="p-3 gap-2 shadow-none h-fit border-0">
+        <div className="flex items-center justify-between gap-2 border-b pb-2 rounded-md px-2">
+          <div className={`text-sm font-semibold text-primary ${textHeadCls}`}>
+            {tCreditsDebits("Debits")}
+          </div>
           <Button
             type="button"
             size="sm"
@@ -104,7 +117,7 @@ export function CreditDebitCardsSection({ disabled }: Props) {
             }
           >
             <Plus className="h-4 w-4" />
-            Add
+            {tCommon("Add")}
           </Button>
         </div>
 

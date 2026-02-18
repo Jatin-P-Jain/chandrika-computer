@@ -1,6 +1,7 @@
 {
   "Common": {
     "Account": "You are logged in with",
+    "Add": "Add",
     "Amount": "Amount",
     "Back": "Back",
     "Cancel": "Cancel",
@@ -24,6 +25,7 @@
     "Language": "Language",
     "LastUpdated": "Last Updated",
     "LightMode": "Light Mode",
+    "Loading": "Loading...",
     "Login": "Login",
     "Logout": "Logout",
     "Next": "Next",
@@ -43,6 +45,14 @@
     "Update": "Update",
     "Updating": "Updating",
     "ViewAll": "View All"
+  },
+  "CreditsDebits": {
+    "Accounts": "Accounts",
+    "Credits": "Credits",
+    "Debits": "Debits",
+    "NoAccountsFound": "No account found.",
+    "SearchAccount": "Search Account...",
+    "SelectAccount": "Select an account"
   },
   "DailyAccount": {
     "AddExpense": "Add Expense",

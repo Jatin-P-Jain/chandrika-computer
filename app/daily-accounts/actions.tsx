@@ -26,6 +26,7 @@ export const createDailyAccountItem = async (
     | "createdBy"
     | "updatedBy"
     | "allTags"
+    | "accountsCache"
     | "totalEarnings"
     | "totalSpends"
   >,
@@ -125,6 +126,7 @@ export const updateDailyAccountItem = async (
     | "createdBy"
     | "updatedBy"
     | "allTags"
+    | "accountsCache"
     | "totalEarnings"
     | "totalSpends"
   >,

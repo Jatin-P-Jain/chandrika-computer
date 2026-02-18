@@ -68,7 +68,10 @@ export function LineItemRow({
         <div className="w-full">
           <div className="flex justify-between items-center w-full gap-2 ">
             <div
-              className={clsx("text-base font-semibold flex-1", textHeadCls)}
+              className={clsx(
+                "text-base font-semibold flex-1 tabular-nums",
+                textHeadCls,
+              )}
             >
               {formatINR(amount)}
             </div>

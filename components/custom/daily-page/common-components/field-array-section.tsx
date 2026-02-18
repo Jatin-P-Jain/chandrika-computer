@@ -84,7 +84,12 @@ export function FieldArraySection({
                 {tDailyAccount("NetIncome")}
               </div>
             </div>
-            <div className={clsx("text-base font-semibold", textHeadCls)}>
+            <div
+              className={clsx(
+                "text-base tabular-nums font-semibold",
+                textHeadCls,
+              )}
+            >
               {formatINR(netForDay || 0)}
             </div>
           </div>

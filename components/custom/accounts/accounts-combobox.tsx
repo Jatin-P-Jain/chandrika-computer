@@ -24,20 +24,24 @@ import {
   listAccounts,
   AccountDoc,
 } from "@/app/accounts/accounts-actions";
+import { useTranslations } from "next-intl";
 
 type Props = {
   value: string; // accountId
   onChange: (accountId: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  onAccountMeta?: (meta: { id: string; name: string }) => void;
 };
 
 export function AccountComboBox({
   value,
   onChange,
   disabled,
-  placeholder = "Select account...",
+  onAccountMeta,
 }: Props) {
+  const tCommon = useTranslations("Common");
+  const tCreditsDebits = useTranslations("CreditsDebits");
   const [open, setOpen] = React.useState(false);
   const [accounts, setAccounts] = React.useState<AccountDoc[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -78,17 +82,26 @@ export function AccountComboBox({
     setCreating(true);
     try {
       const res = await createAccount(name);
-      // Put newly created at top (but keep list usable)
+
       setAccounts((prev) => {
         const without = prev.filter((a) => a.id !== res.data.id);
         return [res.data, ...without];
       });
+
       onChange(res.data.id);
+      onAccountMeta?.({ id: res.data.id, name: res.data.name });
+
       setOpen(false);
       setQuery("");
     } finally {
       setCreating(false);
     }
+  }
+
+  function onSelectAccount(a: AccountDoc) {
+    onChange(a.id);
+    onAccountMeta?.({ id: a.id, name: a.name });
+    setOpen(false);
   }
 
   return (
@@ -99,7 +112,7 @@ export function AccountComboBox({
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
               <span className="text-sm flex items-center gap-2">
                 <Loader2 className="animate-spin h-4 w-4" />
-                {`Creating "${normalizedQuery}'s account"...`}
+                {tCreditsDebits("Creating account...")}
               </span>
             </div>
           )}
@@ -111,7 +124,7 @@ export function AccountComboBox({
             disabled={disabled}
             className="w-full justify-between"
           >
-            {selected ? selected.name : placeholder}
+            {selected ? selected.name : tCreditsDebits("SelectAccount")}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </div>
@@ -128,14 +141,16 @@ export function AccountComboBox({
           )}
           <Command shouldFilter={true}>
             <CommandInput
-              placeholder={loading ? "Loading..." : "Search account..."}
+              placeholder={
+                loading ? tCommon("Loading") : tCreditsDebits("SearchAccount")
+              }
               value={query}
               onValueChange={setQuery}
             />
             <CommandList>
               <CommandEmpty>
                 <div className="p-2 text-sm">
-                  No account found.
+                  {tCreditsDebits("NoAccountsFound")}
                   {normalizedQuery && !exactMatch ? (
                     <Button
                       type="button"
@@ -146,21 +161,18 @@ export function AccountComboBox({
                       disabled={creating}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Create “{normalizedQuery}”
+                      {tCommon("Create")} “{normalizedQuery}”
                     </Button>
                   ) : null}
                 </div>
               </CommandEmpty>
 
-              <CommandGroup heading="Accounts">
+              <CommandGroup heading={tCreditsDebits("Accounts")}>
                 {accounts.map((a) => (
                   <CommandItem
                     key={a.id}
                     value={a.name}
-                    onSelect={() => {
-                      onChange(a.id);
-                      setOpen(false);
-                    }}
+                    onSelect={() => onSelectAccount(a)}
                   >
                     <Check
                       className={cn(

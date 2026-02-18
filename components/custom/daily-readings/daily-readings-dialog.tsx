@@ -355,7 +355,7 @@ export default function DailyReadingsDialog({
                 <div className="flex justify-between items-center w-full">
                   <span className="flex gap-2 justify-start items-center">
                     {tReadings("TotalAmount")} = {tReadings("Copies")} × 1.5 ={" "}
-                    <b className="text-base">{formatINR(photoAmount)}</b>
+                    <b className="text-base tabular-nums">{formatINR(photoAmount)}</b>
                   </span>
                   <span className="text-xs text-muted-foreground italic hidden md:inline-flex">
                     {" "}
@@ -456,7 +456,10 @@ export default function DailyReadingsDialog({
                         textBodyCls,
                       )}
                     >
-                      {tCommon("Amount")}: <b>{formatINR(stampAmounts[50])}</b>
+                      {tCommon("Amount")}:{" "}
+                      <b className="tabular-nums">
+                        {formatINR(stampAmounts[50])}
+                      </b>
                     </div>
                   </div>
 
@@ -578,7 +581,7 @@ export default function DailyReadingsDialog({
                         textBodyCls,
                       )}
                     >
-                      {tCommon("Amount")}: <b>{formatINR(stampAmounts[500])}</b>
+                      {tCommon("Amount")}: <b className="tabular-nums">{formatINR(stampAmounts[500])}</b>
                     </div>
                   </div>
 
@@ -640,7 +643,7 @@ export default function DailyReadingsDialog({
                       )}
                     >
                       {tCommon("Amount")}:{" "}
-                      <b>{formatINR(stampAmounts[1000])}</b>
+                      <b className="tabular-nums">{formatINR(stampAmounts[1000])}</b>
                     </div>
                   </div>
                 </div>
@@ -648,7 +651,7 @@ export default function DailyReadingsDialog({
                 <div className="rounded-md border p-3 text-sm flex flex-col gap-2 items-center justify-center">
                   <span>
                     {tReadings("TotalStampDuty")} (SD):{" "}
-                    <b className="text-base">{formatINR(stampTotal)}</b>
+                    <b className="text-base tabular-nums">{formatINR(stampTotal)}</b>
                   </span>
                   <span className="text-xs text-amber-700 italic">
                     {tReadings("NoteValuesUsedDirectly")}
@@ -710,7 +713,7 @@ export default function DailyReadingsDialog({
                   )}
                 >
                   {tReadings("Yesterday")}:{" "}
-                  <b className="text-foreground">{photoPrev}</b>
+                  <b className="text-foreground tabular-nums">{photoPrev}</b>
                 </div>
                 <div
                   className={clsx(
@@ -719,7 +722,7 @@ export default function DailyReadingsDialog({
                   )}
                 >
                   {tReadings("Today")}:{" "}
-                  <b className="text-foreground">{photoToday ?? 0}</b>
+                  <b className="text-foreground tabular-nums">{photoToday ?? 0}</b>
                 </div>
                 <div
                   className={clsx(
@@ -728,7 +731,7 @@ export default function DailyReadingsDialog({
                   )}
                 >
                   {tReadings("TotalCopies")} ={" "}
-                  <b className="text-foreground">{photoDiff}</b>
+                  <b className="text-foreground tabular-nums">{photoDiff}</b>
                 </div>
 
                 <div
@@ -738,7 +741,7 @@ export default function DailyReadingsDialog({
                   )}
                 >
                   {tReadings("TotalAmount")} (FS):{" "}
-                  <b className="text-foreground">{formatINR(photoAmount)}</b>
+                  <b className="text-foreground tabular-nums">{formatINR(photoAmount)}</b>
                 </div>
 
                 <span
@@ -786,7 +789,7 @@ export default function DailyReadingsDialog({
                         )}
                       >
                         {tReadings("Yesterday")}:{" "}
-                        <b className="text-foreground">{stampPrev[d]}</b>
+                        <b className="text-foreground tabular-nums">{stampPrev[d]}</b>
                       </div>
 
                       <div
@@ -796,7 +799,7 @@ export default function DailyReadingsDialog({
                         )}
                       >
                         {tReadings("Today")}:{" "}
-                        <b className="text-foreground">
+                        <b className="text-foreground tabular-nums">
                           {d === 50
                             ? r50
                             : d === 100
@@ -814,7 +817,7 @@ export default function DailyReadingsDialog({
                         )}
                       >
                         {tReadings("StampsSold")}:{" "}
-                        <b className="text-foreground">{stampSold[d]}</b>
+                        <b className="text-foreground tabular-nums">{stampSold[d]}</b>
                       </div>
 
                       <div
@@ -824,7 +827,7 @@ export default function DailyReadingsDialog({
                         )}
                       >
                         {tCommon("Amount")}:{" "}
-                        <b className="text-foreground">
+                        <b className="text-foreground tabular-nums">
                           {formatINR(stampAmounts[d])}
                         </b>
                       </div>
@@ -839,7 +842,7 @@ export default function DailyReadingsDialog({
                   )}
                 >
                   {tReadings("TotalStampDuty")} (SD):{" "}
-                  <b className="text-foreground">{formatINR(stampTotal)}</b>
+                  <b className="text-foreground tabular-nums">{formatINR(stampTotal)}</b>
                 </div>
 
                 <span
