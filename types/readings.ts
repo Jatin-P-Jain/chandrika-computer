@@ -7,8 +7,8 @@ export type PhotocopyReadingDoc = {
   difference: number;
   rate: number; // 1.5
   amount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 };
 
 export type StampPartDoc = {
@@ -22,6 +22,6 @@ export type StampReadingDoc = {
   date: string; // YYYY-MM-DD (also docId)
   parts: Record<Denomination, StampPartDoc>;
   totalAmount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 };

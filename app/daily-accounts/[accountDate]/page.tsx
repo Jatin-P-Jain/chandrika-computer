@@ -26,8 +26,6 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
 
   if (docId) {
     const { data } = await getDailyAccountItem(docId);
-    console.log({data});
-    
     if (data) {
       const { mode: modeParam } = await searchParams;
       mode = modeParam === "edit" ? "edit" : "view";
@@ -36,12 +34,7 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
     }
   }
 
-  const readings = docId
-    ? await getReadings(docId)
-    : { photocopy: null, stamp: null };
-
-    console.log({readings});
-    
+  const readings = await getReadings(docId);
 
   return (
     <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-32 gap-1 max-w-7xl mx-auto">
@@ -49,7 +42,7 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
       <DailyAccountDayNavigator docId={docId} />
       <div
         className={clsx(
-          "flex w-full overflow-auto max-h-[calc(100vh-14rem)] no-scrollbar rounded-md p-1 md:p-2",
+          "flex w-full overflow-auto max-h-[calc(100vh-13rem)] no-scrollbar rounded-md p-1 md:p-2",
         )}
       >
         <DailyPage

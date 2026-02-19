@@ -47,6 +47,7 @@ type DailyPageProps = {
   dailyItemData?: DailyAccount;
   docId: string;
   readings?: {
+    success: boolean;
     photocopy: PhotocopyReadingDoc | null;
     stamp: StampReadingDoc | null;
   };
@@ -72,7 +73,7 @@ export default function DailyPage({
 
   const isReadOnly = mode === "view";
   const updateMode = mode === "edit";
-  const areReadingsDone = !!readings?.photocopy || !!readings?.stamp;
+  const areReadingsDone = readings?.success;
 
   const form = useForm<DailyFormValues>({
     resolver: zodResolver(dailySchema),

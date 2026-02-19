@@ -11,6 +11,23 @@ import type {
 
 const DENOMS: Denomination[] = [50, 100, 500, 1000];
 
+type TimestampLike = { toMillis: () => number };
+
+function toMillis(ts: unknown): number | null {
+  if (!ts) return null;
+  if (ts instanceof Date) return ts.getTime();
+  if (typeof ts === "object" && ts !== null) {
+    const maybe = ts as TimestampLike;
+    if (typeof maybe.toMillis === "function") return maybe.toMillis();
+  }
+  return null;
+}
+
+function toDate(ts: unknown): Date | null {
+  const ms = toMillis(ts);
+  return ms ? new Date(ms) : null;
+}
+
 function toYmd(d: Date) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -33,7 +50,7 @@ function clamp0(n: number) {
 }
 
 export async function getReadings(todayDateYmd: string, deltaDays = 0) {
-  const yesterday = addDaysYmd(todayDateYmd, deltaDays); // default deltaDays=0 means get yesterday's readings, deltaDays=-7 means get 7 days ago readings
+  const yesterday = addDaysYmd(todayDateYmd, deltaDays);
 
   const photoRef = fireStore.collection("photocopyReadings").doc(yesterday);
   const stampRef = fireStore.collection("stampReadings").doc(yesterday);
@@ -43,14 +60,39 @@ export async function getReadings(todayDateYmd: string, deltaDays = 0) {
     stampRef.get(),
   ]);
 
-  const photocopy = photoSnap.exists
+  const photocopyRaw = photoSnap.exists
     ? (photoSnap.data() as PhotocopyReadingDoc)
     : null;
-  const stamp = stampSnap.exists ? (stampSnap.data() as StampReadingDoc) : null;
+  const stampRaw = stampSnap.exists
+    ? (stampSnap.data() as StampReadingDoc)
+    : null;
+
+  const photocopy = photocopyRaw
+    ? {
+        ...photocopyRaw,
+        createdAt: toDate(photocopyRaw.createdAt),
+        updatedAt: toDate(photocopyRaw.updatedAt),
+      }
+    : null;
+
+  const stamp = stampRaw
+    ? {
+        ...stampRaw,
+        createdAt: toDate(stampRaw.createdAt),
+        updatedAt: toDate(stampRaw.updatedAt),
+      }
+    : null;
+
+  if (photocopy === null || stamp === null) {
+    return {
+      success: false,
+      photocopy,
+      stamp,
+    };
+  }
 
   return {
-    success: true as const,
-    yesterdayDateYmd: yesterday,
+    success: true,
     photocopy,
     stamp,
   };

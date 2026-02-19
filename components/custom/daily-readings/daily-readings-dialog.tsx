@@ -13,6 +13,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 
 import type {
@@ -30,12 +37,14 @@ import {
   stampReadingSchema,
 } from "@/schema/readings.schema";
 import {
+  CheckCircle,
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
   Loader2Icon,
   Pencil,
   SaveIcon,
+  TriangleAlert,
   X,
 } from "lucide-react";
 import { ReadingInput } from "../daily-page/common-components/reading-input";
@@ -43,6 +52,7 @@ import { formatINR } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { useLocale, useTranslations } from "next-intl";
 import clsx from "clsx";
+import { useBreakpoints } from "@/hooks/useBreakPoints";
 
 const DENOMS: Denomination[] = [50, 100, 500, 1000];
 
@@ -57,6 +67,7 @@ type Props = {
     stamp?: StampReadingDoc;
   }) => void;
   readings?: {
+    success: boolean;
     photocopy?: PhotocopyReadingDoc | null;
     stamp?: StampReadingDoc | null;
   };
@@ -77,6 +88,8 @@ export default function DailyReadingsDialog({
   const textSmCls = clsx(isHi && "text-sm! font-[inherit]");
   const textXsCls = clsx(isHi && "text-xs! font-[inherit]");
 
+  const { isTabletUp } = useBreakpoints();
+
   const [open, setOpen] = React.useState(false);
   const [step, setStep] = React.useState<Step>("photocopy");
   const [loadingPrev, setLoadingPrev] = React.useState(false);
@@ -92,6 +105,9 @@ export default function DailyReadingsDialog({
     500: 0,
     1000: 0,
   });
+
+  // NEW: when readings are already saved, user must confirm+save only if they changed something
+  const [hasEdits, setHasEdits] = React.useState(false);
 
   // IMPORTANT: schema uses preprocess; type RHF as input/output to avoid Resolver mismatch.
   const photoForm = useForm<z.input<typeof photocopyReadingSchema>>({
@@ -111,12 +127,68 @@ export default function DailyReadingsDialog({
     mode: "onChange",
   });
 
+  const readingsFound = readings?.success;
+
   // reset step when dialog opens/closes (optional but keeps UX clean)
   React.useEffect(() => {
-    if (open) {
+    if (open && !readingsFound) {
       setStep("photocopy");
+    } else {
+      setStep("review");
+    }
+  }, [open, readingsFound]);
+
+  // NEW: reset edit state when dialog opens/closes
+  React.useEffect(() => {
+    if (!open) {
+      setHasEdits(false);
+    } else {
+      setHasEdits(false);
     }
   }, [open]);
+
+  // NEW: when existing readings are loaded, ensure forms reflect them and clear edit state
+  React.useEffect(() => {
+    if (!open) return;
+
+    photoForm.reset(
+      { todayReading: readings?.photocopy?.todayReading ?? 0 },
+      { keepDirty: false },
+    );
+
+    stampForm.reset(
+      {
+        r50: readings?.stamp?.parts?.[50]?.todayReading ?? 0,
+        r100: readings?.stamp?.parts?.[100]?.todayReading ?? 0,
+        r500: readings?.stamp?.parts?.[500]?.todayReading ?? 0,
+        r1000: readings?.stamp?.parts?.[1000]?.todayReading ?? 0,
+      },
+      { keepDirty: false },
+    );
+
+    setHasEdits(false);
+  }, [
+    open,
+    readings?.photocopy?.todayReading,
+    readings?.stamp?.parts,
+    photoForm,
+    stampForm,
+  ]);
+
+  // NEW: detect user edits when readings were already saved
+  React.useEffect(() => {
+    if (!open) return;
+    if (!readingsFound) return;
+
+    if (photoForm.formState.isDirty || stampForm.formState.isDirty) {
+      setHasEdits(true);
+    }
+  }, [
+    open,
+    readingsFound,
+    photoForm.formState.isDirty,
+    stampForm.formState.isDirty,
+  ]);
 
   // Fetch yesterday on open
   React.useEffect(() => {
@@ -233,6 +305,23 @@ export default function DailyReadingsDialog({
 
       toast.success("Saved photocopy & stamp");
       onSaved?.({ photocopy: photoRes.data, stamp: stampRes.data });
+
+      // NEW: reset dirty/edit state after successful save
+      photoForm.reset(
+        { todayReading: photoValues.todayReading },
+        { keepDirty: false },
+      );
+      stampForm.reset(
+        {
+          r50: stampValues.r50,
+          r100: stampValues.r100,
+          r500: stampValues.r500,
+          r1000: stampValues.r1000,
+        },
+        { keepDirty: false },
+      );
+      setHasEdits(false);
+
       setOpen(false);
     } catch (e) {
       toast.error("Save failed", {
@@ -268,35 +357,39 @@ export default function DailyReadingsDialog({
     );
   };
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          className="text-sm p-0! flex justify-center items-center text-primary"
-          variant={"ghost"}
-        >
-          <span className="hidden md:flex">
-            {tReadings("PhotocopyStampReadings")}{" "}
-          </span>
-          <span className="md:hidden">{tReadings("SD&FSReadings")} </span>
-          <ChevronsRight className="size-4" />
-        </Button>
-      </DialogTrigger>
+  const TriggerButton = (
+    <Button
+      className="text-sm p-0! flex justify-center items-center text-primary"
+      variant={"ghost"}
+    >
+      <span className="hidden md:flex">
+        {tReadings("PhotocopyStampReadings")}{" "}
+      </span>
+      <span className="md:hidden">{tReadings("SD&FSReadings")} </span>
+      <ChevronsRight className="size-4" />
+    </Button>
+  );
 
-      <DialogContent
-        className="min-w-[50%] p-0 px-3 py-4 md:px-4 md:py-6"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle>{tReadings("EnterReadings")}</DialogTitle>
-        </DialogHeader>
-
-        <div className="w-full space-y-3">
-          <StepHeader />
-          {/* STEP 1: Photocopy (UI unchanged) */}
-          {step === "photocopy" ? (
-            <div className="space-y-1 w-full">
+  const Content = (
+    <>
+      <div className="w-full space-y-3 overflow-auto">
+        <StepHeader />
+        <div className="flex items-center justify-between w-full flex-col gap-2 md:flex-row ">
+          <div className="flex gap-2 items-center justify-start text-green-700 text-xs">
+            <CheckCircle className="size-4 text-green-700" />{" "}
+            {tReadings("ReadingsAlreadySaved")}
+          </div>
+          {hasEdits && (
+            <div className="flex gap-2 items-center justify-start text-yellow-700 text-sm">
+              <TriangleAlert className="size-4 text-yellow-700" />{" "}
+              {tReadings("EditedSomeValues")}
+            </div>
+          )}
+        </div>
+        {/* STEP 1: Photocopy (UI unchanged) */}
+        {step === "photocopy" ? (
+          <div className="space-y-1 w-full">
+            <div className="max-h-[50vh] overflow-auto no-scrollbar">
               <div className={clsx("flex italic font-medium", textBodyCls)}>
                 {tReadings("PhotocopyMachineReading")}
               </div>
@@ -355,7 +448,9 @@ export default function DailyReadingsDialog({
                 <div className="flex justify-between items-center w-full">
                   <span className="flex gap-2 justify-start items-center">
                     {tReadings("TotalAmount")} = {tReadings("Copies")} × 1.5 ={" "}
-                    <b className="text-base tabular-nums">{formatINR(photoAmount)}</b>
+                    <b className="text-base tabular-nums">
+                      {formatINR(photoAmount)}
+                    </b>
                   </span>
                   <span className="text-xs text-muted-foreground italic hidden md:inline-flex">
                     {" "}
@@ -366,322 +461,331 @@ export default function DailyReadingsDialog({
                   {tReadings("NoteValuesUsedDirectly")}
                 </span>
               </div>
-
-              {/* Stepper controls */}
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => setOpen(false)}
-                  disabled={saving}
-                  className="gap-1"
-                >
-                  <X className="size-4" /> {tCommon("Cancel")}
-                </Button>
-                <Button
-                  onClick={goNextFromPhotocopy}
-                  disabled={saving || loadingPrev}
-                  className="gap-0"
-                >
-                  {tCommon("Next")} <ChevronRight className="size-4" />
-                </Button>
-              </div>
             </div>
-          ) : null}
-          {/* STEP 2: Stamp (UI unchanged) */}
-          {step === "stamp" ? (
-            <div className="space-y-4 w-full">
-              <div className="space-y-3">
-                {loadingPrev && (
-                  <div className="text-sm text-muted-foreground flex items-center gap-2 justify-start">
-                    {tReadings("LoadingYesterdaysReadings")}{" "}
-                    <Loader2Icon className="size-3 animate-spin" />
-                  </div>
-                )}
 
-                <div className="grid md:grid-cols-4 grid-cols-1 gap-2 w-full max-h-[55vh] overflow-auto no-scrollbar">
-                  {/* ₹50 */}
-                  <div className="rounded-md border p-3 space-y-1">
-                    <div className={clsx("text-sm font-medium", textBodyCls)}>
-                      ₹ 50
-                    </div>
-                    <div className="text-xs italic">
-                      {tReadings("ClosingStampSerialNumbers")}
-                    </div>
-                    <div
+            {/* Stepper controls */}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => setOpen(false)}
+                disabled={saving}
+                className="gap-1"
+              >
+                <X className="size-4" /> {tCommon("Cancel")}
+              </Button>
+              <Button
+                onClick={goNextFromPhotocopy}
+                disabled={saving || loadingPrev}
+                className="gap-0"
+              >
+                {tCommon("Next")} <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {/* STEP 2: Stamp (UI unchanged) */}
+        {step === "stamp" ? (
+          <div className="space-y-4 w-full ">
+            <div className="space-y-3 max-h-[50vh] overflow-auto no-scrollbar">
+              {loadingPrev && (
+                <div className="text-sm text-muted-foreground flex items-center gap-2 justify-start">
+                  {tReadings("LoadingYesterdaysReadings")}{" "}
+                  <Loader2Icon className="size-3 animate-spin" />
+                </div>
+              )}
+
+              <div className="grid md:grid-cols-4 grid-cols-1 gap-2 w-full">
+                {/* ₹50 */}
+                <div className="rounded-md border p-3 space-y-1">
+                  <div className={clsx("text-sm font-medium", textBodyCls)}>
+                    ₹ 50
+                  </div>
+                  <div className="text-xs italic">
+                    {tReadings("ClosingStampSerialNumbers")}
+                  </div>
+                  <div
+                    className={clsx(
+                      "text-xs text-muted-foreground flex items-center justify-between",
+                      textSmCls,
+                    )}
+                  >
+                    {tReadings("Yesterday")}: <b>{stampPrev[50]}</b>
+                  </div>
+                  <div className="flex items-center gap-2 justify-between">
+                    <Label
                       className={clsx(
-                        "text-xs text-muted-foreground flex items-center justify-between",
+                        "text-xs text-muted-foreground w-full",
                         textSmCls,
                       )}
                     >
-                      {tReadings("Yesterday")}: <b>{stampPrev[50]}</b>
-                    </div>
-                    <div className="flex items-center gap-2 justify-between">
-                      <Label
-                        className={clsx(
-                          "text-xs text-muted-foreground w-full",
-                          textSmCls,
-                        )}
-                      >
-                        {tReadings("Today")} :
-                      </Label>
-                      <Controller
-                        control={stampForm.control}
-                        name="r50"
-                        render={({ field }) => (
-                          <ReadingInput
-                            value={(field.value as number) ?? 0}
-                            onChange={field.onChange}
-                            placeholder="0"
-                            inputClassName="w-fit!"
-                          />
-                        )}
-                      />
-                    </div>
-                    {stampForm.formState.errors.r50 ? (
-                      <p className="text-xs text-destructive">
-                        {String(stampForm.formState.errors.r50.message)}
-                      </p>
-                    ) : null}
-
-                    <div
-                      className={clsx(
-                        "text-sm flex items-center justify-between mt-2",
+                      {tReadings("Today")} :
+                    </Label>
+                    <Controller
+                      control={stampForm.control}
+                      name="r50"
+                      render={({ field }) => (
+                        <ReadingInput
+                          value={(field.value as number) ?? 0}
+                          onChange={field.onChange}
+                          placeholder="0"
+                          inputClassName="w-fit!"
+                        />
                       )}
-                    >
-                      {tReadings("StampsSold")}: <b>{stampSold[50]}</b>
-                    </div>
-                    <div
-                      className={clsx(
-                        "text-sm flex justify-between items-center",
-                        textBodyCls,
-                      )}
-                    >
-                      {tCommon("Amount")}:{" "}
-                      <b className="tabular-nums">
-                        {formatINR(stampAmounts[50])}
-                      </b>
-                    </div>
+                    />
                   </div>
+                  {stampForm.formState.errors.r50 ? (
+                    <p className="text-xs text-destructive">
+                      {String(stampForm.formState.errors.r50.message)}
+                    </p>
+                  ) : null}
 
-                  {/* ₹100 */}
-                  <div className="rounded-md border p-3 space-y-1">
-                    <div className={clsx("text-sm font-medium", textBodyCls)}>
-                      ₹ 100
-                    </div>
-                    <div className="text-xs italic">
-                      {tReadings("ClosingStampSerialNumbers")}
-                    </div>
-                    <div
-                      className={clsx(
-                        "text-xs text-muted-foreground flex items-center justify-between",
-                        textSmCls,
-                      )}
-                    >
-                      {tReadings("Yesterday")}: <b>{stampPrev[100]}</b>
-                    </div>
-                    <div className="flex items-center gap-2 justify-between">
-                      <Label
-                        className={clsx(
-                          "text-xs text-muted-foreground w-full",
-                          textSmCls,
-                        )}
-                      >
-                        {tReadings("Today")} :
-                      </Label>
-                      <Controller
-                        control={stampForm.control}
-                        name="r100"
-                        render={({ field }) => (
-                          <ReadingInput
-                            value={(field.value as number) ?? 0}
-                            onChange={field.onChange}
-                            placeholder="0"
-                            inputClassName="w-fit!"
-                          />
-                        )}
-                      />
-                    </div>
-                    {stampForm.formState.errors.r100 ? (
-                      <p className="text-xs text-destructive">
-                        {String(stampForm.formState.errors.r100.message)}
-                      </p>
-                    ) : null}
-
-                    <div
-                      className={clsx(
-                        "text-sm flex items-center justify-between mt-2",
-                      )}
-                    >
-                      {tReadings("StampsSold")}: <b>{stampSold[100]}</b>
-                    </div>
-                    <div
-                      className={clsx(
-                        "text-sm flex justify-between items-center",
-                        textBodyCls,
-                      )}
-                    >
-                      {tCommon("Amount")}: <b>{formatINR(stampAmounts[100])}</b>
-                    </div>
+                  <div
+                    className={clsx(
+                      "text-sm flex items-center justify-between mt-2",
+                    )}
+                  >
+                    {tReadings("StampsSold")}: <b>{stampSold[50]}</b>
                   </div>
-
-                  {/* ₹500 */}
-                  <div className="rounded-md border p-3 space-y-1">
-                    <div className={clsx("text-sm font-medium", textBodyCls)}>
-                      ₹ 500
-                    </div>
-                    <div className="text-xs italic">
-                      {tReadings("ClosingStampSerialNumbers")}
-                    </div>
-                    <div
-                      className={clsx(
-                        "text-xs text-muted-foreground flex items-center justify-between",
-                        textSmCls,
-                      )}
-                    >
-                      {tReadings("Yesterday")}: <b>{stampPrev[500]}</b>
-                    </div>
-                    <div className="flex items-center gap-2 justify-between">
-                      <Label
-                        className={clsx(
-                          "text-xs text-muted-foreground w-full",
-                          textSmCls,
-                        )}
-                      >
-                        {tReadings("Today")} :
-                      </Label>
-                      <Controller
-                        control={stampForm.control}
-                        name="r500"
-                        render={({ field }) => (
-                          <ReadingInput
-                            value={(field.value as number) ?? 0}
-                            onChange={field.onChange}
-                            placeholder="0"
-                            inputClassName="w-fit!"
-                          />
-                        )}
-                      />
-                    </div>
-                    {stampForm.formState.errors.r500 ? (
-                      <p className="text-xs text-destructive">
-                        {String(stampForm.formState.errors.r500.message)}
-                      </p>
-                    ) : null}
-
-                    <div
-                      className={clsx(
-                        "text-sm flex items-center justify-between mt-2",
-                      )}
-                    >
-                      {tReadings("StampsSold")}: <b>{stampSold[500]}</b>
-                    </div>
-                    <div
-                      className={clsx(
-                        "text-sm flex justify-between items-center",
-                        textBodyCls,
-                      )}
-                    >
-                      {tCommon("Amount")}: <b className="tabular-nums">{formatINR(stampAmounts[500])}</b>
-                    </div>
-                  </div>
-
-                  {/* ₹1000 */}
-                  <div className="rounded-md border p-3 space-y-1">
-                    <div className={clsx("text-sm font-medium", textBodyCls)}>
-                      ₹ 1000
-                    </div>
-                    <div className="text-xs italic">
-                      {tReadings("ClosingStampSerialNumbers")}
-                    </div>
-                    <div
-                      className={clsx(
-                        "text-xs text-muted-foreground flex items-center justify-between",
-                        textSmCls,
-                      )}
-                    >
-                      {tReadings("Yesterday")}: <b>{stampPrev[1000]}</b>
-                    </div>
-                    <div className="flex items-center gap-2 justify-between">
-                      <Label
-                        className={clsx(
-                          "text-xs text-muted-foreground w-full",
-                          textSmCls,
-                        )}
-                      >
-                        {tReadings("Today")} :
-                      </Label>
-                      <Controller
-                        control={stampForm.control}
-                        name="r1000"
-                        render={({ field }) => (
-                          <ReadingInput
-                            value={(field.value as number) ?? 0}
-                            onChange={field.onChange}
-                            placeholder="0"
-                            inputClassName="w-fit!"
-                          />
-                        )}
-                      />
-                    </div>
-                    {stampForm.formState.errors.r1000 ? (
-                      <p className="text-xs text-destructive">
-                        {String(stampForm.formState.errors.r1000.message)}
-                      </p>
-                    ) : null}
-
-                    <div
-                      className={clsx(
-                        "text-sm flex items-center justify-between mt-2",
-                      )}
-                    >
-                      {tReadings("StampsSold")}: <b>{stampSold[1000]}</b>
-                    </div>
-                    <div
-                      className={clsx(
-                        "text-sm flex justify-between items-center",
-                        textBodyCls,
-                      )}
-                    >
-                      {tCommon("Amount")}:{" "}
-                      <b className="tabular-nums">{formatINR(stampAmounts[1000])}</b>
-                    </div>
+                  <div
+                    className={clsx(
+                      "text-sm flex justify-between items-center",
+                      textBodyCls,
+                    )}
+                  >
+                    {tCommon("Amount")}:{" "}
+                    <b className="tabular-nums">
+                      {formatINR(stampAmounts[50])}
+                    </b>
                   </div>
                 </div>
 
-                <div className="rounded-md border p-3 text-sm flex flex-col gap-2 items-center justify-center">
-                  <span>
-                    {tReadings("TotalStampDuty")} (SD):{" "}
-                    <b className="text-base tabular-nums">{formatINR(stampTotal)}</b>
-                  </span>
-                  <span className="text-xs text-amber-700 italic">
-                    {tReadings("NoteValuesUsedDirectly")}
-                  </span>
+                {/* ₹100 */}
+                <div className="rounded-md border p-3 space-y-1">
+                  <div className={clsx("text-sm font-medium", textBodyCls)}>
+                    ₹ 100
+                  </div>
+                  <div className="text-xs italic">
+                    {tReadings("ClosingStampSerialNumbers")}
+                  </div>
+                  <div
+                    className={clsx(
+                      "text-xs text-muted-foreground flex items-center justify-between",
+                      textSmCls,
+                    )}
+                  >
+                    {tReadings("Yesterday")}: <b>{stampPrev[100]}</b>
+                  </div>
+                  <div className="flex items-center gap-2 justify-between">
+                    <Label
+                      className={clsx(
+                        "text-xs text-muted-foreground w-full",
+                        textSmCls,
+                      )}
+                    >
+                      {tReadings("Today")} :
+                    </Label>
+                    <Controller
+                      control={stampForm.control}
+                      name="r100"
+                      render={({ field }) => (
+                        <ReadingInput
+                          value={(field.value as number) ?? 0}
+                          onChange={field.onChange}
+                          placeholder="0"
+                          inputClassName="w-fit!"
+                        />
+                      )}
+                    />
+                  </div>
+                  {stampForm.formState.errors.r100 ? (
+                    <p className="text-xs text-destructive">
+                      {String(stampForm.formState.errors.r100.message)}
+                    </p>
+                  ) : null}
+
+                  <div
+                    className={clsx(
+                      "text-sm flex items-center justify-between mt-2",
+                    )}
+                  >
+                    {tReadings("StampsSold")}: <b>{stampSold[100]}</b>
+                  </div>
+                  <div
+                    className={clsx(
+                      "text-sm flex justify-between items-center",
+                      textBodyCls,
+                    )}
+                  >
+                    {tCommon("Amount")}: <b>{formatINR(stampAmounts[100])}</b>
+                  </div>
+                </div>
+
+                {/* ₹500 */}
+                <div className="rounded-md border p-3 space-y-1">
+                  <div className={clsx("text-sm font-medium", textBodyCls)}>
+                    ₹ 500
+                  </div>
+                  <div className="text-xs italic">
+                    {tReadings("ClosingStampSerialNumbers")}
+                  </div>
+                  <div
+                    className={clsx(
+                      "text-xs text-muted-foreground flex items-center justify-between",
+                      textSmCls,
+                    )}
+                  >
+                    {tReadings("Yesterday")}: <b>{stampPrev[500]}</b>
+                  </div>
+                  <div className="flex items-center gap-2 justify-between">
+                    <Label
+                      className={clsx(
+                        "text-xs text-muted-foreground w-full",
+                        textSmCls,
+                      )}
+                    >
+                      {tReadings("Today")} :
+                    </Label>
+                    <Controller
+                      control={stampForm.control}
+                      name="r500"
+                      render={({ field }) => (
+                        <ReadingInput
+                          value={(field.value as number) ?? 0}
+                          onChange={field.onChange}
+                          placeholder="0"
+                          inputClassName="w-fit!"
+                        />
+                      )}
+                    />
+                  </div>
+                  {stampForm.formState.errors.r500 ? (
+                    <p className="text-xs text-destructive">
+                      {String(stampForm.formState.errors.r500.message)}
+                    </p>
+                  ) : null}
+
+                  <div
+                    className={clsx(
+                      "text-sm flex items-center justify-between mt-2",
+                    )}
+                  >
+                    {tReadings("StampsSold")}: <b>{stampSold[500]}</b>
+                  </div>
+                  <div
+                    className={clsx(
+                      "text-sm flex justify-between items-center",
+                      textBodyCls,
+                    )}
+                  >
+                    {tCommon("Amount")}:{" "}
+                    <b className="tabular-nums">
+                      {formatINR(stampAmounts[500])}
+                    </b>
+                  </div>
+                </div>
+
+                {/* ₹1000 */}
+                <div className="rounded-md border p-3 space-y-1">
+                  <div className={clsx("text-sm font-medium", textBodyCls)}>
+                    ₹ 1000
+                  </div>
+                  <div className="text-xs italic">
+                    {tReadings("ClosingStampSerialNumbers")}
+                  </div>
+                  <div
+                    className={clsx(
+                      "text-xs text-muted-foreground flex items-center justify-between",
+                      textSmCls,
+                    )}
+                  >
+                    {tReadings("Yesterday")}: <b>{stampPrev[1000]}</b>
+                  </div>
+                  <div className="flex items-center gap-2 justify-between">
+                    <Label
+                      className={clsx(
+                        "text-xs text-muted-foreground w-full",
+                        textSmCls,
+                      )}
+                    >
+                      {tReadings("Today")} :
+                    </Label>
+                    <Controller
+                      control={stampForm.control}
+                      name="r1000"
+                      render={({ field }) => (
+                        <ReadingInput
+                          value={(field.value as number) ?? 0}
+                          onChange={field.onChange}
+                          placeholder="0"
+                          inputClassName="w-fit!"
+                        />
+                      )}
+                    />
+                  </div>
+                  {stampForm.formState.errors.r1000 ? (
+                    <p className="text-xs text-destructive">
+                      {String(stampForm.formState.errors.r1000.message)}
+                    </p>
+                  ) : null}
+
+                  <div
+                    className={clsx(
+                      "text-sm flex items-center justify-between mt-2",
+                    )}
+                  >
+                    {tReadings("StampsSold")}: <b>{stampSold[1000]}</b>
+                  </div>
+                  <div
+                    className={clsx(
+                      "text-sm flex justify-between items-center",
+                      textBodyCls,
+                    )}
+                  >
+                    {tCommon("Amount")}:{" "}
+                    <b className="tabular-nums">
+                      {formatINR(stampAmounts[1000])}
+                    </b>
+                  </div>
                 </div>
               </div>
 
-              {/* Stepper controls */}
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={goBack}
-                  disabled={saving}
-                  className="gap-0"
-                >
-                  <ChevronLeft className="size-4" /> {tCommon("Back")}
-                </Button>
-                <Button
-                  onClick={goNextFromStamp}
-                  disabled={saving || loadingPrev}
-                  className="gap-0"
-                >
-                  {tCommon("Next")} <ChevronRight className="size-4" />
-                </Button>
+              <div className="rounded-md border p-3 text-sm flex flex-col gap-2 items-center justify-center">
+                <span>
+                  {tReadings("TotalStampDuty")} (SD):{" "}
+                  <b className="text-base tabular-nums">
+                    {formatINR(stampTotal)}
+                  </b>
+                </span>
+                <span className="text-xs text-amber-700 italic">
+                  {tReadings("NoteValuesUsedDirectly")}
+                </span>
               </div>
             </div>
-          ) : null}
-          {/* STEP 3: Review + editable (jump back to edit) */}
-          {step === "review" ? (
-            <div className="space-y-4 w-full max-h-[70vh] overflow-auto no-scrollbar">
+
+            {/* Stepper controls */}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                onClick={goBack}
+                disabled={saving}
+                className="gap-0"
+              >
+                <ChevronLeft className="size-4" /> {tCommon("Back")}
+              </Button>
+              <Button
+                onClick={goNextFromStamp}
+                disabled={saving || loadingPrev}
+                className="gap-0"
+              >
+                {tCommon("Next")} <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {/* STEP 3: Review + editable (jump back to edit) */}
+        {step === "review" ? (
+          <div className="space-y-4 w-full">
+            <div className="max-h-[50vh] overflow-auto no-scrollbar flex flex-col gap-4">
               {/* Photocopy review */}
               <div className="rounded-md border p-3 text-sm flex flex-col gap-1">
                 <div className="flex items-center justify-between">
@@ -722,7 +826,9 @@ export default function DailyReadingsDialog({
                   )}
                 >
                   {tReadings("Today")}:{" "}
-                  <b className="text-foreground tabular-nums">{photoToday ?? 0}</b>
+                  <b className="text-foreground tabular-nums">
+                    {photoToday ?? 0}
+                  </b>
                 </div>
                 <div
                   className={clsx(
@@ -741,7 +847,9 @@ export default function DailyReadingsDialog({
                   )}
                 >
                   {tReadings("TotalAmount")} (FS):{" "}
-                  <b className="text-foreground tabular-nums">{formatINR(photoAmount)}</b>
+                  <b className="text-foreground tabular-nums">
+                    {formatINR(photoAmount)}
+                  </b>
                 </div>
 
                 <span
@@ -789,7 +897,9 @@ export default function DailyReadingsDialog({
                         )}
                       >
                         {tReadings("Yesterday")}:{" "}
-                        <b className="text-foreground tabular-nums">{stampPrev[d]}</b>
+                        <b className="text-foreground tabular-nums">
+                          {stampPrev[d]}
+                        </b>
                       </div>
 
                       <div
@@ -817,7 +927,9 @@ export default function DailyReadingsDialog({
                         )}
                       >
                         {tReadings("StampsSold")}:{" "}
-                        <b className="text-foreground tabular-nums">{stampSold[d]}</b>
+                        <b className="text-foreground tabular-nums">
+                          {stampSold[d]}
+                        </b>
                       </div>
 
                       <div
@@ -842,7 +954,9 @@ export default function DailyReadingsDialog({
                   )}
                 >
                   {tReadings("TotalStampDuty")} (SD):{" "}
-                  <b className="text-foreground tabular-nums">{formatINR(stampTotal)}</b>
+                  <b className="text-foreground tabular-nums">
+                    {formatINR(stampTotal)}
+                  </b>
                 </div>
 
                 <span
@@ -851,8 +965,10 @@ export default function DailyReadingsDialog({
                   {tReadings("NoteValuesUsedDirectly")}
                 </span>
               </div>
+            </div>
 
-              {/* Final controls: only here we save */}
+            {/* Final controls: only here we save */}
+            {!readingsFound || hasEdits ? (
               <div className="flex justify-end gap-2">
                 <Button
                   variant="secondary"
@@ -883,10 +999,54 @@ export default function DailyReadingsDialog({
                   <SaveIcon className="size-4" />
                 </Button>
               </div>
-            </div>
-          ) : null}
-        </div>
-      </DialogContent>
-    </Dialog>
+            ) : (
+              <div className="flex justify-end gap-2">
+                <Button onClick={() => setOpen(false)} className="gap-1">
+                  <span className={textSmCls}>{tCommon("Ok")} 👍🏻</span>
+                  {/* <SaveIcon className="size-4" /> */}
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+    </>
+  );
+
+  if (isTabletUp) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
+
+        <DialogContent
+          className="min-w-[50%] p-0 px-3 py-4 md:px-4 md:py-6 shadow-2xl overflow-auto"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>{tReadings("EnterReadings")}</DialogTitle>
+          </DialogHeader>
+
+          {Content}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
+
+      <DrawerContent
+        className="p-0 px-3 py-3 md:px-4 md:py-6 shadow-2xl"
+        onOpenAutoFocus={(e: Event) => e.preventDefault()}
+        onCloseAutoFocus={(e: Event) => e.preventDefault()}
+      >
+        <DrawerHeader>
+          <DrawerTitle>{tReadings("EnterReadings")}</DrawerTitle>
+        </DrawerHeader>
+        {Content}
+      </DrawerContent>
+    </Drawer>
   );
 }

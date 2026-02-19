@@ -184,7 +184,7 @@ export default function DailyNotesDialog({ form, readOnly = false }: Props) {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-auto no-scrollbar">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between gap-3">
             <span>{tNotes("Notes")}</span>

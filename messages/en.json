@@ -31,6 +31,7 @@
     "Next": "Next",
     "NoDataFound": "You do not have any Daily Accounts yet. You can create one by clicking on \"Create\" button.",
     "NoDataFoundWithFilters": "No results for these filters. It looks like no items match your criteria. Try removing a few filters or resetting the filters",
+    "Ok": "Ok",
     "Optional": "Optional",
     "Reset": "Reset",
     "Save": "Save",
@@ -145,6 +146,7 @@
   "Readings": {
     "ClosingStampSerialNumbers": "Closing Stamp Serial Numbers",
     "Copies": "Copies",
+    "EditedSomeValues": "You have edited some fields, please confirm and save.",
     "EnterReadings": "Enter Readings",
     "FSRate": "@ ₹1.5 / copy",
     "Info": "SD & FS are auto-calculated from the readings.",
@@ -152,6 +154,7 @@
     "Photocopy": "Photocopy",
     "PhotocopyMachineReading": "Photocopy Machine Reading",
     "PhotocopyStampReadings": "Photocopy & Stamp Readings",
+    "ReadingsAlreadySaved": "Readings for the day were already saved.",
     "Review": "Review",
     "SD&FSReadings": "SD/FS Readings",
     "Stamp": "Stamp",

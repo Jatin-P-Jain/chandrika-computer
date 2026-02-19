@@ -133,7 +133,7 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
                 setIsEditing(false);
               }}
               disabled={disabled || !isRowValid}
-              className="w-full md:w-auto border-green-700 border text-green-700 bg-transparent"
+              className="w-auto border-green-700 border text-green-700 bg-transparent"
             >
               <Check className="h-4 w-4" />
             </Button>
@@ -147,7 +147,7 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
                 onRemove();
               }}
               disabled={disabled}
-              className="w-full md:w-auto border-red-700 border text-red-700 bg-transparent"
+              className="w-auto border-red-700 border text-red-700 bg-transparent"
             >
               <X className="h-4 w-4" />
             </Button>
