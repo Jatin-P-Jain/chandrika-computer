@@ -1,13 +1,20 @@
 // app/daily-account/readings-actions.ts
 "use server";
 
-import { fireStore } from "@/firebase/server";
+import { fireStore, getTotalPages } from "@/firebase/server";
 import type {
   Denomination,
   PhotocopyReadingDoc,
   StampReadingDoc,
   StampPartDoc,
 } from "@/types/readings";
+
+type GetStampReadingsOptions = {
+  pagination?: {
+    pageSize?: number;
+    page?: number;
+  };
+};
 
 const DENOMS: Denomination[] = [50, 100, 500, 1000];
 
@@ -127,16 +134,59 @@ export async function savePhotocopyReading(opts: {
   return { success: true as const, data: payload };
 }
 
+export const getStampReadings = async (options?: GetStampReadingsOptions) => {
+  const page = options?.pagination?.page || 1;
+  const pageSize = options?.pagination?.pageSize || 10;
+
+  // const { status, brandId } = options?.filters || {};
+
+  const stampReadingQuery = fireStore
+    .collection("stampReadings")
+    .orderBy("date", "desc");
+
+  let stampReadingSnapshot;
+  let stampReadingTotalPages;
+  let totalItems;
+
+  if (pageSize) {
+    const stampReadingTotal = await getTotalPages(stampReadingQuery, pageSize);
+    stampReadingTotalPages = stampReadingTotal?.totalPages;
+    totalItems = stampReadingTotal?.totalItems;
+
+    stampReadingSnapshot = await stampReadingQuery
+      .limit(pageSize)
+      .offset((page - 1) * pageSize)
+      .get();
+  } else {
+    stampReadingSnapshot = await stampReadingQuery.get();
+  }
+  const brands = stampReadingSnapshot.docs.map((doc) => {
+    const rawReading = doc.data();
+    const reading: StampReadingDoc = {
+      date: rawReading.date,
+      parts: rawReading.parts,
+      totalAmount: rawReading.totalAmount,
+      createdAt: toDate(rawReading.createdAt),
+      updatedAt: toDate(rawReading.updatedAt),
+    };
+    return reading;
+  });
+  return {
+    data: brands,
+    totalPages: stampReadingTotalPages,
+    totalItems: totalItems,
+  };
+};
 export async function saveStampReading(opts: {
   todayDateYmd: string;
   partsTodayReadings: Record<Denomination, number>;
   prevPartsReadings: Record<Denomination, number>; // from yesterday
 }) {
-  const parts: Record<Denomination, StampPartDoc> = {
-    50: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
-    100: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
-    500: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
-    1000: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
+  const parts: Record<`${Denomination}`, StampPartDoc> = {
+    "50": { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
+    "100": { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
+    "500": { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
+    "1000": { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
   };
 
   for (const d of DENOMS) {
@@ -145,10 +195,10 @@ export async function saveStampReading(opts: {
     const difference = clamp0(todayReading - prevReading);
     const amount = clamp0(difference * d);
 
-    parts[d] = { todayReading, prevReading, difference, amount };
+    parts[`${d}`] = { todayReading, prevReading, difference, amount };
   }
 
-  const totalAmount = DENOMS.reduce((acc, d) => acc + parts[d].amount, 0);
+  const totalAmount = DENOMS.reduce((acc, d) => acc + parts[`${d}`].amount, 0);
 
   const ref = fireStore.collection("stampReadings").doc(opts.todayDateYmd);
 

@@ -1,7 +1,10 @@
 import { DailyAccount } from "@/types/daily-account";
 
 export type DirtyFields =
-  | boolean
+  | true
+  | false
+  | null
+  | undefined
   | { [key: string]: DirtyFields }
   | DirtyFields[];
 
@@ -140,20 +143,33 @@ function toUser(user: unknown): UserShape {
 }
 
 export function getDirtyValues<T>(dirty: DirtyFields, values: T): Partial<T> {
+  // leaf: include as-is
   if (dirty === true) return values as unknown as Partial<T>;
-  // If any element in an array is dirty, send the whole array (RHF can't express partial array patches reliably).
+
+  // array: if any element dirty, send whole array
   if (Array.isArray(dirty)) return values as unknown as Partial<T>;
 
+  // not dirty / invalid shape
   if (!dirty || typeof dirty !== "object") return {};
 
-  const out: Record<string, unknown> = {};
-  for (const key of Object.keys(dirty)) {
-    const dirtyObj = dirty as Record<string, DirtyFields>;
-    const childDirty = dirtyObj[key];
-    const valueObj = values as unknown as Record<string, unknown>;
-    const childValue = valueObj[key];
+  // if we got an object dirty map but values isn't an object, nothing to extract
+  if (!isRecord(values)) return {};
 
+  const out: Record<string, unknown> = {};
+
+  for (const key of Object.keys(dirty as Record<string, DirtyFields>)) {
+    const childDirty = (dirty as Record<string, DirtyFields>)[key];
+    if (!childDirty) continue;
+
+    const childValue = (values as Record<string, unknown>)[key];
+
+    // Critical guard: dirty key exists but value missing -> skip
+    if (childValue === undefined) continue;
+
+    // recurse
     const child = getDirtyValues(childDirty, childValue);
+
+    // include only if it actually produced something, or leaf dirty=true
     if (
       childDirty === true ||
       (isRecord(child) && Object.keys(child).length > 0)

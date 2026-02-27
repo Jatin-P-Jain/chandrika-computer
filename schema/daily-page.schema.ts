@@ -37,7 +37,7 @@ export const makeDailySchema = (t?: TFunction) => {
     // NEW:
     notes: z.array(noteItemSchema),
 
-    accountsCache: z.record(z.string(), z.string()), // { [accountId]: accountName }
+    accountsCache: z.record(z.string(), z.string()).optional(), // { [accountId]: accountName }
 
     totalCashCollected: money,
   });

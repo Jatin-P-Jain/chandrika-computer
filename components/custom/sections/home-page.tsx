@@ -7,6 +7,7 @@ import {
   Layers,
   Loader2,
   LockKeyholeIcon,
+  Newspaper,
   XIcon,
 } from "lucide-react";
 import {
@@ -27,20 +28,19 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const tHomePage = useTranslations("HomePage");
   const tDailyAccount = useTranslations("DailyAccount");
   const tStampStockLedger = useTranslations("StampStock");
+  const tPhotocopyRegister = useTranslations("PhotocopyRegister");
   const tToast = useTranslations("Toast");
 
   const auth = useAuth();
   const { authState, completePhoneVerification } = auth;
   const isUserLoading = authState.status === "loading";
-  authState.status === "first-time-setup" ||
-    authState.status === "phone-verification-required";
   const isPhoneVerification =
     authState.status === "first-time-setup" ||
     authState.status === "phone-verification-required";
   const currentUser = isPhoneVerification ? authState.currentUser : null;
 
   const [sessionExpiredPopupShown, setSessionExpiredPopupShown] = useState(
-    sessionExpired === "1"
+    sessionExpired === "1",
   );
 
   return (
@@ -80,7 +80,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
         <div
           className={clsx(
             "flex justify-start items-center text-muted-foreground gap-2 text-base px-2",
-            locale === "hi" && "text-lg!"
+            locale === "hi" && "text-lg!",
           )}
         >
           <div className="rounded-full p-2 w-fit bg-primary/10 text-primary">
@@ -93,7 +93,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
             <p
               className={clsx(
                 "text-sm text-justify",
-                locale === "hi" && "text-sm! md:text-base!"
+                locale === "hi" && "text-sm! md:text-base!",
               )}
             >
               {tHomePage("SecureServicesDesc")}
@@ -180,6 +180,46 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                 </CardTitle>
                 <CardDescription className="">
                   {tStampStockLedger("Desc")}
+                </CardDescription>
+              </div>
+            </CardHeader>
+            {authState.status !== "ready" ? (
+              isUserLoading ? (
+                <div className="absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md">
+                  <Loader2 className="animate-spin size-5" />
+                </div>
+              ) : (
+                <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
+              )
+            ) : null}
+          </Card>
+        </Link>
+        <Link
+          href="/photocopy-register"
+          className="group block"
+          onNavigate={(e) => {
+            if (authState.status !== "ready") {
+              e.preventDefault(); // blocks Next navigation [web:309]
+              toast.info(tToast("SecuredService"), {
+                description: tToast("PleaseLoginToAccessServiceDesc"),
+              });
+            }
+          }}
+        >
+          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
+            <CardHeader className="flex flex-row items-center gap-3">
+              <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-300">
+                {/* replace with your own icon */}
+                <span className="font-semibold">
+                  <Newspaper className="size-8" />
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 md:gap-2">
+                <CardTitle className={clsx("leading-6")}>
+                  {tPhotocopyRegister("Title")}
+                </CardTitle>
+                <CardDescription className="">
+                  {tPhotocopyRegister("Desc")}
                 </CardDescription>
               </div>
             </CardHeader>

@@ -78,7 +78,7 @@ export default function DailyPage({
   const form = useForm<DailyFormValues>({
     resolver: zodResolver(dailySchema),
     defaultValues: initialData ?? {
-      fixed: { sd: 0, sc: 0, fs: 0 },
+      fixed: { sd: 0, sc: 0, fs: 0, flexnCard: 0, otherFixedExpenses: [] },
       earnings: { netIncome: 0, otherIncomes: [] },
       businessExpenses: [],
       dailySpends: [],
@@ -91,6 +91,15 @@ export default function DailyPage({
     },
     mode: "onChange",
   });
+  useEffect(() => {
+    const values = form.getValues();
+    const result = dailySchema.safeParse(values);
+    console.log(
+      "zod safeParse success?",
+      result.success,
+      result.success ? null : JSON.stringify(result.error.issues, null, 2),
+    );
+  }, [form.watch()]);
 
   // existing watches
   const fixed = useWatch({ control: form.control, name: "fixed" });

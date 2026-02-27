@@ -143,6 +143,10 @@
     "NoMemoryItems": "No memory items yet.",
     "Notes": "Notes"
   },
+  "PhotocopyRegister": {
+    "Desc": "Track the photocopy readings from here",
+    "Title": "Photocopy Register"
+  },
   "Readings": {
     "ClosingStampSerialNumbers": "Closing Stamp Serial Numbers",
     "Copies": "Copies",
@@ -166,7 +170,7 @@
     "Yesterday": "Yesterday"
   },
   "StampStock": {
-    "Desc": "Track your stamp stock and ledger movements.",
+    "Desc": "Track your stamp stock movements.",
     "Title": "Stamp Stock Ledger (Stamp Register)"
   },
   "Toast": {

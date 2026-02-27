@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (!currentUser) throw new Error("No current user for verification");
 
-    return currentUser.getIdToken();
+    return currentUser.getIdToken(true);
   };
 
   const startPhoneVerificationFlow = () => {
@@ -107,7 +107,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // 👇 Update Firestore ONLY if phone wasn't verified before
       if (!phoneVerified) {
         const idTokenResult = await currentUser.getIdTokenResult(true);
-        const claims = idTokenResult.claims as any;
+        const claims = idTokenResult.claims;
         const phoneNumber = currentUser.phoneNumber
           ? currentUser.phoneNumber.slice(3)
           : null;
@@ -189,7 +189,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         // Claims only for role/admin, and don't force refresh on load
         const idTokenResult = await user.getIdTokenResult(); // [web:125]
-        const claims = idTokenResult.claims as any;
+        const claims = idTokenResult.claims;
 
         // Ensure user doc exists
         const safeUser: UserData = {
@@ -197,7 +197,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email: user.email ?? null,
           phoneNumber: user.phoneNumber?.slice(3) ?? null,
           displayName: user.displayName ?? null,
-          role: claims.admin ? "admin" : null,
+          role: claims.admin ? "admin" : "user",
           photoUrl: user.photoURL,
         };
         await createUserIfNotExists(safeUser);
