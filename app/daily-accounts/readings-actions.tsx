@@ -182,11 +182,11 @@ export async function saveStampReading(opts: {
   partsTodayReadings: Record<Denomination, number>;
   prevPartsReadings: Record<Denomination, number>; // from yesterday
 }) {
-  const parts: Record<`${Denomination}`, StampPartDoc> = {
-    "50": { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
-    "100": { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
-    "500": { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
-    "1000": { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
+  const parts: Record<Denomination, StampPartDoc> = {
+    50: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
+    100: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
+    500: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
+    1000: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
   };
 
   for (const d of DENOMS) {
@@ -195,10 +195,10 @@ export async function saveStampReading(opts: {
     const difference = clamp0(todayReading - prevReading);
     const amount = clamp0(difference * d);
 
-    parts[`${d}`] = { todayReading, prevReading, difference, amount };
+    parts[d] = { todayReading, prevReading, difference, amount };
   }
 
-  const totalAmount = DENOMS.reduce((acc, d) => acc + parts[`${d}`].amount, 0);
+  const totalAmount = DENOMS.reduce((acc, d) => acc + parts[d].amount, 0);
 
   const ref = fireStore.collection("stampReadings").doc(opts.todayDateYmd);
 
