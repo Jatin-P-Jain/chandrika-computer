@@ -41,7 +41,8 @@ export function DateDisplay({
 
     return (
       <span className={className}>
-        {formatted} <span className="text-sm">({dayName.toString()})</span>
+        {formatted}{" "}
+        <span className="md:text-sm text-xs">({dayName.toString()})</span>
       </span>
     );
   }

@@ -6,8 +6,18 @@ import { Label } from "@/components/ui/label";
 import { StampReadingsResponsive } from "./stamp-readings-responsive";
 import type { StampReadingRow } from "@/types/readings";
 import { useLocale, useTranslations } from "next-intl";
+import { Layers } from "lucide-react";
 
-export function StampRegisterClient({ data }: { data: StampReadingRow[] }) {
+export function StampRegisterClient({
+  stampReadingPromise,
+}: {
+  stampReadingPromise: Promise<{
+    data: StampReadingRow[];
+    totalPages: number | undefined;
+    totalItems: number | undefined;
+  }>;
+}) {
+  const { data } = React.use(stampReadingPromise);
   const tCommon = useTranslations("Common");
   const tStampRegister = useTranslations("StampRegister");
   const [showReadings, setShowReadings] = React.useState(false);
@@ -20,7 +30,10 @@ export function StampRegisterClient({ data }: { data: StampReadingRow[] }) {
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex items-center justify-between gap-3 w-full">
-        <h1 className={`text-lg font-semibold ${textHeadingCls}`}>
+        <h1
+          className={`text-lg font-semibold flex items-center gap-2 ${textHeadingCls}`}
+        >
+          <Layers className="size-6" />
           {tStampRegister("StampRegister")}
         </h1>
 

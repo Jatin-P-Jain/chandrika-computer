@@ -1,8 +1,14 @@
+import { Suspense } from "react";
 import { getStampReadings } from "../daily-accounts/readings-actions";
 import { StampRegisterClient } from "./stamp-register-client";
+import { StampRegisterSkeleton } from "./stamp-register-skeleton";
 
 export default async function Page() {
-  const { data } = await getStampReadings();
+  const stampReadingPromise = getStampReadings();
 
-  return <StampRegisterClient data={data} />;
+  return (
+    <Suspense fallback={<StampRegisterSkeleton />}>
+      <StampRegisterClient stampReadingPromise={stampReadingPromise} />
+    </Suspense>
+  );
 }

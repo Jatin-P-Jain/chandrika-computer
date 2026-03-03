@@ -1,5 +1,4 @@
 import { DateDisplay } from "@/components/custom/date-display";
-import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -27,9 +26,7 @@ export function StampReadingsResponsive({
 
   const locale = useLocale();
   const isHi = locale === "hi";
-  const textHeadingCls = isHi ? "text-lg! md:text-xl!" : "";
   const textBodyCls = isHi ? "text-base!" : "";
-  const textSmCls = isHi ? "text-sm md:text-base!" : "";
 
   return (
     <div className="space-y-4 w-full">
@@ -49,7 +46,7 @@ export function StampReadingsResponsive({
                   key={d}
                   className={`text-right font-semibold ${textBodyCls}`}
                 >
-                  ₹{d}
+                  <span className="border-2 px-2 rounded-md">₹{d}</span>
                 </TableHead>
               ))}
               <TableHead className={`text-right font-semibold ${textBodyCls}`}>
@@ -209,25 +206,56 @@ export function StampReadingsResponsive({
       {/* Mobile */}
       <div className="md:hidden space-y-3">
         {data.map((r) => (
-          <div key={r.date} className="rounded-md border p-3">
+          <div
+            key={r.date}
+            className="rounded-md border p-3 flex flex-col gap-2"
+          >
             <div className="flex items-center justify-between">
-              <div className="font-medium">{r.date}</div>
-              <div className="font-semibold">
-                Total: {formatINR(r.totalAmount)}
+              <DateDisplay
+                value={r.date}
+                type="docId"
+                className={`w-full text-primary font-semibold flex items-center gap-1 ${textBodyCls}`}
+              />
+              <div className="font-semibold w-full text-right">
+                {tCommon("Total")}: {formatINR(r.totalAmount)}
               </div>
             </div>
 
-            <Separator className="my-3" />
-
-            <div className="grid grid-cols-4 gap-2 text-sm">
+            <div className="grid grid-cols-2 gap-2 text-sm">
               {DENOMS.map((d) => (
                 <div key={d} className="rounded-md bg-muted p-2">
-                  <div className="text-xs text-muted-foreground">{d}</div>
-                  <div className="mt-1">
-                    Diff: {r.parts[d]?.difference ?? 0}
+                  <div className={` ${textBodyCls}`}>₹{d}</div>
+                  {showReadings && (
+                    <>
+                      <div
+                        className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
+                      >
+                        <span className="text-xs">
+                          {tReadings("YesterdayReading")}:
+                        </span>{" "}
+                        {r.parts[d]?.prevReading ?? 0}
+                      </div>
+                      <div
+                        className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
+                      >
+                        <span className="text-xs">
+                          {tReadings("TodayReading")}:
+                        </span>{" "}
+                        {r.parts[d]?.todayReading ?? 0}
+                      </div>
+                    </>
+                  )}
+                  <div
+                    className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
+                  >
+                    <span className="text-xs">{tReadings("StampCount")}:</span>{" "}
+                    {r.parts[d]?.difference ?? 0}
                   </div>
-                  <div className="text-muted-foreground">
-                    Val: {formatINR(r.parts[d]?.amount ?? 0)}
+                  <div
+                    className={`font-semibold justify-between flex items-center ${textBodyCls}`}
+                  >
+                    <span className="text-xs">{tReadings("StampAmount")}:</span>{" "}
+                    {formatINR(r.parts[d]?.amount ?? 0, true, false)}
                   </div>
                 </div>
               ))}
