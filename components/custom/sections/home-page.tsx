@@ -27,7 +27,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const locale = useLocale();
   const tHomePage = useTranslations("HomePage");
   const tDailyAccount = useTranslations("DailyAccount");
-  const tStampStockLedger = useTranslations("StampStock");
+  const tStampRegister = useTranslations("StampRegister");
   const tPhotocopyRegister = useTranslations("PhotocopyRegister");
   const tToast = useTranslations("Toast");
 
@@ -155,7 +155,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
         </Link>
 
         <Link
-          href="/stamp-stock-ledger"
+          href="/stamp-register"
           className="group block"
           onNavigate={(e) => {
             if (authState.status !== "ready") {
@@ -176,10 +176,10 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
               </div>
               <div className="flex flex-col gap-1 md:gap-2">
                 <CardTitle className={clsx("leading-6")}>
-                  {tStampStockLedger("Title")}
+                  {tStampRegister("Title")}
                 </CardTitle>
                 <CardDescription className="">
-                  {tStampStockLedger("Desc")}
+                  {tStampRegister("Desc")}
                 </CardDescription>
               </div>
             </CardHeader>

@@ -12,6 +12,7 @@
     "Create": "नया बनाएं",
     "CreatedAt": "बनाया गया",
     "DarkMode": "डार्क मोड",
+    "Date": "दिनांक",
     "Edit": "एडिट करें",
     "EN": "EN",
     "English": "अंग्रेज़ी",
@@ -33,15 +34,18 @@
     "NoDataFoundWithFilters": "इन फ़िल्टर के लिए कोई परिणाम नहीं मिले। ऐसा लगता है कि कोई भी आइटम आपके मानदंडों से मेल नहीं खाता। फ़िल्टर हटाने या रिसेट करने का प्रयास करें।",
     "Ok": "ठीक है",
     "Optional": "वैकल्पिक",
+    "Particulars": "विवरण",
     "Reset": "रीसेट करें",
     "Save": "सेव करें",
     "Saving": "सेव किया जा रहा है",
     "Settings": "सेटिंग्स",
     "ShowingResults": "पेज {currentPage} • कुल {totalItems} परिणामों में से  {start}–{end} दिखाए जा रहें है",
+    "ShowReadings": "रीडिंग दिखाएँ",
     "SigningInWithGoogle": "आपको Google से लॉग इन किया जा रहा है",
     "SignInWithGoogle": "Google से लॉग इन करें",
     "SignInWithGoogleMobile": "लॉग इन करें",
     "Tags": "टैग",
+    "Total": "कुल",
     "TypeAndEnter": "टाइप करें और एंटर दबाएं",
     "Update": "अपडेट",
     "Updating": "अपडेट किया जा रहा है",
@@ -144,7 +148,8 @@
     "Notes": "नोट्स"
   },
   "PhotocopyRegister": {
-    "Desc": "यहां से फोटोकॉपी की रीडिंग ट्रैक करें",
+    "Desc": "यहां से अपनी फोटोकॉपी रीडिंग को ट्रैक करें",
+    "PhotocopyRegister": "फोटोकॉपी रजिस्टर",
     "Title": "फोटोकॉपी रजिस्टर"
   },
   "Readings": {
@@ -156,21 +161,29 @@
     "Info": "रीडिंग से SD और FS की गणना स्वतः हो जाती है।",
     "NoteValuesUsedDirectly": "नोट: यह अंतिम राशि सीधे आज के दैनिक खाते में उपयोग की जाएगी।",
     "Photocopy": "फोटोकॉपी",
+    "PhotocopyAmount": "फोटोकॉपी की राशि",
+    "PhotocopyCount": "प्रतियों की संख्या",
     "PhotocopyMachineReading": "फोटोकॉपी मशीन रीडिंग",
     "PhotocopyStampReadings": "फोटोकॉपी और स्टाम्प रीडिंग",
+    "PreviousDay": "पिछला दिन",
     "ReadingsAlreadySaved": "आज के लिए रीडिंग पहले ही सहेज ली गई थी।",
     "Review": "समीक्षा",
     "SD&FSReadings": "SD/FS रीडिंग",
     "Stamp": "स्टाम्प",
+    "StampAmount": "स्टाम्प राशि",
+    "StampCount": "स्टाम्प संख्या",
     "StampsSold": "स्टाम्प बिक्री संख्या",
     "Today": "आज",
+    "TodayReading": "आज की रीडिंग",
     "TotalAmount": "कुल राशि",
     "TotalCopies": "कुल प्रतियां",
     "TotalStampDuty": "कुल स्टाम्प शुल्क",
-    "Yesterday": "पिछला कल"
+    "Yesterday": "पिछला कल",
+    "YesterdayReading": "कल की रीडिंग"
   },
-  "StampStock": {
+  "StampRegister": {
     "Desc": "अपने स्टाम्प स्टॉक की गतिविधियों पर नज़र रखें।",
+    "StampRegister": "स्टाम्प रजिस्टर",
     "Title": "स्टाम्प स्टॉक लेजर (स्टाम्प रजिस्टर)"
   },
   "Toast": {

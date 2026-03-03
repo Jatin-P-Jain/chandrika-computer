@@ -12,6 +12,7 @@
     "Create": "Create",
     "CreatedAt": "Created By",
     "DarkMode": "Dark Mode",
+    "Date": "Date",
     "Edit": "Edit",
     "EN": "EN",
     "English": "English",
@@ -33,15 +34,18 @@
     "NoDataFoundWithFilters": "No results for these filters. It looks like no items match your criteria. Try removing a few filters or resetting the filters",
     "Ok": "Ok",
     "Optional": "Optional",
+    "Particulars": "Particulars",
     "Reset": "Reset",
     "Save": "Save",
     "Saving": "Saving",
     "Settings": "Settings",
     "ShowingResults": "Page {currentPage} • Showing {start}–{end} of {totalItems} results",
+    "ShowReadings": "Show Readings",
     "SigningInWithGoogle": "Logging you in with Google",
     "SignInWithGoogle": "Login with Google",
     "SignInWithGoogleMobile": "Login",
     "Tags": "Tags",
+    "Total": "Total",
     "TypeAndEnter": "Type and press Enter",
     "Update": "Update",
     "Updating": "Updating",
@@ -144,7 +148,8 @@
     "Notes": "Notes"
   },
   "PhotocopyRegister": {
-    "Desc": "Track the photocopy readings from here",
+    "Desc": "Track your photocopy readings from here",
+    "PhotocopyRegister": "Photocopy Register",
     "Title": "Photocopy Register"
   },
   "Readings": {
@@ -156,21 +161,29 @@
     "Info": "SD & FS are auto-calculated from the readings.",
     "NoteValuesUsedDirectly": "Note: This final amount will directly be used in today's daily\n                  account.",
     "Photocopy": "Photocopy",
+    "PhotocopyAmount": "Photocopy Amount",
+    "PhotocopyCount": "Number of copies",
     "PhotocopyMachineReading": "Photocopy Machine Reading",
     "PhotocopyStampReadings": "Photocopy & Stamp Readings",
+    "PreviousDay": "Previous Day",
     "ReadingsAlreadySaved": "Readings for the day were already saved.",
     "Review": "Review",
     "SD&FSReadings": "SD/FS Readings",
     "Stamp": "Stamp",
+    "StampAmount": "Stamp Amount",
+    "StampCount": "Stamp Count",
     "StampsSold": "Stamps Sold",
     "Today": "Today",
+    "TodayReading": "Today's Reading",
     "TotalAmount": "Total Amount",
     "TotalCopies": "Total Copies",
     "TotalStampDuty": "Total Stamp Duty",
-    "Yesterday": "Yesterday"
+    "Yesterday": "Yesterday",
+    "YesterdayReading": "Yesterday's Reading"
   },
-  "StampStock": {
+  "StampRegister": {
     "Desc": "Track your stamp stock movements.",
+    "StampRegister": "Stamp Register",
     "Title": "Stamp Stock Ledger (Stamp Register)"
   },
   "Toast": {

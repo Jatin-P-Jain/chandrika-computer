@@ -37,7 +37,7 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
   const readings = await getReadings(docId);
 
   return (
-    <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-32 gap-1 max-w-7xl mx-auto">
+    <div className="flex flex-col justify-center items-center w-full">
       <DailyAccountHeader />
       <DailyAccountDayNavigator docId={docId} />
       <div

@@ -7,9 +7,11 @@ import type {
   PhotocopyReadingDoc,
   StampReadingDoc,
   StampPartDoc,
+  StampReadingRow,
+  PhotocopyReadingRow,
 } from "@/types/readings";
 
-type GetStampReadingsOptions = {
+type GetReadingsOptions = {
   pagination?: {
     pageSize?: number;
     page?: number;
@@ -104,7 +106,52 @@ export async function getReadings(todayDateYmd: string, deltaDays = 0) {
     stamp,
   };
 }
+export const getPhotocopyReadings = async (options?: GetReadingsOptions) => {
+  const page = options?.pagination?.page || 1;
+  const pageSize = options?.pagination?.pageSize || 10;
 
+  // const { status, brandId } = options?.filters || {};
+
+  const photocopyReadingQuery = fireStore
+    .collection("photocopyReadings")
+    .orderBy("date", "desc");
+
+  let photocopyReadingSnapshot;
+  let photocopyReadingTotalPages;
+  let totalItems;
+
+  if (pageSize) {
+    const photocopyReadingTotal = await getTotalPages(photocopyReadingQuery, pageSize);
+    photocopyReadingTotalPages = photocopyReadingTotal?.totalPages;
+    totalItems = photocopyReadingTotal?.totalItems;
+
+    photocopyReadingSnapshot = await photocopyReadingQuery
+      .limit(pageSize)
+      .offset((page - 1) * pageSize)
+      .get();
+  } else {
+    photocopyReadingSnapshot = await photocopyReadingQuery.get();
+  }
+  const photocopyReadings = photocopyReadingSnapshot.docs.map((doc) => {
+    const rawReading = doc.data();
+    const reading: PhotocopyReadingDoc = {
+      date: rawReading.date,
+      todayReading: rawReading.todayReading,
+      prevReading: rawReading.prevReading,
+      difference: rawReading.difference,
+      rate: rawReading.rate,
+      amount: rawReading.amount,
+      createdAt: toDate(rawReading.createdAt),
+      updatedAt: toDate(rawReading.updatedAt),
+    };
+    return reading;
+  });
+  return {
+    data: photocopyReadings as PhotocopyReadingRow[],
+    totalPages: photocopyReadingTotalPages,
+    totalItems: totalItems,
+  };
+};
 export async function savePhotocopyReading(opts: {
   todayDateYmd: string;
   todayReading: number;
@@ -134,7 +181,7 @@ export async function savePhotocopyReading(opts: {
   return { success: true as const, data: payload };
 }
 
-export const getStampReadings = async (options?: GetStampReadingsOptions) => {
+export const getStampReadings = async (options?: GetReadingsOptions) => {
   const page = options?.pagination?.page || 1;
   const pageSize = options?.pagination?.pageSize || 10;
 
@@ -160,7 +207,7 @@ export const getStampReadings = async (options?: GetStampReadingsOptions) => {
   } else {
     stampReadingSnapshot = await stampReadingQuery.get();
   }
-  const brands = stampReadingSnapshot.docs.map((doc) => {
+  const stampReadings = stampReadingSnapshot.docs.map((doc) => {
     const rawReading = doc.data();
     const reading: StampReadingDoc = {
       date: rawReading.date,
@@ -172,7 +219,7 @@ export const getStampReadings = async (options?: GetStampReadingsOptions) => {
     return reading;
   });
   return {
-    data: brands,
+    data: stampReadings as StampReadingRow[],
     totalPages: stampReadingTotalPages,
     totalItems: totalItems,
   };

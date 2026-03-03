@@ -9,7 +9,7 @@ import { usePaginatedFirestore } from "@/hooks/usePaginatedFirestore";
 import { DAILY_ACCOUNTS_LIST_PAGE_SIZE } from "@/lib/utils";
 import { DailyAccount } from "@/types/daily-account";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { DailyAccountCard } from "./daily-account-card";
 import { useLocale, useTranslations } from "next-intl";
 import { DailyAccountCardSkeleton } from "./daily-account-loader";
@@ -130,15 +130,6 @@ export default function DailyAccountsList({
       filters: firestoreFilters, // 🔥 All URL filters
     });
 
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-
-  // after loading becomes false
-  useEffect(() => {
-    if (!loading) {
-      setHasLoadedOnce(true);
-    }
-  }, [loading]);
-
   // ⏮ Reset to page 1 if filters change
   useEffect(() => {
     if (previousFiltersRef.current !== filterKey) {
@@ -162,11 +153,11 @@ export default function DailyAccountsList({
   const end = Math.min(currentPage * DAILY_ACCOUNTS_LIST_PAGE_SIZE, totalItems);
   const totalPages = Math.max(
     Math.ceil(totalItems / DAILY_ACCOUNTS_LIST_PAGE_SIZE),
-    1
+    1,
   );
 
   // Loading state
-  if (loading || !hasLoadedOnce) {
+  if (loading) {
     return (
       <div className="flex h-full w-full flex-1 flex-col gap-2">
         <div className="w-full flex justify-center text-muted-foreground items-center gap-3 animate-pulse">
@@ -181,7 +172,7 @@ export default function DailyAccountsList({
   }
 
   // Empty state
-  if (!loading && hasLoadedOnce && data.length === 0) {
+  if (!loading && data.length === 0) {
     return (
       <div className="flex h-full min-h-120 w-full flex-1 items-center justify-center">
         <p className="text-muted-foreground">
