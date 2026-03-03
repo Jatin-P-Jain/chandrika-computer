@@ -1,8 +1,9 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import clsx from "clsx";
-import { ClipboardListIcon, LayoutList, Link } from "lucide-react";
+import { ClipboardListIcon, LayoutList } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
 
 const DailyAccountHeader = () => {
   const tCommon = useTranslations("Common");

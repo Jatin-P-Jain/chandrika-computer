@@ -372,13 +372,15 @@ export default function DailyReadingsDialog({
 
   const Content = (
     <>
-      <div className="w-full space-y-3 overflow-auto">
+      <div className="w-full flex flex-col gap-2 overflow-auto">
         <StepHeader />
         <div className="flex items-center justify-between w-full flex-col gap-2 md:flex-row ">
-          <div className="flex gap-2 items-center justify-start text-green-700 text-xs">
-            <CheckCircle className="size-4 text-green-700" />{" "}
-            {tReadings("ReadingsAlreadySaved")}
-          </div>
+          {readings?.success && (
+            <div className="flex gap-2 items-center justify-start text-green-700 text-xs">
+              <CheckCircle className="size-4 text-green-700" />{" "}
+              {tReadings("ReadingsAlreadySaved")}
+            </div>
+          )}
           {hasEdits && (
             <div className="flex gap-2 items-center justify-start text-yellow-700 text-sm">
               <TriangleAlert className="size-4 text-yellow-700" />{" "}
@@ -388,15 +390,15 @@ export default function DailyReadingsDialog({
         </div>
         {/* STEP 1: Photocopy (UI unchanged) */}
         {step === "photocopy" ? (
-          <div className="space-y-1 w-full">
-            <div className="max-h-[50vh] overflow-auto no-scrollbar">
+          <div className="flex flex-col  gap-2 w-full">
+            <div className="max-h-[50vh] overflow-auto no-scrollbar flex flex-col gap-2">
               <div className={clsx("flex italic font-medium", textBodyCls)}>
                 {tReadings("PhotocopyMachineReading")}
               </div>
 
               <div
                 className={clsx(
-                  "text-sm text-muted-foreground flex items-center gap-2 justify-between",
+                  "text-sm text-muted-foreground flex items-center gap-2 justify-between pr-3",
                   textSmCls,
                 )}
               >
@@ -422,7 +424,10 @@ export default function DailyReadingsDialog({
                       value={(field.value as number) ?? 0}
                       onChange={field.onChange}
                       placeholder="0"
-                      inputClassName={clsx("w-fit! text-sm", textSmCls)}
+                      inputClassName={clsx(
+                        "w-fit! text-sm text-right",
+                        textSmCls,
+                      )}
                     />
                   )}
                 />
@@ -436,7 +441,7 @@ export default function DailyReadingsDialog({
 
               <div
                 className={clsx(
-                  "text-xs text-muted-foreground flex justify-between items-center",
+                  "text-xs text-muted-foreground flex justify-between items-center pr-3",
                   textSmCls,
                 )}
               >
@@ -505,7 +510,7 @@ export default function DailyReadingsDialog({
                   </div>
                   <div
                     className={clsx(
-                      "text-xs text-muted-foreground flex items-center justify-between",
+                      "text-xs text-muted-foreground flex items-center justify-between pr-3",
                       textSmCls,
                     )}
                   >
@@ -528,7 +533,7 @@ export default function DailyReadingsDialog({
                           value={(field.value as number) ?? 0}
                           onChange={field.onChange}
                           placeholder="0"
-                          inputClassName="w-fit!"
+                          inputClassName="w-fit! text-right"
                         />
                       )}
                     />
@@ -541,7 +546,7 @@ export default function DailyReadingsDialog({
 
                   <div
                     className={clsx(
-                      "text-sm flex items-center justify-between mt-2",
+                      "text-sm flex items-center justify-between mt-2 pr-3",
                     )}
                   >
                     {tReadings("StampsSold")}: <b>{stampSold[50]}</b>
@@ -569,7 +574,7 @@ export default function DailyReadingsDialog({
                   </div>
                   <div
                     className={clsx(
-                      "text-xs text-muted-foreground flex items-center justify-between",
+                      "text-xs text-muted-foreground flex items-center justify-between pr-3",
                       textSmCls,
                     )}
                   >
@@ -592,7 +597,7 @@ export default function DailyReadingsDialog({
                           value={(field.value as number) ?? 0}
                           onChange={field.onChange}
                           placeholder="0"
-                          inputClassName="w-fit!"
+                          inputClassName="w-fit! text-right"
                         />
                       )}
                     />
@@ -605,7 +610,7 @@ export default function DailyReadingsDialog({
 
                   <div
                     className={clsx(
-                      "text-sm flex items-center justify-between mt-2",
+                      "text-sm flex items-center justify-between mt-2 pr-3",
                     )}
                   >
                     {tReadings("StampsSold")}: <b>{stampSold[100]}</b>
@@ -630,7 +635,7 @@ export default function DailyReadingsDialog({
                   </div>
                   <div
                     className={clsx(
-                      "text-xs text-muted-foreground flex items-center justify-between",
+                      "text-xs text-muted-foreground flex items-center justify-between pr-3",
                       textSmCls,
                     )}
                   >
@@ -653,7 +658,7 @@ export default function DailyReadingsDialog({
                           value={(field.value as number) ?? 0}
                           onChange={field.onChange}
                           placeholder="0"
-                          inputClassName="w-fit!"
+                          inputClassName="w-fit! text-right"
                         />
                       )}
                     />
@@ -666,7 +671,7 @@ export default function DailyReadingsDialog({
 
                   <div
                     className={clsx(
-                      "text-sm flex items-center justify-between mt-2",
+                      "text-sm flex items-center justify-between mt-2 pr-3",
                     )}
                   >
                     {tReadings("StampsSold")}: <b>{stampSold[500]}</b>
@@ -694,7 +699,7 @@ export default function DailyReadingsDialog({
                   </div>
                   <div
                     className={clsx(
-                      "text-xs text-muted-foreground flex items-center justify-between",
+                      "text-xs text-muted-foreground flex items-center justify-between pr-3",
                       textSmCls,
                     )}
                   >
@@ -717,7 +722,7 @@ export default function DailyReadingsDialog({
                           value={(field.value as number) ?? 0}
                           onChange={field.onChange}
                           placeholder="0"
-                          inputClassName="w-fit!"
+                          inputClassName="w-fit! text-right"
                         />
                       )}
                     />
@@ -730,7 +735,7 @@ export default function DailyReadingsDialog({
 
                   <div
                     className={clsx(
-                      "text-sm flex items-center justify-between mt-2",
+                      "text-sm flex items-center justify-between mt-2 pr-3",
                     )}
                   >
                     {tReadings("StampsSold")}: <b>{stampSold[1000]}</b>
@@ -1019,7 +1024,7 @@ export default function DailyReadingsDialog({
         <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
 
         <DialogContent
-          className="min-w-[50%] p-0 px-3 py-4 md:px-4 md:py-6 shadow-2xl overflow-auto"
+          className="min-w-[90%] p-0 px-3 py-4 md:px-4 md:py-6 shadow-2xl overflow-auto"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
