@@ -7,7 +7,7 @@ import { ChevronsRight } from "lucide-react";
 import { DateDisplay } from "../date-display";
 import CreatedOrUpdated from "../created-or-updated";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 
 type DailyAccountCardProps = {
   dailyAccount: DailyAccount;

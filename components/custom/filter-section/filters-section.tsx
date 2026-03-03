@@ -1,5 +1,6 @@
 "use client";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,9 +25,7 @@ import clsx from "clsx";
 import { MoreFiltersPopover } from "./more-filters";
 import { enUS, hi } from "date-fns/locale";
 
-const PRESET_FILTERS = [
-  { id: "week", label: "PastWeek", value: "week" },
-];
+const PRESET_FILTERS = [{ id: "week", label: "PastWeek", value: "week" }];
 
 const SORT_FIELDS = [
   { value: "created", label: "CreatedDate" },
@@ -43,7 +42,7 @@ export function FiltersSection() {
   const isHi = locale === "hi";
   const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
   const textSmCls = clsx(
-    isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!"
+    isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!",
   );
 
   const router = useRouter();
@@ -88,7 +87,7 @@ export function FiltersSection() {
 
   const updateSearchParams = (
     newParams: Record<string, string | string[]>,
-    clearAll?: boolean
+    clearAll?: boolean,
   ) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -153,7 +152,7 @@ export function FiltersSection() {
               "flex justify-center items-center cursor-pointer border border-primary px-3 py-1 bg-background text-primary hover:scale-105 transition-all duration-300",
               {
                 "bg-primary text-white": dateRange === filter.value,
-              }
+              },
             )}
             onClick={() => {
               // 🔥 TOGGLE LOGIC
@@ -194,7 +193,7 @@ export function FiltersSection() {
               textBodyCls,
               {
                 "text-primary border-primary scale-102": openDatePicker || date,
-              }
+              },
             )}
           >
             <CalendarRange className="size-4" />
@@ -290,7 +289,7 @@ export function FiltersSection() {
               "gap-1 transition-all duration-300 hover:shadow-md hover:scale-102",
               {
                 "text-primary border-primary scale-102": openSorting,
-              }
+              },
             )}
           >
             <span
@@ -300,7 +299,7 @@ export function FiltersSection() {
               <span>
                 {tFilters("Sort")}{" "}
                 {tFilters(
-                  SORT_FIELDS.find((f) => f.value === sortField)?.label || ""
+                  SORT_FIELDS.find((f) => f.value === sortField)?.label || "",
                 )}{" "}
                 ({sortDir === "asc" ? "↑" : "↓"})
               </span>
@@ -319,7 +318,7 @@ export function FiltersSection() {
                     "w-full flex items-center gap-2 p-2 rounded-md text-sm justify-start",
                     sortField === field.value
                       ? "bg-primary/10 text-primary font-medium"
-                      : "hover:bg-accent text-muted-foreground"
+                      : "hover:bg-accent text-muted-foreground",
                   )}
                   onClick={() =>
                     updateSearchParams({

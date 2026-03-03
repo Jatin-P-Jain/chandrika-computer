@@ -8,7 +8,8 @@ import {
 import { usePaginatedFirestore } from "@/hooks/usePaginatedFirestore";
 import { DAILY_ACCOUNTS_LIST_PAGE_SIZE } from "@/lib/utils";
 import { DailyAccount } from "@/types/daily-account";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useRef } from "react";
 import { DailyAccountCard } from "./daily-account-card";
 import { useLocale, useTranslations } from "next-intl";

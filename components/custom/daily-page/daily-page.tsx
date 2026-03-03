@@ -1,7 +1,7 @@
 // components/custom/daily-page/daily-page.tsx
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
 import { useForm, useWatch } from "react-hook-form";

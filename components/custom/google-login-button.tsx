@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { Button } from "../ui/button";
 import { useAuth } from "@/context/useAuth";
 import GoogleIcon from "@/assets/google-icon.svg";

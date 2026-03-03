@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { format, parseISO, isValid } from "date-fns";
 import { DayNavigator } from "@/components/custom/date-navigator";
+import { useRouter } from "nextjs-toploader/app";
 
 function toDateOnly(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());

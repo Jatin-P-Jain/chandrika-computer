@@ -1,9 +1,8 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import clsx from "clsx";
-import { ClipboardListIcon, LayoutList } from "lucide-react";
+import { ClipboardListIcon, LayoutList, Link } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 
 const DailyAccountHeader = () => {
   const tCommon = useTranslations("Common");
@@ -11,7 +10,6 @@ const DailyAccountHeader = () => {
   const locale = useLocale();
   const isHi = locale === "hi";
   const textCls = clsx(isHi && "text-lg! font-[inherit]");
-  const router = useRouter();
   return (
     <div className="flex justify-between items-center w-full">
       <h1 className="flex justify-center items-center gap-1 font-semibold text-primary text-lg md:text-xl">
@@ -22,14 +20,14 @@ const DailyAccountHeader = () => {
         variant="ghost"
         className={clsx(
           "flex gap-2 justify-between items-center font-semibold text-sm md:text-base text-primary p-0! hover:bg-transparent hover:text-primary",
-          textCls
+          textCls,
         )}
-        onClick={() => {
-          router.push("/daily-accounts");
-        }}
+        asChild
       >
-        {tCommon("ViewAll")}
-        <LayoutList className="size-4 md:size-5" />
+        <Link href="/daily-accounts">
+          {tCommon("ViewAll")}
+          <LayoutList className="size-4 md:size-5" />
+        </Link>
       </Button>
     </div>
   );

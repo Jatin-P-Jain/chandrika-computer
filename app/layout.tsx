@@ -19,6 +19,7 @@ import { Toaster } from "sonner";
 import { DateTimeDisplay } from "@/components/custom/date-time-display";
 import { KeyboardProvider } from "@/context/keyboard-context";
 import { Metadata } from "next";
+import NextTopLoader from "nextjs-toploader";
 
 const amita = Amita({
   variable: "--font-amita",
@@ -84,6 +85,11 @@ export default async function RootLayout({
             <LanguageFontWrapper>
               <KeyboardProvider>
                 <AuthProvider>
+                  <NextTopLoader
+                    color="#065884"
+                    height={3}
+                    showSpinner={false}
+                  />
                   <Navbar />
                   <DateTimeDisplay />
                   <main className="flex ">
