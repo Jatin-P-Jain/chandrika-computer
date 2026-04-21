@@ -139,7 +139,8 @@ export default function DailyPage({
     name: "totalCashCollected",
   });
 
-  const totalFixed = (fixed?.sd ?? 0) + fixed?.sd * 0.3 + (fixed?.fs ?? 0) + fixed?.flexnCard;
+  const totalFixed =
+    (fixed?.sd ?? 0) + fixed?.sd * 0.3 + (fixed?.fs ?? 0) + fixed?.flexnCard;
   const totalBusiness = sumAmounts(businessExpenses);
   const totalSpends = sumAmounts(dailySpends);
   const netForDay =
@@ -299,14 +300,16 @@ export default function DailyPage({
 
                 // 1) Blocking rules (readings)
                 const blocking: ReviewItem[] = [];
-                if (fs === 0) {
+                // Only block if readings are truly missing (null/undefined), not just zero values
+                const readingsData = readings ?? {};
+                if (readingsData.photocopy == null) {
                   blocking.push({
                     id: "missing-photocopy",
                     title: tSaveReview("PhotocopyReadingMissing"),
                     description: tSaveReview("PleaseAddReadingsAndSave"),
                   });
                 }
-                if (sd === 0) {
+                if (readingsData.stamp == null) {
                   blocking.push({
                     id: "missing-stamp",
                     title: tSaveReview("StampReadingMissing"),

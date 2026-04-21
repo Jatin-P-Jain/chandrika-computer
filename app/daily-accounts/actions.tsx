@@ -16,6 +16,7 @@ import { UserData } from "@/types/user";
 import { toDocId } from "@/lib/utils";
 import { cache } from "react";
 import { FilterTag, FilterUser } from "@/types/filters";
+import { Timestamp } from "firebase-admin/firestore";
 
 export const createDailyAccountItem = async (
   data: Omit<
@@ -70,12 +71,12 @@ export const createDailyAccountItem = async (
         ...validation.data,
         id: documentId,
         createdBy: user,
-        created: new Date(),
-        updated: new Date(),
+        created: Timestamp.now(),
+        updated: Timestamp.now(),
         allTags,
         totalEarnings: totals.earnings,
         totalSpends: totals.spends,
-        lastCalculated: new Date(),
+        lastCalculated: Timestamp.now(),
       });
     });
 
@@ -181,7 +182,7 @@ export const updateDailyAccountItem = async (
       txn.update(docRef, {
         ...validation.data,
         id: docId,
-        updated: new Date(),
+        updated: Timestamp.now(),
         updatedBy: user,
         allTags,
         totalEarnings: totals.earnings,

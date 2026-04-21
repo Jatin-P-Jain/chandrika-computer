@@ -66,23 +66,24 @@ export function AmountInput({
         onFocus={() => setHasInteracted(true)}
         onChange={(e) => {
           setHasInteracted(true);
-
           const nextRaw = e.target.value;
-
-          // If user deletes everything, show placeholder again
-          // and keep numeric value as 0.
+          setRaw(nextRaw);
+          // If user deletes everything, show placeholder again and keep numeric value as 0.
           if (nextRaw.trim() === "") {
-            setRaw("");
             onChange(0);
             return;
           }
-
           const nextNumber = parseINR(nextRaw);
           onChange(nextNumber);
-
-          // Re-format what user typed (same behavior as before),
-          // but now we still allow the field to become truly empty.
-          setRaw(formatINR(nextNumber, false, false));
+        }}
+        onBlur={() => {
+          // On blur, reformat the value
+          const nextNumber = parseINR(raw);
+          if (Number(nextNumber) === 0) {
+            setRaw("");
+          } else {
+            setRaw(formatINR(nextNumber, false, false));
+          }
         }}
       />
 

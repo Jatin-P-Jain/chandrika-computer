@@ -18,12 +18,27 @@ import { DailyAccount } from "@/types/daily-account";
 import { normalizeDailyAccount } from "@/lib/server-utils";
 import { FirestoreFilter } from "@/types/filters";
 
+/**
+ * usePaginatedFirestore
+ *
+ * Supports external page state for router/URL sync and direct jumps.
+ *
+ * Usage:
+ *   const [page, setPage] = useState(routerPageFromQuery);
+ *   const { data, ... } = usePaginatedFirestore({
+ *     collectionPath, pageSize, filters, orderByField, orderByDirection,
+ *     externalPage: page, setExternalPage: setPage
+ *   });
+ *   // Sync page <-> router query param
+ */
 type UsePaginatedFirestoreOptions = {
   collectionPath: string;
   pageSize?: number;
   filters?: FirestoreFilter[];
   orderByField?: string;
   orderByDirection?: "asc" | "desc";
+  externalPage?: number;
+  setExternalPage?: (page: number) => void;
 };
 
 export const usePaginatedFirestore = ({
@@ -32,11 +47,14 @@ export const usePaginatedFirestore = ({
   filters = [],
   orderByField = "created",
   orderByDirection = "desc",
+  externalPage,
+  setExternalPage,
 }: UsePaginatedFirestoreOptions) => {
   const [data, setData] = useState<DailyAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [internalPage, setInternalPage] = useState(1);
+  const currentPage = externalPage ?? internalPage;
   const [totalItems, setTotalItems] = useState(0);
 
   const cursors = useRef<(QueryDocumentSnapshot<DocumentData> | null)[]>([
@@ -49,50 +67,42 @@ export const usePaginatedFirestore = ({
     setLoading(true);
     try {
       let q = query(collection(firestore, collectionPath));
-
-      // Dynamic orderBy
       q = query(q, orderBy(orderByField, orderByDirection));
-
-      // PERFECT filter handling
       filters.forEach((f) => {
         if (Array.isArray(f.value)) {
-          // array-contains-any (multiple tags)
           if (f.operator === "array-contains-any") {
             q = query(q, where(f.field, "array-contains-any", f.value));
-          }
-          // in queries (max 10 items)
-          else if (f.operator === "in" && (f.value as string[]).length <= 10) {
+          } else if (
+            f.operator === "in" &&
+            (f.value as string[]).length <= 10
+          ) {
             q = query(q, where(f.field, "in", f.value));
           }
         } else {
-          // Single value filters (dates, etc.)
           q = query(q, where(f.field, f.operator, f.value));
         }
       });
-
-      // Pagination cursor
       const cursor = cursors.current[page - 1];
       if (cursor) {
         q = query(q, startAfter(cursor));
       }
-
       q = query(q, limit(pageSize));
       const snapshot = await getDocs(q);
-
       const docs = snapshot.docs.map(
         (doc) => normalizeDailyAccount(doc.data()) as DailyAccount
       );
-
       if (snapshot.docs.length < pageSize) {
         setHasMore(false);
       }
-
       if (!cursors.current[page]) {
         cursors.current[page] = snapshot.docs.at(-1) ?? null;
       }
-
       setData(docs);
-      setCurrentPage(page);
+      if (setExternalPage) {
+        setExternalPage(page);
+      } else {
+        setInternalPage(page);
+      }
     } catch (err) {
       console.error("Pagination fetch error:", err);
     } finally {
@@ -103,8 +113,12 @@ export const usePaginatedFirestore = ({
   const resetPagination = () => {
     cursors.current = [null];
     setData([]);
-    setCurrentPage(1);
     setHasMore(true);
+    if (setExternalPage) {
+      setExternalPage(1);
+    } else {
+      setInternalPage(1);
+    }
     loadPage(1);
   };
 
@@ -171,5 +185,6 @@ export const usePaginatedFirestore = ({
     totalItems,
     loadPage,
     resetPagination,
+    setCurrentPage: setExternalPage ?? setInternalPage,
   };
 };
