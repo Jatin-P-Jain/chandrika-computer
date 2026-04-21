@@ -112,7 +112,7 @@ export function AccountComboBox({
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
               <span className="text-sm flex items-center gap-2">
                 <Loader2 className="animate-spin h-4 w-4" />
-                {tCreditsDebits("Creating account...")}
+                {tCreditsDebits("CreatingAccount")}
               </span>
             </div>
           )}

@@ -25,7 +25,7 @@ import { FixedExpensesSection } from "./sections/fixed-expenses";
 import { FieldArraySection } from "./common-components/field-array-section";
 import { AmountInput } from "./common-components/amount-input";
 import { Loader2, PencilIcon, Repeat, SaveIcon, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/useAuth";
 import { toast } from "sonner";
 import {
@@ -38,6 +38,9 @@ import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import DailyReadingsDialog from "../daily-readings/daily-readings-dialog";
 import DailyNotesDialog from "../daily-notes/daily-notes-dialog";
 import { CreditDebitCardsSection } from "../accounts/credit-debit-section";
+
+import { SaveReviewDialog, type ReviewItem } from "./save-review-dialog";
+import type { CreditDebitImperative } from "../accounts/credit-debit-section";
 
 type DailyPageMode = "create" | "view" | "edit";
 
@@ -53,6 +56,26 @@ type DailyPageProps = {
   };
 };
 
+function isNonEmptyArray<T>(v: T[] | undefined | null) {
+  return Array.isArray(v) && v.length > 0;
+}
+
+function formatLineItemSummary(
+  items: { label?: string; amount?: number }[],
+  max = 6,
+) {
+  const parts = items.slice(0, max).map((x, i) => {
+    const label = String(x.label ?? "").trim() || `#${i + 1}`;
+    const amount = typeof x.amount === "number" ? x.amount : 0;
+    return `${label}: ${formatINR(amount)}`;
+  });
+
+  const remaining = items.length - parts.length;
+  return remaining > 0
+    ? `${parts.join(", ")}, +${remaining} more`
+    : parts.join(", ");
+}
+
 export default function DailyPage({
   mode,
   initialData,
@@ -63,6 +86,8 @@ export default function DailyPage({
   const tCommon = useTranslations("Common");
   const tToast = useTranslations("Toast");
   const tDailyAccount = useTranslations("DailyAccount");
+  const tSaveReview = useTranslations("SaveReview");
+  const tCreditsDebits = useTranslations("CreditsDebits");
   const locale = useLocale();
   const isHi = locale === "hi";
   const textBodyCls = clsx(isHi && "text-lg font-[inherit]");
@@ -114,12 +139,22 @@ export default function DailyPage({
     name: "totalCashCollected",
   });
 
-  const totalFixed = (fixed?.sd ?? 0) + fixed?.sd * 0.3 + (fixed?.fs ?? 0);
+  const totalFixed = (fixed?.sd ?? 0) + fixed?.sd * 0.3 + (fixed?.fs ?? 0) + fixed?.flexnCard;
   const totalBusiness = sumAmounts(businessExpenses);
   const totalSpends = sumAmounts(dailySpends);
   const netForDay =
     totalCashCollected - (totalFixed + totalBusiness + totalSpends);
   const totalEarnings = earnings.netIncome + sumAmounts(earnings.otherIncomes);
+
+  const creditDebitRef = useRef<CreditDebitImperative | null>(null);
+  const creditDebitAnchorRef = useRef<HTMLDivElement | null>(null);
+
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
+  const [reviewMode, setReviewMode] = useState<
+    "BLOCK_READINGS" | "SOFT_CONFIRM"
+  >("SOFT_CONFIRM");
+  const [pendingData, setPendingData] = useState<DailyFormValues | null>(null);
 
   const { user, getUserToken } = useAuth();
   const router = useRouter();
@@ -203,228 +238,388 @@ export default function DailyPage({
   };
 
   return renderForm ? (
-    <div className="flex flex-col justify-start items-start w-full">
-      <div className="flex w-full justify-between items-center mb-2">
-        <DailyReadingsDialog
-          readings={readings}
-          todayDateYmd={docId}
-          onSaved={(saved) => {
-            if (saved.photocopy) {
-              form.setValue("fixed.fs", saved.photocopy.amount, {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-            }
-            if (saved.stamp) {
-              form.setValue("fixed.sd", saved.stamp.totalAmount, {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-            }
+    <>
+      <div className="flex flex-col justify-start items-start w-full">
+        <div className="flex w-full justify-between items-center mb-2">
+          <DailyReadingsDialog
+            readings={readings}
+            todayDateYmd={docId}
+            onSaved={(saved) => {
+              if (saved.photocopy) {
+                form.setValue("fixed.fs", saved.photocopy.amount, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }
+              if (saved.stamp) {
+                form.setValue("fixed.sd", saved.stamp.totalAmount, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }
 
-            // Keep server-prop readings in sync for view/reload correctness
-            router.refresh();
-          }}
-        />
-        <DailyNotesDialog form={form} readOnly={mode === "view"} />
-      </div>
-      <Card
-        className={clsx(
-          "w-full p-2 md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",
-        )}
-      >
-        <div
+              // Keep server-prop readings in sync for view/reload correctness
+              router.refresh();
+            }}
+          />
+          <DailyNotesDialog form={form} readOnly={mode === "view"} />
+        </div>
+        <Card
           className={clsx(
-            "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col",
-            textBodyCls,
+            "w-full p-2 md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto",
           )}
         >
-          <span className="text-base text-yellow-700">ॐ</span>
-          <span className="text-orange-600"> श्री गणेशाय नमः</span>
-        </div>
-
-        {/* You can still wrap in Form, even for read-only, to reuse watch() logic */}
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col flex-1"
+          <div
+            className={clsx(
+              "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col",
+              textBodyCls,
+            )}
           >
-            <Accordion
-              defaultValue={[
-                "fixed",
-                "earnings.otherIncomes",
-                "businessExpenses",
-                "dailySpends",
-              ]}
-              orientation="horizontal"
-              type="multiple"
-              className="grow min-h-0 lg:grid lg:grid-cols-4 gap-3 md:gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-3 md:pb-0"
-            >
-              <FixedExpensesSection
-                totalBarClassName="p-2"
-                totalFixed={
-                  Number(formatINR(totalFixed)) ? totalFixed : totalFixed
+            <span className="text-base text-yellow-700">ॐ</span>
+            <span className="text-orange-600"> श्री गणेशाय नमः</span>
+          </div>
+
+          {/* You can still wrap in Form, even for read-only, to reuse watch() logic */}
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(async (data) => {
+                if (isReadOnly) return;
+
+                const fs = Number(form.getValues("fixed.fs") ?? 0);
+                const sd = Number(form.getValues("fixed.sd") ?? 0);
+
+                const creditItems = form.getValues("creditItems") ?? [];
+                const debitItems = form.getValues("debitItems") ?? [];
+
+                const dailySpendsNow = form.getValues("dailySpends") ?? [];
+                const businessExpensesNow =
+                  form.getValues("businessExpenses") ?? [];
+                const extraEarnings =
+                  form.getValues("earnings.otherIncomes") ?? [];
+
+                // 1) Blocking rules (readings)
+                const blocking: ReviewItem[] = [];
+                if (fs === 0) {
+                  blocking.push({
+                    id: "missing-photocopy",
+                    title: tSaveReview("PhotocopyReadingMissing"),
+                    description: tSaveReview("PleaseAddReadingsAndSave"),
+                  });
                 }
-                readings={readings}
-                readOnly={isReadOnly}
-              />
+                if (sd === 0) {
+                  blocking.push({
+                    id: "missing-stamp",
+                    title: tSaveReview("StampReadingMissing"),
+                    description: tSaveReview("PleaseAddReadingsAndSave"),
+                  });
+                }
 
-              <FieldArraySection
-                value="earnings.otherIncomes"
-                title={tDailyAccount("Income")}
-                addButtonText={tDailyAccount("AddIncome")}
-                totalLabel={tDailyAccount("TotalIncome")}
-                totalValue={formatINR(totalEarnings)}
-                totalBarClassName="bg-green-100! text-green-900! p-2"
-                showNet={true}
-                netForDay={netForDay}
-                readOnly={isReadOnly}
-              />
+                // 2) Always-present review items
+                const items: ReviewItem[] = [];
 
-              <FieldArraySection
-                value="businessExpenses"
-                title={tDailyAccount("BusinessExpense")}
-                addButtonText={tDailyAccount("AddExpense")}
-                totalLabel={tDailyAccount("TotalBusinessExpense")}
-                totalValue={formatINR(totalBusiness)}
-                totalBarClassName="p-2"
-                readOnly={isReadOnly}
-              />
+                items.push({
+                  id: "readings-summary",
+                  title: tSaveReview("Readings"),
+                  description:
+                    fs === 0 || sd === 0
+                      ? tSaveReview("ReadingsMissingDesc")
+                      : tSaveReview("ReadingsPresentDesc"),
+                });
 
-              <FieldArraySection
-                value="dailySpends"
-                title={tDailyAccount("DailySpends")}
-                addButtonText={tDailyAccount("AddSpend")}
-                totalLabel={tDailyAccount("TotalDailySpends")}
-                totalValue={formatINR(totalSpends)}
-                totalBarClassName="p-2"
-                readOnly={isReadOnly}
-              />
-            </Accordion>
-            <CreditDebitCardsSection disabled={isReadOnly} />
+                items.push({
+                  id: "credits-summary",
+                  title: `${tCreditsDebits("Credits")} (${creditItems.length})`,
+                  description: isNonEmptyArray(creditItems)
+                    ? formatLineItemSummary(creditItems)
+                    : (tSaveReview("NoCreditsAdded") ?? "No credits added."),
+                  actionLabel: isNonEmptyArray(creditItems)
+                    ? tCommon("Add")
+                    : undefined,
+                  onAction: isNonEmptyArray(creditItems)
+                    ? () => {
+                        setReviewOpen(false);
+                        creditDebitAnchorRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                        creditDebitRef.current?.addCredit();
+                      }
+                    : undefined,
+                });
 
-            {/* Final input / read-only display */}
-            <div className="flex gap-4 w-full justify-center items-center mt-4 flex-col">
-              {isReadOnly ? (
-                <div className="flex flex-col md:flex-row justify-center w-full">
-                  <div className="flex flex-col gap-4 items-center justify-center w-full lg:pl-42">
-                    <span
-                      className={clsx(
-                        "text-base text-center font-semibold text-muted-foreground",
-                        textBodyCls,
-                      )}
-                    >
-                      {tDailyAccount("TotalCashCollected")}:
-                    </span>
-                    <span
-                      className={clsx(
-                        "text-xl font-semibold text-center text-primary",
-                        textHeadCls,
-                      )}
-                    >
-                      {formatINR(totalCashCollected)}
-                    </span>
-                  </div>
-                  <div className="flex justify-end items-center mt-3 md:mt-0">
-                    <div className="flex ">
-                      <CreatedOrUpdated
-                        createdBy={dailyItemData?.createdBy}
-                        updatedBy={dailyItemData?.updatedBy}
-                        created={dailyItemData?.created}
-                        updated={dailyItemData?.updated}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <FormField
-                  control={form.control}
-                  name="totalCashCollected"
-                  render={({ field }) => (
-                    <div className="flex flex-col">
-                      <FormItem className="flex w-full items-center justify-center flex-col">
-                        <FormLabel
-                          className={clsx("text-base text-center", textBodyCls)}
-                        >
-                          {tDailyAccount("TotalCashCollected")}:
-                        </FormLabel>
-                        <FormControl>
-                          <AmountInput
-                            value={Number(field.value) || 0}
-                            onChange={(n) => field.onChange(n)}
-                            inputClassName="h-full text-xl! font-semibold w-full border-0 shadow-none"
-                          />
-                        </FormControl>
-                      </FormItem>
-                      <FormMessage className="text-xs" />
-                    </div>
-                  )}
+                items.push({
+                  id: "debits-summary",
+                  title: `${tCreditsDebits("Debits")} (${debitItems.length})`,
+                  description: isNonEmptyArray(debitItems)
+                    ? formatLineItemSummary(debitItems)
+                    : tSaveReview("NoDebitsAdded"),
+                  actionLabel: isNonEmptyArray(debitItems)
+                    ? (tCommon("Add") ?? "Add")
+                    : undefined,
+                  onAction: isNonEmptyArray(debitItems)
+                    ? () => {
+                        setReviewOpen(false);
+                        creditDebitAnchorRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                        creditDebitRef.current?.addDebit();
+                      }
+                    : undefined,
+                });
+
+                // Extra earnings (ALWAYS)
+                items.push({
+                  id: "extra-earnings",
+                  title: `${tDailyAccount("OtherEarnings")} (${extraEarnings.length})`,
+                  description: isNonEmptyArray(extraEarnings)
+                    ? formatLineItemSummary(extraEarnings)
+                    : tSaveReview("NoExtraEarnings"),
+                });
+
+                // 3) Conditional reminders
+                if (!isNonEmptyArray(dailySpendsNow)) {
+                  items.push({
+                    id: "dailyspends-empty",
+                    title: tDailyAccount("DailySpends"),
+                    description: tSaveReview("DailySpendsEmptyConfirm"),
+                  });
+                }
+
+                if (!isNonEmptyArray(businessExpensesNow)) {
+                  items.push({
+                    id: "businessexpenses-empty",
+                    title:
+                      tDailyAccount("BusinessExpense") ?? "Business expense",
+                    description: tSaveReview("BusinessExpenseEmptyConfirm"),
+                  });
+                }
+
+                // 4) Open the dialog (block or confirm)
+                if (blocking.length > 0) {
+                  setReviewMode("BLOCK_READINGS");
+                  setReviewItems([...blocking, ...items]);
+                  setPendingData(null);
+                  setReviewOpen(true);
+                  return;
+                }
+
+                setReviewMode("SOFT_CONFIRM");
+                setReviewItems(items);
+                setPendingData(data);
+                setReviewOpen(true);
+              })}
+              className="flex flex-col flex-1"
+            >
+              <Accordion
+                defaultValue={[
+                  "fixed",
+                  "earnings.otherIncomes",
+                  "businessExpenses",
+                  "dailySpends",
+                ]}
+                orientation="horizontal"
+                type="multiple"
+                className="grow min-h-0 lg:grid lg:grid-cols-4 gap-3 md:gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-3 md:pb-0"
+              >
+                <FixedExpensesSection
+                  totalBarClassName="p-2"
+                  totalFixed={
+                    Number(formatINR(totalFixed)) ? totalFixed : totalFixed
+                  }
+                  readings={readings}
+                  readOnly={isReadOnly}
                 />
-              )}
 
-              {isReadOnly ? (
-                <>
-                  <Button
-                    variant={"outline"}
-                    type="button"
-                    onClick={handleEditClick}
-                    className="text-primary border-primary flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
-                  >
-                    <span>{tCommon("Edit")}</span>
-                    {<PencilIcon className="size-4" />}
-                  </Button>
-                </>
-              ) : (
-                <div className="flex gap-2 items-center justify-center lg:absolute lg:top-4 lg:right-4 w-full lg:w-fit">
-                  <Button
-                    disabled={!canSubmit || isSubmitting}
-                    type="submit"
-                    className="flex gap-2 font-semibold text-sm w-full lg:w-fit justify-center items-center"
-                  >
-                    <span>
-                      {updateMode
-                        ? isSubmitting
-                          ? tCommon("Updating")
-                          : tCommon("Update")
-                        : isSubmitting
-                          ? tCommon("Saving")
-                          : tCommon("Save")}
-                    </span>
-                    {updateMode ? (
-                      isSubmitting ? (
+                <FieldArraySection
+                  value="earnings.otherIncomes"
+                  title={tDailyAccount("Income")}
+                  addButtonText={tDailyAccount("AddIncome")}
+                  totalLabel={tDailyAccount("TotalIncome")}
+                  totalValue={formatINR(totalEarnings)}
+                  totalBarClassName="bg-green-100! text-green-900! p-2"
+                  showNet={true}
+                  netForDay={netForDay}
+                  readOnly={isReadOnly}
+                />
+
+                <FieldArraySection
+                  value="businessExpenses"
+                  title={tDailyAccount("BusinessExpense")}
+                  addButtonText={tDailyAccount("AddExpense")}
+                  totalLabel={tDailyAccount("TotalBusinessExpense")}
+                  totalValue={formatINR(totalBusiness)}
+                  totalBarClassName="p-2"
+                  readOnly={isReadOnly}
+                />
+
+                <FieldArraySection
+                  value="dailySpends"
+                  title={tDailyAccount("DailySpends")}
+                  addButtonText={tDailyAccount("AddSpend")}
+                  totalLabel={tDailyAccount("TotalDailySpends")}
+                  totalValue={formatINR(totalSpends)}
+                  totalBarClassName="p-2"
+                  readOnly={isReadOnly}
+                />
+              </Accordion>
+              <div ref={creditDebitAnchorRef}>
+                <CreditDebitCardsSection
+                  ref={creditDebitRef}
+                  disabled={isReadOnly}
+                />
+              </div>
+
+              {/* Final input / read-only display */}
+              <div className="flex gap-4 w-full justify-center items-center mt-4 flex-col">
+                {isReadOnly ? (
+                  <div className="flex flex-col md:flex-row justify-center w-full">
+                    <div className="flex flex-col gap-4 items-center justify-center w-full lg:pl-42">
+                      <span
+                        className={clsx(
+                          "text-base text-center font-semibold text-muted-foreground",
+                          textBodyCls,
+                        )}
+                      >
+                        {tDailyAccount("TotalCashCollected")}:
+                      </span>
+                      <span
+                        className={clsx(
+                          "text-xl font-semibold text-center text-primary",
+                          textHeadCls,
+                        )}
+                      >
+                        {formatINR(totalCashCollected)}
+                      </span>
+                    </div>
+                    <div className="flex justify-end items-center mt-3 md:mt-0">
+                      <div className="flex ">
+                        <CreatedOrUpdated
+                          createdBy={dailyItemData?.createdBy}
+                          updatedBy={dailyItemData?.updatedBy}
+                          created={dailyItemData?.created}
+                          updated={dailyItemData?.updated}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <FormField
+                    control={form.control}
+                    name="totalCashCollected"
+                    render={({ field }) => (
+                      <div className="flex flex-col">
+                        <FormItem className="flex w-full items-center justify-center flex-col">
+                          <FormLabel
+                            className={clsx(
+                              "text-base text-center",
+                              textBodyCls,
+                            )}
+                          >
+                            {tDailyAccount("TotalCashCollected")}:
+                          </FormLabel>
+                          <FormControl>
+                            <AmountInput
+                              value={Number(field.value) || 0}
+                              onChange={(n) => field.onChange(n)}
+                              inputClassName="h-full text-xl! font-semibold w-full border-0 shadow-none"
+                            />
+                          </FormControl>
+                        </FormItem>
+                        <FormMessage className="text-xs" />
+                      </div>
+                    )}
+                  />
+                )}
+
+                {isReadOnly ? (
+                  <>
+                    <Button
+                      variant={"outline"}
+                      type="button"
+                      onClick={handleEditClick}
+                      className="text-primary border-primary flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
+                    >
+                      <span>{tCommon("Edit")}</span>
+                      {<PencilIcon className="size-4" />}
+                    </Button>
+                  </>
+                ) : (
+                  <div className="flex gap-2 items-center justify-center lg:absolute lg:top-4 lg:right-4 w-full lg:w-fit">
+                    <Button
+                      disabled={!canSubmit || isSubmitting}
+                      type="submit"
+                      className="flex gap-2 font-semibold text-sm w-full lg:w-fit justify-center items-center"
+                    >
+                      <span>
+                        {updateMode
+                          ? isSubmitting
+                            ? tCommon("Updating")
+                            : tCommon("Update")
+                          : isSubmitting
+                            ? tCommon("Saving")
+                            : tCommon("Save")}
+                      </span>
+                      {updateMode ? (
+                        isSubmitting ? (
+                          <Loader2 className="animate-spin size-4" />
+                        ) : (
+                          <Repeat className="size-4" />
+                        )
+                      ) : isSubmitting ? (
                         <Loader2 className="animate-spin size-4" />
                       ) : (
-                        <Repeat className="size-4" />
-                      )
-                    ) : isSubmitting ? (
-                      <Loader2 className="animate-spin size-4" />
-                    ) : (
-                      <SaveIcon className="size-4" />
-                    )}
-                  </Button>
-                  {updateMode && (
-                    <Button
-                      variant="outline"
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={() =>
-                        router.replace(`/daily-accounts/${docId}`, {
-                          scroll: false,
-                        })
-                      }
-                      className="border-red-700 text-red-700 gap-1"
-                    >
-                      {tCommon("Cancel")}
-                      <X className="size-4" />
+                        <SaveIcon className="size-4" />
+                      )}
                     </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </form>
-        </Form>
-      </Card>
-    </div>
+                    {updateMode && (
+                      <Button
+                        variant="outline"
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() =>
+                          router.replace(`/daily-accounts/${docId}`, {
+                            scroll: false,
+                          })
+                        }
+                        className="border-red-700 text-red-700 gap-1"
+                      >
+                        {tCommon("Cancel")}
+                        <X className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </form>
+          </Form>
+        </Card>
+      </div>
+      <SaveReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        title={
+          reviewMode === "BLOCK_READINGS"
+            ? tSaveReview("ReadingsNotAdded")
+            : tSaveReview("ConfirmBeforeSave")
+        }
+        description={
+          reviewMode === "BLOCK_READINGS"
+            ? tSaveReview("AddReadingsThenSave")
+            : tSaveReview("ReviewBelowSections")
+        }
+        items={reviewItems}
+        cancelText={tCommon("Cancel")}
+        confirmText={tCommon("ContinueAndSave")}
+        hideConfirm={reviewMode === "BLOCK_READINGS"}
+        onConfirm={async () => {
+          setReviewOpen(false);
+          if (!pendingData) return;
+          await onSubmit(pendingData);
+          setPendingData(null);
+        }}
+      />
+    </>
   ) : (
     <div className=" gap-4 rounded-sm text-center text-muted-foreground flex flex-col justify-center items-center bg-background h-full lg:w-1/2 mx-auto p-4">
       {tDailyAccount("NoDailyAccountFound")}

@@ -8,6 +8,7 @@
     "ChandrikaComputer": "Chandrika Computer",
     "Computer": "Computer",
     "ConfirmAndSave": "Confirm & Save",
+    "ContinueAndSave": "Continue & Save",
     "ContinueOnTheTab": "Continue in new tab",
     "Create": "Create",
     "CreatedAt": "Created By",
@@ -53,6 +54,7 @@
   },
   "CreditsDebits": {
     "Accounts": "Accounts",
+    "CreatingAccount": "Creating Account",
     "Credits": "Credits",
     "Debits": "Debits",
     "NoAccountsFound": "No account found.",
@@ -75,6 +77,7 @@
     "Income": "Income (Chandrika)",
     "NetIncome": "Net Income",
     "NoDailyAccountFound": "No Daily Account found for the day.",
+    "OtherEarnings": "Other Earnings",
     "Photocopy": "Photocopy (FS)",
     "StampDuty": "Stamp Duty (SD)",
     "SurCharge": "Stamp Surcharge (SC)",
@@ -180,6 +183,23 @@
     "TotalStampDuty": "Total Stamp Duty",
     "Yesterday": "Yesterday",
     "YesterdayReading": "Yesterday's Reading"
+  },
+  "SaveReview": {
+    "AddReadingsThenSave": "Please add readings and then save.",
+    "BusinessExpenseEmptyConfirm": "Business expense section is empty. Confirm if you want to continue without adding any expense.",
+    "ConfirmBeforeSave": "Confirm before saving",
+    "DailySpendsEmptyConfirm": "Daily spends section is empty. Confirm if you want to continue without adding any spends.",
+    "NoCreditsAdded": "No credits added.",
+    "NoDebitsAdded": "No debits added.",
+    "NoExtraEarnings": "No extra earnings added.",
+    "PhotocopyReadingMissing": "Photocopy readings not added",
+    "PleaseAddReadingsAndSave": "Please add readings and come back to save.",
+    "Readings": "Readings",
+    "ReadingsMissingDesc": "Photocopy/Stamp readings are missing. Please add readings and come back to save.",
+    "ReadingsNotAdded": "Readings not added",
+    "ReadingsPresentDesc": "Readings look added. Please verify once before saving.",
+    "ReviewBelowSections": "Review below sections before saving.",
+    "StampReadingMissing": "Stamp readings not added"
   },
   "StampRegister": {
     "Desc": "Track your stamp stock movements.",

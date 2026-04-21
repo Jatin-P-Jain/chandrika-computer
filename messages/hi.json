@@ -8,6 +8,7 @@
     "ChandrikaComputer": "चंद्रिका कंप्यूटर",
     "Computer": "कंप्यूटर",
     "ConfirmAndSave": "पुष्टि कर  सेव करें",
+    "ContinueAndSave": "जारी रखें और सेव करें",
     "ContinueOnTheTab": "नए टैब में जारी रखें",
     "Create": "नया बनाएं",
     "CreatedAt": "बनाया गया",
@@ -53,6 +54,7 @@
   },
   "CreditsDebits": {
     "Accounts": "खातें",
+    "CreatingAccount": "खाता बनाया जा रहा है",
     "Credits": "जमाखाते",
     "Debits": "नामेखाते",
     "NoAccountsFound": "कोई खाता नहीं मिला।",
@@ -75,6 +77,7 @@
     "Income": "आय (चंद्रिका)",
     "NetIncome": "शुद्ध आय",
     "NoDailyAccountFound": "इस दिन का कोई दैनिक खता नहीं मिला।",
+    "OtherEarnings": "अन्य आय",
     "Photocopy": "फोटोकॉपी (FS)",
     "StampDuty": "स्टाम्प शुल्क (SD)",
     "SurCharge": "स्टाम्प अधिभार (SC)",
@@ -180,6 +183,23 @@
     "TotalStampDuty": "कुल स्टाम्प शुल्क",
     "Yesterday": "पिछला कल",
     "YesterdayReading": "कल की रीडिंग"
+  },
+  "SaveReview": {
+    "AddReadingsThenSave": "कृपया रीडिंग जोड़ें और फिर सहेजें।",
+    "BusinessExpenseEmptyConfirm": "व्यावसायिक व्यय अनुभाग खाली है। यदि आप कोई व्यय जोड़े बिना आगे बढ़ना चाहते हैं तो पुष्टि करें।",
+    "ConfirmBeforeSave": "सेव करने से पहले पुष्टि करें",
+    "DailySpendsEmptyConfirm": "दैनिक खर्च अनुभाग खाली है। यदि आप कोई खर्च जोड़े बिना जारी रखना चाहते हैं तो पुष्टि करें।",
+    "NoCreditsAdded": "कोई क्रेडिट नहीं जोड़ा गया।",
+    "NoDebitsAdded": "कोई डेबिट नहीं जोड़ा गया।",
+    "NoExtraEarnings": "कोई अतिरिक्त आय नहीं जोड़ी गई।",
+    "PhotocopyReadingMissing": "फोटोकॉपी रीडिंग शामिल नहीं की गई हैं",
+    "PleaseAddReadingsAndSave": "कृपया पढ़ने के लिए सामग्री जोड़ें और सहेजने के लिए वापस आएं।",
+    "Readings": "रीडिंग",
+    "ReadingsMissingDesc": "फोटोकॉपी/स्टाम्प की रीडिंग उपलब्ध नहीं हैं। कृपया रीडिंग जोड़ें और सेव करने के लिए वापस आएं।",
+    "ReadingsNotAdded": "पठन सामग्री नहीं जोड़ी गई",
+    "ReadingsPresentDesc": "रीडिंग जोड़ दी गई हैं। कृपया सेव करने से पहले एक बार पुष्टि कर लें।",
+    "ReviewBelowSections": "सेव करने से पहले नीचे दिए गए अनुभागों की समीक्षा करें।",
+    "StampReadingMissing": "स्टाम्प रीडिंग नहीं जोड़ी गई"
   },
   "StampRegister": {
     "Desc": "अपने स्टाम्प स्टॉक की गतिविधियों पर नज़र रखें।",

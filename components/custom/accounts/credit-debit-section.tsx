@@ -22,7 +22,7 @@ type LineItemLike = {
 };
 
 function isLastRowIncomplete(v: LineItemLike | undefined): boolean {
-  if (!v) return false; // no rows => allow add
+  if (!v) return false;
   const accountOk = (v.accountId ?? "").trim().length > 0;
   const labelOk = (v.label ?? "").trim().length > 0;
   const amountOk =
@@ -30,7 +30,15 @@ function isLastRowIncomplete(v: LineItemLike | undefined): boolean {
   return !(accountOk && labelOk && amountOk);
 }
 
-export function CreditDebitCardsSection({ disabled }: Props) {
+export type CreditDebitImperative = {
+  addCredit: () => void;
+  addDebit: () => void;
+};
+
+export const CreditDebitCardsSection = React.forwardRef<
+  CreditDebitImperative,
+  Props
+>(function CreditDebitCardsSection({ disabled }: Props, ref) {
   const tCommon = useTranslations("Common");
   const tCreditsDebits = useTranslations("CreditsDebits");
 
@@ -40,15 +48,8 @@ export function CreditDebitCardsSection({ disabled }: Props) {
 
   const { control } = useFormContext<DailyFormValues>();
 
-  const credit = useFieldArray({
-    control,
-    name: "creditItems",
-  });
-
-  const debit = useFieldArray({
-    control,
-    name: "debitItems",
-  });
+  const credit = useFieldArray({ control, name: "creditItems" });
+  const debit = useFieldArray({ control, name: "debitItems" });
 
   const creditItems = useWatch({ control, name: "creditItems" });
   const debitItems = useWatch({ control, name: "debitItems" });
@@ -65,6 +66,25 @@ export function CreditDebitCardsSection({ disabled }: Props) {
   const disableAddCredit = !!disabled || isLastRowIncomplete(lastCredit);
   const disableAddDebit = !!disabled || isLastRowIncomplete(lastDebit);
 
+  const addCredit = React.useCallback(() => {
+    credit.append(
+      { accountId: "", label: "", amount: 0 },
+      { shouldFocus: false },
+    );
+  }, [credit]);
+
+  const addDebit = React.useCallback(() => {
+    debit.append(
+      { accountId: "", label: "", amount: 0 },
+      { shouldFocus: false },
+    );
+  }, [debit]);
+
+  React.useImperativeHandle(ref, () => ({ addCredit, addDebit }), [
+    addCredit,
+    addDebit,
+  ]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 md:gap-36 gap-4">
       <Card className="p-3 gap-2 shadow-none h-fit border-0">
@@ -77,12 +97,7 @@ export function CreditDebitCardsSection({ disabled }: Props) {
             size="sm"
             variant="secondary"
             disabled={disableAddCredit}
-            onClick={() =>
-              credit.append(
-                { accountId: "", label: "", amount: 0 },
-                { shouldFocus: false },
-              )
-            }
+            onClick={addCredit}
           >
             <Plus className="h-4 w-4" />
             {tCommon("Add")}
@@ -109,12 +124,7 @@ export function CreditDebitCardsSection({ disabled }: Props) {
             size="sm"
             variant="secondary"
             disabled={disableAddDebit}
-            onClick={() =>
-              debit.append(
-                { accountId: "", label: "", amount: 0 },
-                { shouldFocus: false },
-              )
-            }
+            onClick={addDebit}
           >
             <Plus className="h-4 w-4" />
             {tCommon("Add")}
@@ -132,4 +142,4 @@ export function CreditDebitCardsSection({ disabled }: Props) {
       </Card>
     </div>
   );
-}
+});
