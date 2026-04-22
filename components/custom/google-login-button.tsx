@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "nextjs-toploader/app";
 import { Button } from "../ui/button";
 import { useAuth } from "@/context/useAuth";
 import GoogleIcon from "@/assets/google-icon.svg";
@@ -9,6 +8,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { LogInIcon } from "lucide-react";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 type ButtonProps = {
   variant?:
     | "link"
@@ -31,7 +31,7 @@ export default function GoogleLoginButton({
 }: ButtonProps) {
   const tSignIn = useTranslations("Common");
   const auth = useAuth();
-  const router = useRouter();
+  const { refresh } = useSafeRouter();
   const [signingIn, setSigningIn] = useState(false);
   const combinedClassName = `flex ${
     signingIn
@@ -48,7 +48,7 @@ export default function GoogleLoginButton({
             onSuccess();
             setSigningIn(false);
           } else {
-            router.refresh();
+            refresh();
             setSigningIn(false);
           }
         } catch (e) {

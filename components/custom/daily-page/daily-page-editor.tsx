@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "nextjs-toploader/app";
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
 import { useForm, useWatch } from "react-hook-form";
@@ -34,6 +33,7 @@ import { DailyAccount } from "@/types/daily-account";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import type { ReviewItem } from "./save-review-dialog";
 import type { CreditDebitImperative } from "../accounts/credit-debit-section";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 
 const DailyReadingsDialog = dynamic(
   () => import("../daily-readings/daily-readings-dialog"),
@@ -188,7 +188,7 @@ export default function DailyPageEditor({
   const [pendingData, setPendingData] = useState<DailyFormValues | null>(null);
 
   const { user, getUserToken } = useAuth();
-  const router = useRouter();
+  const { replace, refresh } = useSafeRouter();
   const [renderForm, setRenderForm] = useState(updateMode || areReadingsDone);
 
   useEffect(() => {
@@ -226,7 +226,7 @@ export default function DailyPageEditor({
       }
 
       toast.success("Success!", { description: tToast("DailyAccountUpdated") });
-      router.replace(`/daily-accounts/${docId}?mode=view`, { scroll: false });
+      replace(`/daily-accounts/${docId}?mode=view`, { scroll: false });
       return;
     }
 
@@ -243,7 +243,7 @@ export default function DailyPageEditor({
       toast.error("Error!", { description: saveResponse.error });
       return;
     }
-    router.replace(`/daily-accounts/${saveResponse.docId}?mode=view`, {
+    replace(`/daily-accounts/${saveResponse.docId}?mode=view`, {
       scroll: false,
     });
     toast.success("Success!", { description: tToast("DailyAccountCreated") });
@@ -393,7 +393,7 @@ export default function DailyPageEditor({
                 });
               }
 
-              router.refresh();
+              refresh();
             }}
           />
           <DailyNotesDialog form={form} />
@@ -528,7 +528,7 @@ export default function DailyPageEditor({
                       type="button"
                       disabled={isSubmitting}
                       onClick={() =>
-                        router.replace(`/daily-accounts/${docId}`, {
+                        replace(`/daily-accounts/${docId}`, {
                           scroll: false,
                         })
                       }

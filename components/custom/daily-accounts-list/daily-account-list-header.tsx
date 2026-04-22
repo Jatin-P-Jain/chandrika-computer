@@ -1,11 +1,11 @@
 "use client";
 import { LayoutList, PlusCircle } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toDocId } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
+import { SafeLink } from "@/components/custom/SafeLink";
 
 const FiltersSection = dynamic(
   () =>
@@ -36,9 +36,9 @@ export default function DailyAccountListHeader() {
         variant="outline"
         className={`border shadow-lg border-primary text-primary font-bold -tracking-normal hover:bg-primary hover:text-white`}
       >
-        <Link href={`/daily-accounts/${toDocId()}`}>
+        <SafeLink href={`/daily-accounts/${toDocId()}`}>
           {tCommon("Create")} <PlusCircle className="size-5" />
-        </Link>
+        </SafeLink>
       </Button>
       <div className="lg:flex hidden ml-auto">
         <FiltersSection />

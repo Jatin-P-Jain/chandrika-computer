@@ -7,8 +7,8 @@ import { ChevronsRight } from "lucide-react";
 import { DateDisplay } from "../date-display";
 import CreatedOrUpdated from "../created-or-updated";
 import { useTranslations } from "next-intl";
-import { useRouter } from "nextjs-toploader/app";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 
 type DailyAccountCardProps = {
   dailyAccount: DailyAccount;
@@ -29,12 +29,12 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
     updatedBy,
   } = dailyAccount as DailyAccount;
 
-  const router = useRouter();
+  const { push } = useSafeRouter();
 
   return (
     <Card
       onClick={() => {
-        router.push(`/daily-accounts/${id}`);
+        push(`/daily-accounts/${id}`);
       }}
       className="cursor-pointer w-full flex p-1 lg:p-0 shadow-md border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]"
     >

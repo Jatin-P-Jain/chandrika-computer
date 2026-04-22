@@ -17,6 +17,7 @@ import { AuthProvider } from "@/context/useAuth";
 import { Toaster } from "sonner";
 import { DateTimeDisplay } from "@/components/custom/date-time-display";
 import { KeyboardProvider } from "@/context/keyboard-context";
+import { NavigationLockProvider } from "@/context/navigation-lock-provider";
 import { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
 
@@ -80,54 +81,56 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <LanguageFontWrapper>
-              <KeyboardProvider>
-                <AuthProvider>
-                  <NextTopLoader
-                    color="#065884"
-                    height={3}
-                    showSpinner={false}
-                  />
-                  <Navbar />
-                  <DateTimeDisplay />
-                  <main className="flex ">
-                    <div className="w-full overflow-auto no-scrollbar! mx-auto md:mt-32 mt-28 p-4 max-w-7xl">
-                      {children}
+              <NavigationLockProvider>
+                <KeyboardProvider>
+                  <AuthProvider>
+                    <NextTopLoader
+                      color="#065884"
+                      height={3}
+                      showSpinner={false}
+                    />
+                    <Navbar />
+                    <DateTimeDisplay />
+                    <main className="flex ">
+                      <div className="w-full overflow-auto no-scrollbar! mx-auto md:mt-32 mt-28 p-4 max-w-7xl">
+                        {children}
+                      </div>
+                    </main>
+                    {/* <AccountFooter /> */}
+                    <div className="flex md:hidden">
+                      <Toaster
+                        closeButton
+                        richColors
+                        position="bottom-center"
+                        className="flex justify-center"
+                        toastOptions={{
+                          classNames: {
+                            toast:
+                              "md:w-fit! flex items-center p-2! px-4! md:p-4!",
+                            title: "font-semibold w-full",
+                            description: "",
+                          },
+                        }}
+                      />
                     </div>
-                  </main>
-                  {/* <AccountFooter /> */}
-                  <div className="flex md:hidden">
-                    <Toaster
-                      closeButton
-                      richColors
-                      position="bottom-center"
-                      className="flex justify-center"
-                      toastOptions={{
-                        classNames: {
-                          toast:
-                            "md:w-fit! flex items-center p-2! px-4! md:p-4!",
-                          title: "font-semibold w-full",
-                          description: "",
-                        },
-                      }}
-                    />
-                  </div>
-                  <div className="hidden md:flex">
-                    <Toaster
-                      closeButton
-                      richColors
-                      position="top-center"
-                      className="flex justify-center"
-                      toastOptions={{
-                        classNames: {
-                          toast: "w-fit! flex items-center gap-3",
-                          title: "text-lg font-semibold w-full",
-                          description: "md:text-base",
-                        },
-                      }}
-                    />
-                  </div>
-                </AuthProvider>
-              </KeyboardProvider>
+                    <div className="hidden md:flex">
+                      <Toaster
+                        closeButton
+                        richColors
+                        position="top-center"
+                        className="flex justify-center"
+                        toastOptions={{
+                          classNames: {
+                            toast: "w-fit! flex items-center gap-3",
+                            title: "text-lg font-semibold w-full",
+                            description: "md:text-base",
+                          },
+                        }}
+                      />
+                    </div>
+                  </AuthProvider>
+                </KeyboardProvider>
+              </NavigationLockProvider>
             </LanguageFontWrapper>
           </ThemeProvider>
         </NextIntlClientProvider>

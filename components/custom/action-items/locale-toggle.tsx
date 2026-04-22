@@ -1,10 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "nextjs-toploader/app";
 import { useState, useTransition } from "react";
 import { Button } from "../../ui/button";
 import { Loader2 } from "lucide-react";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 
 const COOKIE_NAME = "CHANDRIKA_COMPUTER_LOCALE";
 
@@ -31,7 +31,7 @@ function getInitialLocale(): "en" | "hi" {
 }
 
 export function LocaleToggle({ labelClassName }: { labelClassName: string }) {
-  const router = useRouter();
+  const { refresh } = useSafeRouter();
   const tCommon = useTranslations("Common");
 
   const [locale, setLocale] = useState<"en" | "hi">(() => getInitialLocale());
@@ -48,7 +48,7 @@ export function LocaleToggle({ labelClassName }: { labelClassName: string }) {
 
     // 3) Refresh in a transition so we can show loading feedback [web:321][web:330]
     startTransition(() => {
-      router.refresh();
+      refresh();
     });
   };
 

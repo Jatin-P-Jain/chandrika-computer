@@ -1,13 +1,13 @@
 "use client";
 
-import { useRouter } from "nextjs-toploader/app";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 import { Button } from "@/components/ui/button";
 
 export function BackButton() {
-  const router = useRouter();
+  const { back } = useSafeRouter();
 
   return (
-    <Button variant="outline" className="w-[40%]" onClick={() => router.back()}>
+    <Button variant="outline" className="w-[40%]" onClick={() => back()}>
       👈🏻 Back
     </Button>
   );

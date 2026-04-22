@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 import {
   ClipboardListIcon,
   Info,
@@ -24,6 +24,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
+  const { push } = useSafeRouter();
   const locale = useLocale();
   const tHomePage = useTranslations("HomePage");
   const tDailyAccount = useTranslations("DailyAccount");
@@ -113,16 +114,16 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
 
       {/* Service cards */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Link
-          href="/daily-accounts"
-          className="group block"
-          onNavigate={(e) => {
+        <div
+          className="group block cursor-pointer"
+          onClick={() => {
             if (authState.status !== "ready") {
-              e.preventDefault(); // blocks Next navigation [web:309]
               toast.info(tToast("SecuredService"), {
                 description: tToast("PleaseLoginToAccessServiceDesc"),
               });
+              return;
             }
+            push("/daily-accounts");
           }}
         >
           <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
@@ -152,18 +153,18 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
               )
             ) : null}
           </Card>
-        </Link>
+        </div>
 
-        <Link
-          href="/stamp-register"
-          className="group block"
-          onNavigate={(e) => {
+        <div
+          className="group block cursor-pointer"
+          onClick={() => {
             if (authState.status !== "ready") {
-              e.preventDefault(); // blocks Next navigation [web:309]
               toast.info(tToast("SecuredService"), {
                 description: tToast("PleaseLoginToAccessServiceDesc"),
               });
+              return;
             }
+            push("/stamp-register");
           }}
         >
           <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
@@ -193,17 +194,17 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
               )
             ) : null}
           </Card>
-        </Link>
-        <Link
-          href="/photocopy-register"
-          className="group block"
-          onNavigate={(e) => {
+        </div>
+        <div
+          className="group block cursor-pointer"
+          onClick={() => {
             if (authState.status !== "ready") {
-              e.preventDefault(); // blocks Next navigation [web:309]
               toast.info(tToast("SecuredService"), {
                 description: tToast("PleaseLoginToAccessServiceDesc"),
               });
+              return;
             }
+            push("/photocopy-register");
           }}
         >
           <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
@@ -233,7 +234,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
               )
             ) : null}
           </Card>
-        </Link>
+        </div>
       </div>
       <div id="recaptcha-container" className="hidden"></div>
     </section>

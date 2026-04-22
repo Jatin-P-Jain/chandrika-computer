@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { ClipboardListIcon, LayoutList } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
-import Link from "next/link";
+import { SafeLink } from "@/components/custom/SafeLink";
 
 const DailyAccountHeader = () => {
   const tCommon = useTranslations("Common");
@@ -24,10 +24,10 @@ const DailyAccountHeader = () => {
         )}
         asChild
       >
-        <Link href="/daily-accounts">
+        <SafeLink href="/daily-accounts">
           {tCommon("ViewAll")}
           <LayoutList className="size-4 md:size-5" />
-        </Link>
+        </SafeLink>
       </Button>
     </div>
   );

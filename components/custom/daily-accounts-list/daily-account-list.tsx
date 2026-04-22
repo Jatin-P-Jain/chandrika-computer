@@ -6,10 +6,10 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { usePaginatedFirestore } from "@/hooks/usePaginatedFirestore";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 import { DAILY_ACCOUNTS_LIST_PAGE_SIZE } from "@/lib/utils";
 import { DailyAccount } from "@/types/daily-account";
 import { useSearchParams } from "next/navigation";
-import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useRef } from "react";
 import { DailyAccountCard } from "./daily-account-card";
 import { useTranslations } from "next-intl";
@@ -35,7 +35,7 @@ export default function DailyAccountsList({
   const tCommon = useTranslations("Common");
   const { textSmCls } = useLocaleTypography();
 
-  const router = useRouter();
+  const { replace } = useSafeRouter();
   const searchParams = useSearchParams();
   const hasFiltersApplied = searchParams.has("filtersApplied");
   const previousFiltersRef = useRef<string>("");
@@ -137,15 +137,15 @@ export default function DailyAccountsList({
 
       const sp = new URLSearchParams(searchParams.toString());
       sp.set("page", "1");
-      router.replace(`/daily-accounts?${sp.toString()}`);
+      replace(`/daily-accounts?${sp.toString()}`);
       resetPagination();
     }
-  }, [filterKey, resetPagination, router, searchParams]);
+  }, [filterKey, replace, resetPagination, searchParams]);
 
   const handlePageChange = (page: number) => {
     const sp = new URLSearchParams(searchParams.toString());
     sp.set("page", `${page}`);
-    router.replace(`/daily-accounts?${sp.toString()}`);
+    replace(`/daily-accounts?${sp.toString()}`);
     loadPage(page);
   };
 

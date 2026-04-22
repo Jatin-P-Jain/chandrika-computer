@@ -8,8 +8,8 @@ import {
 } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { BackButton } from "@/components/custom/action-items/back-button";
+import { SafeLink } from "@/components/custom/SafeLink";
 
 const NotFound: React.FC = () => (
   <div className="flex justify-center items-center w-full mt-30 mb-26">
@@ -26,9 +26,9 @@ const NotFound: React.FC = () => (
       <CardFooter className="w-full justify-between">
         <BackButton />
         <Button asChild className="w-[40%]">
-          <Link href="/" className="">
+          <SafeLink href="/" className="">
             Home Page
-          </Link>
+          </SafeLink>
         </Button>
       </CardFooter>
     </Card>

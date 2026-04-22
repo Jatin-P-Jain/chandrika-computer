@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 import { useTranslations } from "next-intl";
-import { useRouter } from "nextjs-toploader/app";
 import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +16,7 @@ import CreatedOrUpdated from "../created-or-updated";
 import { ChevronsRight, ListTodo, PencilIcon } from "lucide-react";
 import type { NoteItem } from "@/types/daily-notes";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 
 const DailyReadingsDialog = dynamic(
   () => import("../daily-readings/daily-readings-dialog"),
@@ -187,7 +187,7 @@ export default function DailyPageReadOnly({
   const tDailyAccount = useTranslations("DailyAccount");
   const tReadings = useTranslations("Readings");
   const tNotes = useTranslations("Notes");
-  const router = useRouter();
+  const { push, refresh } = useSafeRouter();
   const { textBodyCls, textDisplayCls } = useLocaleTypography();
   const baseData: DailyFormValues = initialData ?? {
     fixed: { sd: 0, sc: 0, fs: 0, flexnCard: 0, otherFixedExpenses: [] },
@@ -244,7 +244,7 @@ export default function DailyPageReadOnly({
                 photocopy: saved.photocopy ?? prev?.photocopy ?? null,
                 stamp: saved.stamp ?? prev?.stamp ?? null,
               }));
-              router.refresh();
+              refresh();
             }}
           />
         ) : (
@@ -385,7 +385,7 @@ export default function DailyPageReadOnly({
             <Button
               variant={"outline"}
               type="button"
-              onClick={() => router.push(`/daily-accounts/${docId}?mode=edit`)}
+              onClick={() => push(`/daily-accounts/${docId}?mode=edit`)}
               className="text-primary border-primary flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
             >
               <span>{tCommon("Edit")}</span>

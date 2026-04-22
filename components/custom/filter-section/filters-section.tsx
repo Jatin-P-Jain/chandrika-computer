@@ -1,6 +1,5 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useRouter } from "nextjs-toploader/app";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 import { format, addDays } from "date-fns";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { DateRange } from "react-day-picker";
@@ -55,7 +55,7 @@ export function FiltersSection() {
     ? "text-sm! md:text-base! font-[inherit]"
     : "text-xs! md:text-sm!";
 
-  const router = useRouter();
+  const { replace } = useSafeRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const replaceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -114,7 +114,7 @@ export function FiltersSection() {
     if (clearAll) {
       const params = new URLSearchParams(); // Fresh empty params
       startTransition(() => {
-        router.replace(`?${params.toString()}`);
+        replace(`?${params.toString()}`);
       });
       return;
     } else {
@@ -157,7 +157,7 @@ export function FiltersSection() {
     const nextUrl = `?${params.toString()}`;
     const runReplace = () => {
       startTransition(() => {
-        router.replace(nextUrl);
+        replace(nextUrl);
       });
     };
 
