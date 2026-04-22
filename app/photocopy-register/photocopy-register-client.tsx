@@ -5,16 +5,31 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { PhotocopyReadingRow } from "@/types/readings";
 import { useLocale, useTranslations } from "next-intl";
-import { PhotocopyReadingsResponsive } from "./photocopy-readings-responsive";
 import { Newspaper } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const PhotocopyReadingsResponsive = dynamic(
+  () =>
+    import("./photocopy-readings-responsive").then(
+      (m) => m.PhotocopyReadingsResponsive,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full space-y-2">
+        <div className="h-12 w-full animate-pulse rounded-md border bg-muted/40" />
+        <div className="h-20 w-full animate-pulse rounded-md border bg-muted/40" />
+      </div>
+    ),
+  },
+);
 
 export function PhotocopyRegisterClient({
   photocopyReadingPromise,
 }: {
   photocopyReadingPromise: Promise<{
     data: PhotocopyReadingRow[];
-    totalPages: number | undefined;
-    totalItems: number | undefined;
+    nextPageToken: string | undefined;
   }>;
 }) {
   const { data } = React.use(photocopyReadingPromise);

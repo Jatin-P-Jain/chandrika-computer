@@ -18,12 +18,22 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { format, addDays } from "date-fns";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import clsx from "clsx";
-import { MoreFiltersPopover } from "./more-filters";
 import { enUS, hi } from "date-fns/locale";
+import dynamic from "next/dynamic";
+
+const MoreFiltersPopover = dynamic(
+  () => import("./more-filters").then((m) => m.MoreFiltersPopover),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-9 w-28 animate-pulse rounded-md border bg-muted/40" />
+    ),
+  },
+);
 
 const PRESET_FILTERS = [{ id: "week", label: "PastWeek", value: "week" }];
 
@@ -67,23 +77,22 @@ export function FiltersSection() {
   const [date, setDate] = useState<DateRange | undefined>();
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [openSorting, setOpenSorting] = useState(false);
-
-  // Sync date picker with URL
-  useEffect(() => {
+  const presetDateRange = useMemo<DateRange | undefined>(() => {
     if (dateRange === "3days") {
-      setDate({
+      return {
         from: addDays(new Date(), -3),
         to: new Date(),
-      });
-    } else if (dateRange === "week") {
-      setDate({
+      };
+    }
+    if (dateRange === "week") {
+      return {
         from: addDays(new Date(), -7),
         to: new Date(),
-      });
-    } else {
-      setDate(undefined);
+      };
     }
+    return undefined;
   }, [dateRange]);
+  const effectiveDate = date ?? presetDateRange;
 
   const updateSearchParams = (
     newParams: Record<string, string | string[]>,
@@ -198,10 +207,10 @@ export function FiltersSection() {
           >
             <CalendarRange className="size-4" />
             <span className={clsx(textBodyCls)}>
-              {date?.from && date?.to
-                ? `${format(date.from, "MMMM dd", {
+              {effectiveDate?.from && effectiveDate?.to
+                ? `${format(effectiveDate.from, "MMMM dd", {
                     locale: isHi ? hi : enUS,
-                  })} - ${format(date.to, "MMMM dd", {
+                  })} - ${format(effectiveDate.to, "MMMM dd", {
                     locale: isHi ? hi : enUS,
                   })}`
                 : tFilters("DateRange")}
@@ -217,7 +226,7 @@ export function FiltersSection() {
           <Calendar
             locale={hi}
             mode="range"
-            selected={date}
+            selected={effectiveDate}
             onSelect={setDate}
             numberOfMonths={1}
             className="p-0 w-full"
@@ -252,7 +261,7 @@ export function FiltersSection() {
                 setDate(undefined);
                 setOpenDatePicker(false);
               }}
-              disabled={!date?.from || !date?.to}
+              disabled={!effectiveDate?.from || !effectiveDate?.to}
             >
               {tFilters("RemoveFilter")}
             </Button>
@@ -260,15 +269,19 @@ export function FiltersSection() {
               className="ml-auto"
               size="sm"
               onClick={() => {
-                if (date?.from && date?.to) {
+                if (effectiveDate?.from && effectiveDate?.to) {
                   updateSearchParams({
-                    fromDate: date?.from ? format(date.from, "yyyy-MM-dd") : "",
-                    toDate: date?.to ? format(date.to, "yyyy-MM-dd") : "",
+                    fromDate: effectiveDate.from
+                      ? format(effectiveDate.from, "yyyy-MM-dd")
+                      : "",
+                    toDate: effectiveDate.to
+                      ? format(effectiveDate.to, "yyyy-MM-dd")
+                      : "",
                   });
                   setOpenDatePicker(false);
                 }
               }}
-              disabled={!date?.from || !date?.to}
+              disabled={!effectiveDate?.from || !effectiveDate?.to}
             >
               {tFilters("Apply")}
             </Button>

@@ -116,15 +116,6 @@ export default function DailyPage({
     },
     mode: "onChange",
   });
-  useEffect(() => {
-    const values = form.getValues();
-    const result = dailySchema.safeParse(values);
-    console.log(
-      "zod safeParse success?",
-      result.success,
-      result.success ? null : JSON.stringify(result.error.issues, null, 2),
-    );
-  }, [form.watch()]);
 
   // existing watches
   const fixed = useWatch({ control: form.control, name: "fixed" });
@@ -238,6 +229,133 @@ export default function DailyPage({
     router.push(`/daily-accounts/${docId}?mode=edit`);
   };
 
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    void form.handleSubmit(async (data) => {
+      if (isReadOnly) return;
+
+      const fs = Number(form.getValues("fixed.fs") ?? 0);
+      const sd = Number(form.getValues("fixed.sd") ?? 0);
+
+      const creditItems = form.getValues("creditItems") ?? [];
+      const debitItems = form.getValues("debitItems") ?? [];
+
+      const dailySpendsNow = form.getValues("dailySpends") ?? [];
+      const businessExpensesNow = form.getValues("businessExpenses") ?? [];
+      const extraEarnings = form.getValues("earnings.otherIncomes") ?? [];
+
+      // 1) Blocking rules (readings)
+      const blocking: ReviewItem[] = [];
+      // Only block if readings are truly missing (null/undefined), not just zero values
+      const readingsData = readings;
+      if (readingsData?.photocopy == null) {
+        blocking.push({
+          id: "missing-photocopy",
+          title: tSaveReview("PhotocopyReadingMissing"),
+          description: tSaveReview("PleaseAddReadingsAndSave"),
+        });
+      }
+      if (readingsData?.stamp == null) {
+        blocking.push({
+          id: "missing-stamp",
+          title: tSaveReview("StampReadingMissing"),
+          description: tSaveReview("PleaseAddReadingsAndSave"),
+        });
+      }
+
+      // 2) Always-present review items
+      const items: ReviewItem[] = [];
+
+      items.push({
+        id: "readings-summary",
+        title: tSaveReview("Readings"),
+        description:
+          fs === 0 || sd === 0
+            ? tSaveReview("ReadingsMissingDesc")
+            : tSaveReview("ReadingsPresentDesc"),
+      });
+
+      items.push({
+        id: "credits-summary",
+        title: `${tCreditsDebits("Credits")} (${creditItems.length})`,
+        description: isNonEmptyArray(creditItems)
+          ? formatLineItemSummary(creditItems)
+          : (tSaveReview("NoCreditsAdded") ?? "No credits added."),
+        actionLabel: isNonEmptyArray(creditItems) ? tCommon("Add") : undefined,
+        onAction: isNonEmptyArray(creditItems)
+          ? () => {
+              setReviewOpen(false);
+              creditDebitAnchorRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+              creditDebitRef.current?.addCredit();
+            }
+          : undefined,
+      });
+
+      items.push({
+        id: "debits-summary",
+        title: `${tCreditsDebits("Debits")} (${debitItems.length})`,
+        description: isNonEmptyArray(debitItems)
+          ? formatLineItemSummary(debitItems)
+          : tSaveReview("NoDebitsAdded"),
+        actionLabel: isNonEmptyArray(debitItems)
+          ? (tCommon("Add") ?? "Add")
+          : undefined,
+        onAction: isNonEmptyArray(debitItems)
+          ? () => {
+              setReviewOpen(false);
+              creditDebitAnchorRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+              creditDebitRef.current?.addDebit();
+            }
+          : undefined,
+      });
+
+      // Extra earnings (ALWAYS)
+      items.push({
+        id: "extra-earnings",
+        title: `${tDailyAccount("OtherEarnings")} (${extraEarnings.length})`,
+        description: isNonEmptyArray(extraEarnings)
+          ? formatLineItemSummary(extraEarnings)
+          : tSaveReview("NoExtraEarnings"),
+      });
+
+      // 3) Conditional reminders
+      if (!isNonEmptyArray(dailySpendsNow)) {
+        items.push({
+          id: "dailyspends-empty",
+          title: tDailyAccount("DailySpends"),
+          description: tSaveReview("DailySpendsEmptyConfirm"),
+        });
+      }
+
+      if (!isNonEmptyArray(businessExpensesNow)) {
+        items.push({
+          id: "businessexpenses-empty",
+          title: tDailyAccount("BusinessExpense") ?? "Business expense",
+          description: tSaveReview("BusinessExpenseEmptyConfirm"),
+        });
+      }
+
+      // 4) Open the dialog (block or confirm)
+      if (blocking.length > 0) {
+        setReviewMode("BLOCK_READINGS");
+        setReviewItems([...blocking, ...items]);
+        setPendingData(null);
+        setReviewOpen(true);
+        return;
+      }
+
+      setReviewMode("SOFT_CONFIRM");
+      setReviewItems(items);
+      setPendingData(data);
+      setReviewOpen(true);
+    })(event);
+  };
+
   return renderForm ? (
     <>
       <div className="flex flex-col justify-start items-start w-full">
@@ -282,138 +400,7 @@ export default function DailyPage({
 
           {/* You can still wrap in Form, even for read-only, to reuse watch() logic */}
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(async (data) => {
-                if (isReadOnly) return;
-
-                const fs = Number(form.getValues("fixed.fs") ?? 0);
-                const sd = Number(form.getValues("fixed.sd") ?? 0);
-
-                const creditItems = form.getValues("creditItems") ?? [];
-                const debitItems = form.getValues("debitItems") ?? [];
-
-                const dailySpendsNow = form.getValues("dailySpends") ?? [];
-                const businessExpensesNow =
-                  form.getValues("businessExpenses") ?? [];
-                const extraEarnings =
-                  form.getValues("earnings.otherIncomes") ?? [];
-
-                // 1) Blocking rules (readings)
-                const blocking: ReviewItem[] = [];
-                // Only block if readings are truly missing (null/undefined), not just zero values
-                const readingsData = readings ?? {};
-                if (readingsData.photocopy == null) {
-                  blocking.push({
-                    id: "missing-photocopy",
-                    title: tSaveReview("PhotocopyReadingMissing"),
-                    description: tSaveReview("PleaseAddReadingsAndSave"),
-                  });
-                }
-                if (readingsData.stamp == null) {
-                  blocking.push({
-                    id: "missing-stamp",
-                    title: tSaveReview("StampReadingMissing"),
-                    description: tSaveReview("PleaseAddReadingsAndSave"),
-                  });
-                }
-
-                // 2) Always-present review items
-                const items: ReviewItem[] = [];
-
-                items.push({
-                  id: "readings-summary",
-                  title: tSaveReview("Readings"),
-                  description:
-                    fs === 0 || sd === 0
-                      ? tSaveReview("ReadingsMissingDesc")
-                      : tSaveReview("ReadingsPresentDesc"),
-                });
-
-                items.push({
-                  id: "credits-summary",
-                  title: `${tCreditsDebits("Credits")} (${creditItems.length})`,
-                  description: isNonEmptyArray(creditItems)
-                    ? formatLineItemSummary(creditItems)
-                    : (tSaveReview("NoCreditsAdded") ?? "No credits added."),
-                  actionLabel: isNonEmptyArray(creditItems)
-                    ? tCommon("Add")
-                    : undefined,
-                  onAction: isNonEmptyArray(creditItems)
-                    ? () => {
-                        setReviewOpen(false);
-                        creditDebitAnchorRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                        creditDebitRef.current?.addCredit();
-                      }
-                    : undefined,
-                });
-
-                items.push({
-                  id: "debits-summary",
-                  title: `${tCreditsDebits("Debits")} (${debitItems.length})`,
-                  description: isNonEmptyArray(debitItems)
-                    ? formatLineItemSummary(debitItems)
-                    : tSaveReview("NoDebitsAdded"),
-                  actionLabel: isNonEmptyArray(debitItems)
-                    ? (tCommon("Add") ?? "Add")
-                    : undefined,
-                  onAction: isNonEmptyArray(debitItems)
-                    ? () => {
-                        setReviewOpen(false);
-                        creditDebitAnchorRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                        creditDebitRef.current?.addDebit();
-                      }
-                    : undefined,
-                });
-
-                // Extra earnings (ALWAYS)
-                items.push({
-                  id: "extra-earnings",
-                  title: `${tDailyAccount("OtherEarnings")} (${extraEarnings.length})`,
-                  description: isNonEmptyArray(extraEarnings)
-                    ? formatLineItemSummary(extraEarnings)
-                    : tSaveReview("NoExtraEarnings"),
-                });
-
-                // 3) Conditional reminders
-                if (!isNonEmptyArray(dailySpendsNow)) {
-                  items.push({
-                    id: "dailyspends-empty",
-                    title: tDailyAccount("DailySpends"),
-                    description: tSaveReview("DailySpendsEmptyConfirm"),
-                  });
-                }
-
-                if (!isNonEmptyArray(businessExpensesNow)) {
-                  items.push({
-                    id: "businessexpenses-empty",
-                    title:
-                      tDailyAccount("BusinessExpense") ?? "Business expense",
-                    description: tSaveReview("BusinessExpenseEmptyConfirm"),
-                  });
-                }
-
-                // 4) Open the dialog (block or confirm)
-                if (blocking.length > 0) {
-                  setReviewMode("BLOCK_READINGS");
-                  setReviewItems([...blocking, ...items]);
-                  setPendingData(null);
-                  setReviewOpen(true);
-                  return;
-                }
-
-                setReviewMode("SOFT_CONFIRM");
-                setReviewItems(items);
-                setPendingData(data);
-                setReviewOpen(true);
-              })}
-              className="flex flex-col flex-1"
-            >
+            <form onSubmit={handleFormSubmit} className="flex flex-col flex-1">
               <Accordion
                 defaultValue={[
                   "fixed",

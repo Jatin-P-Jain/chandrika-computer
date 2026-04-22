@@ -11,19 +11,16 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function usePwaPrompt() {
-  const [isPwa, setIsPwa] = useState(false);
+  const [isPwa] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.matchMedia("(display-mode: standalone)").matches;
+  });
 
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const standalone = window.matchMedia(
-        "(display-mode: standalone)",
-      ).matches;
-      setIsPwa(standalone);
-    }
-  }, []);
   useEffect(() => {
     const handler = (e: unknown) => {
       const event = e as BeforeInstallPromptEvent;

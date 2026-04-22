@@ -16,6 +16,89 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLocale, useTranslations } from "next-intl";
 
+type FilterItem = FilterUser | FilterTag;
+
+function FilterSection({
+  title,
+  items,
+  currentSelected,
+  filterType,
+  textSmCls,
+  onClear,
+  onToggle,
+}: {
+  title: string;
+  items: FilterItem[];
+  currentSelected: string[];
+  filterType: "createdBy" | "updatedBy" | "tags";
+  textSmCls: string;
+  onClear: (filterType: "createdBy" | "updatedBy" | "tags") => void;
+  onToggle: (
+    filterType: "createdBy" | "updatedBy" | "tags",
+    itemValue: string,
+  ) => void;
+}) {
+  return (
+    <div className="py-2">
+      <div className="flex items-center justify-between mb-2 px-2">
+        <span
+          className={clsx(
+            "text-xs font-medium text-muted-foreground uppercase tracking-wider",
+            textSmCls,
+          )}
+        >
+          {title}
+        </span>
+        {currentSelected.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 px-1 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear(filterType);
+            }}
+          >
+            <X className="size-3 h-3 w-3" />
+          </Button>
+        )}
+      </div>
+      <div className="space-y-1 max-h-32 overflow-auto px-1">
+        {items.map((item) => (
+          <div
+            key={item.value}
+            className="flex gap-2 justify-between p-2 cursor-pointer hover:bg-accent rounded-md items-center"
+            onClick={() => onToggle(filterType, item.value)}
+          >
+            <div className="flex items-center gap-2 flex-1">
+              <Checkbox checked={currentSelected.includes(item.value)} />
+              {filterType !== "tags" ? (
+                <Avatar className="size-5 ring-1 ring-primary border">
+                  <AvatarImage
+                    src={"photoUrl" in item ? (item.photoUrl ?? "") : ""}
+                  />
+                  <AvatarFallback className="text-[10px]">
+                    {item.label?.[0] || "?"}
+                  </AvatarFallback>
+                </Avatar>
+              ) : null}
+              <span className="text-sm">{item.label}</span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {item.count ?? 0}
+            </span>
+          </div>
+        ))}
+      </div>
+      {items.length === 0 && (
+        <div className="px-2 py-4 text-center text-xs text-muted-foreground">
+          No {title.toLowerCase()} available
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MoreFiltersPopover({
   updateSearchParams,
 }: {
@@ -25,7 +108,7 @@ export function MoreFiltersPopover({
   const locale = useLocale();
   const isHi = locale === "hi";
   const textSmCls = clsx(
-    isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!"
+    isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!",
   );
 
   const searchParams = useSearchParams();
@@ -41,8 +124,8 @@ export function MoreFiltersPopover({
 
   const updateFilterList = (
     filterType: "createdBy" | "updatedBy" | "tags",
-    items: FilterUser[] | FilterTag[],
-    selectedIds: string[]
+    items: FilterItem[],
+    selectedIds: string[],
   ) => {
     const values = items
       .filter((item) => selectedIds.includes(item.value))
@@ -66,78 +149,28 @@ export function MoreFiltersPopover({
     });
   };
 
-  const Section = ({
-    title,
-    items,
-    currentSelected,
-    filterType,
-  }: {
-    title: string;
-    items: FilterUser[] | FilterTag[];
-    currentSelected: string[];
-    filterType: "createdBy" | "updatedBy" | "tags";
-  }) => (
-    <div className="py-2">
-      <div className="flex items-center justify-between mb-2 px-2">
-        <span
-          className={clsx(
-            "text-xs font-medium text-muted-foreground uppercase tracking-wider",
-            textSmCls
-          )}
-        >
-          {title}
-        </span>
-        {currentSelected.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 px-1 text-xs" // ✅ Fixed button styling
-            onClick={(e) => {
-              e.stopPropagation();
-              clearSection(filterType);
-            }}
-          >
-            <X className="size-3 h-3 w-3" />
-          </Button>
-        )}
-      </div>
-      <div className="space-y-1 max-h-32 overflow-auto px-1">
-        {items.map((item) => (
-          <div
-            key={item.value}
-            className="flex gap-2 justify-between p-2 cursor-pointer hover:bg-accent rounded-md items-center"
-            onClick={() => {
-              const newSelected = currentSelected.includes(item.value)
-                ? currentSelected.filter((id) => id !== item.value)
-                : [...currentSelected, item.value];
-              updateFilterList(filterType, items as any, newSelected);
-            }}
-          >
-            <div className="flex items-center gap-2 flex-1">
-              <Checkbox checked={currentSelected.includes(item.value)} />
-              {filterType !== "tags" ? (
-                <Avatar className="size-5 ring-1 ring-primary border">
-                  <AvatarImage src={(item as FilterUser)?.photoUrl || ""} />
-                  <AvatarFallback className="text-[10px]">
-                    {item.label?.[0] || "?"}
-                  </AvatarFallback>
-                </Avatar>
-              ) : null}
-              <span className="text-sm">{item.label}</span>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              {item.count ?? 0}
-            </span>
-          </div>
-        ))}
-      </div>
-      {items.length === 0 && (
-        <div className="px-2 py-4 text-center text-xs text-muted-foreground">
-          No {title.toLowerCase()} available
-        </div>
-      )}
-    </div>
-  );
+  const toggleItem = (
+    filterType: "createdBy" | "updatedBy" | "tags",
+    itemValue: string,
+  ) => {
+    const itemMap = {
+      createdBy: creators,
+      updatedBy: updaters,
+      tags,
+    } as const;
+    const currentSelectedMap = {
+      createdBy: currentCreatedBy,
+      updatedBy: currentUpdatedBy,
+      tags: currentTags,
+    } as const;
+
+    const currentSelected = currentSelectedMap[filterType];
+    const newSelected = currentSelected.includes(itemValue)
+      ? currentSelected.filter((id) => id !== itemValue)
+      : [...currentSelected, itemValue];
+
+    updateFilterList(filterType, [...itemMap[filterType]], newSelected);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -151,13 +184,13 @@ export function MoreFiltersPopover({
               "text-primary border-primary scale-102 shadow-md":
                 open || totalSelected > 0,
             },
-            textSmCls
+            textSmCls,
           )}
         >
           <span
             className={clsx(
               textSmCls,
-              "flex justify-center items-center gap-2"
+              "flex justify-center items-center gap-2",
             )}
           >
             <Filter className="size-4" />
@@ -172,25 +205,34 @@ export function MoreFiltersPopover({
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" sideOffset={5}>
         <div className="max-h-96 overflow-auto">
-          <Section
+          <FilterSection
             title={tFilters("CreatedBy")}
             items={creators}
             currentSelected={currentCreatedBy}
             filterType="createdBy"
+            textSmCls={textSmCls}
+            onClear={clearSection}
+            onToggle={toggleItem}
           />
           <div className="border-t mx-2" />
-          <Section
+          <FilterSection
             title={tFilters("UpdatedBy")}
             items={updaters}
             currentSelected={currentUpdatedBy}
             filterType="updatedBy"
+            textSmCls={textSmCls}
+            onClear={clearSection}
+            onToggle={toggleItem}
           />
           <div className="border-t mx-2" />
-          <Section
+          <FilterSection
             title={tFilters("Tags")}
             items={tags}
             currentSelected={currentTags}
             filterType="tags"
+            textSmCls={textSmCls}
+            onClear={clearSection}
+            onToggle={toggleItem}
           />
         </div>
         <div className="border-t p-3 flex justify-between items-center">

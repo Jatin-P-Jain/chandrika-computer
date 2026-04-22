@@ -4,7 +4,6 @@ import {
   Halant,
   Inter,
   Laila,
-  Martel,
   Poppins,
 } from "next/font/google";
 import "./globals.css";
@@ -33,11 +32,6 @@ const laila = Laila({
 const baloo = Baloo_2({
   variable: "--font-baloo",
   weight: ["400", "500", "600", "700", "800"],
-});
-const martel = Martel({
-  variable: "--font-martel",
-  weight: ["200", "300", "400", "600", "700", "800", "900"],
-  subsets: ["latin"],
 });
 const inter = Inter({
   variable: "--font-inter",

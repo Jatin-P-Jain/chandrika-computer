@@ -46,14 +46,10 @@ export function PhoneVerification({
   onVerified: () => void;
   currentUser: User | null;
 }) {
-  // 👈 ONLY show for phone verification states
-  if (
-    !authStateStatus ||
-    (authStateStatus !== "first-time-setup" &&
-      authStateStatus !== "phone-verification-required")
-  ) {
-    return null;
-  }
+  const shouldShow =
+    !!authStateStatus &&
+    (authStateStatus === "first-time-setup" ||
+      authStateStatus === "phone-verification-required");
 
   const locale = useLocale();
   const tToast = useTranslations("Toast");
@@ -62,13 +58,11 @@ export function PhoneVerification({
   // const showPhoneInput = authStateStatus === "first-time-setup";
   // const phoneVerification = authStateStatus === "phone-verification-required";
 
- 
-
   // 👇 Use ref to persist phone number across state switches
   const phoneNumberRef = useRef<string>("");
 
   const [phoneAuthState, setPhoneAuthState] = useState<PhoneAuthState>({
-    phoneNumber: "",
+    phoneNumber: currentUser?.phoneNumber ?? "",
     otp: "",
     error: "",
   });
@@ -83,14 +77,15 @@ export function PhoneVerification({
   const [otpEpoch, setOtpEpoch] = useState(0);
 
   const recaptchaVerifier = useRecaptcha();
-  const { isVerifying, otpSent, sendingOtp, sendOtp, verifyOtp, resetOtp } =
-    useMobileOtp({
+  const { isVerifying, otpSent, sendingOtp, sendOtp, verifyOtp } = useMobileOtp(
+    {
       onSuccess: onVerified,
       appVerifier: recaptchaVerifier,
-      currentUser: currentUser!,
-    });
+      currentUser,
+    },
+  );
 
-   const showPhoneInput = authStateStatus === "first-time-setup" && !otpSent;
+  const showPhoneInput = authStateStatus === "first-time-setup" && !otpSent;
   const phoneVerification =
     authStateStatus === "phone-verification-required" ||
     (authStateStatus === "first-time-setup" && otpSent);
@@ -116,21 +111,6 @@ export function PhoneVerification({
     }
   }, [authStateStatus, currentUser?.phoneNumber]);
 
-  // 👇 Initialize phone number for returning users
-  useEffect(() => {
-    if (
-      phoneVerification &&
-      currentUser?.phoneNumber &&
-      !phoneAuthState.phoneNumber
-    ) {
-      setPhoneAuthState((s) => ({
-        ...s,
-        phoneNumber: currentUser.phoneNumber!,
-      }));
-      phoneNumberRef.current = currentUser.phoneNumber!;
-    }
-  }, [phoneVerification, currentUser?.phoneNumber]);
-
   // 👇 Expiry timer
   useEffect(() => {
     if (!otpSent) return;
@@ -149,9 +129,7 @@ export function PhoneVerification({
 
   // 👇 Resend timer
   useEffect(() => {
-    if (!otpSent) return;
-    setTimer(30);
-    setCanResend(false);
+    if (!otpSent || canResend) return;
 
     const interval = setInterval(() => {
       setTimer((prev) => {
@@ -165,13 +143,15 @@ export function PhoneVerification({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [otpSent, otpEpoch]);
+  }, [otpSent, otpEpoch, canResend]);
 
   const handleSendOTP = async () => {
     if (!phoneAuthState.phoneNumber) {
       toast.error(tToast("PleaseEnterPhoneNumber"));
       return;
     }
+    setTimer(30);
+    setCanResend(false);
     await sendOtp(phoneAuthState.phoneNumber);
     setOtpEpoch((x) => x + 1);
   };
@@ -189,6 +169,8 @@ export function PhoneVerification({
       setHasResentOnce(true);
       toast.success(tToast("OtpResentSuccessfully"));
       setExpiryTimer(300);
+      setTimer(30);
+      setCanResend(false);
       setOtpEpoch((x) => x + 1);
       // Clear OTP input on resend
       setPhoneAuthState((s) => ({ ...s, otp: "" }));
@@ -198,6 +180,10 @@ export function PhoneVerification({
       setResendStatus("idle");
     }
   };
+
+  if (!shouldShow) {
+    return null;
+  }
 
   return (
     <section className="flex items-center justify-center">

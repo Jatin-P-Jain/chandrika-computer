@@ -176,11 +176,3 @@ export const updateAccountTagsIndex = onDocumentWritten(
     await batch.commit().catch(() => {});
   }
 );
-
-const extractTags = (items) => {
-  if (!Array.isArray(items)) return [];
-  return items
-    .flatMap((item) => item?.tags || [])
-    .filter(Boolean)
-    .filter((tag, index, self) => self.indexOf(tag) === index);
-};

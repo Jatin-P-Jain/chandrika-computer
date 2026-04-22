@@ -1,9 +1,16 @@
 // lib/firebaseErrorHandler.ts
 import { FirebaseError } from "firebase/app";
-import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-export function handleFirebaseAuthError(error: unknown, tToast: any) {
+type ToastTranslator = (
+  key: string,
+  values?: Record<string, string | number | Date>
+) => string;
+
+export function handleFirebaseAuthError(
+  error: unknown,
+  tToast: ToastTranslator
+) {
   if (error instanceof FirebaseError) {
     switch (error.code) {
       case "auth/invalid-verification-code":

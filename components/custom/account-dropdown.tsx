@@ -22,8 +22,6 @@ export function AccountDropdown({
 }) {
   const tCommon = useTranslations("Common");
   const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHiCls = clsx(isHi && "text-base! font-medium");
 
   const userReady = userStatus === "ready";
   const guest = userStatus === "no-user";

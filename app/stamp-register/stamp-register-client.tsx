@@ -3,18 +3,33 @@
 import * as React from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { StampReadingsResponsive } from "./stamp-readings-responsive";
 import type { StampReadingRow } from "@/types/readings";
 import { useLocale, useTranslations } from "next-intl";
 import { Layers } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const StampReadingsResponsive = dynamic(
+  () =>
+    import("./stamp-readings-responsive").then(
+      (m) => m.StampReadingsResponsive,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full space-y-2">
+        <div className="h-12 w-full animate-pulse rounded-md border bg-muted/40" />
+        <div className="h-20 w-full animate-pulse rounded-md border bg-muted/40" />
+      </div>
+    ),
+  },
+);
 
 export function StampRegisterClient({
   stampReadingPromise,
 }: {
   stampReadingPromise: Promise<{
     data: StampReadingRow[];
-    totalPages: number | undefined;
-    totalItems: number | undefined;
+    nextPageToken: string | undefined;
   }>;
 }) {
   const { data } = React.use(stampReadingPromise);

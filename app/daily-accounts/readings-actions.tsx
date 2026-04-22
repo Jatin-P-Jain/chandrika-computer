@@ -1,7 +1,7 @@
 // app/daily-account/readings-actions.ts
 "use server";
 
-import { fireStore, getTotalPages } from "@/firebase/server";
+import { fireStore } from "@/firebase/server";
 import type {
   Denomination,
   PhotocopyReadingDoc,

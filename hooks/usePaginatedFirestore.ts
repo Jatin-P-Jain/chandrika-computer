@@ -12,7 +12,7 @@ import {
   QueryDocumentSnapshot,
   DocumentData,
 } from "firebase/firestore";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { firestore } from "@/firebase/client";
 import { DailyAccount } from "@/types/daily-account";
 import { normalizeDailyAccount } from "@/lib/server-utils";
@@ -56,59 +56,72 @@ export const usePaginatedFirestore = ({
   const [internalPage, setInternalPage] = useState(1);
   const currentPage = externalPage ?? internalPage;
   const [totalItems, setTotalItems] = useState(0);
+  const filtersKey = JSON.stringify(filters);
 
   const cursors = useRef<(QueryDocumentSnapshot<DocumentData> | null)[]>([
     null,
   ]);
   const prevQueryKey = useRef("");
 
-  const loadPage = async (page: number) => {
-    if (!hasMore && page > currentPage) return;
-    setLoading(true);
-    try {
-      let q = query(collection(firestore, collectionPath));
-      q = query(q, orderBy(orderByField, orderByDirection));
-      filters.forEach((f) => {
-        if (Array.isArray(f.value)) {
-          if (f.operator === "array-contains-any") {
-            q = query(q, where(f.field, "array-contains-any", f.value));
-          } else if (
-            f.operator === "in" &&
-            (f.value as string[]).length <= 10
-          ) {
-            q = query(q, where(f.field, "in", f.value));
+  const loadPage = useCallback(
+    async (page: number) => {
+      if (!hasMore && page > currentPage) return;
+      setLoading(true);
+      try {
+        let q = query(collection(firestore, collectionPath));
+        q = query(q, orderBy(orderByField, orderByDirection));
+        filters.forEach((f) => {
+          if (Array.isArray(f.value)) {
+            if (f.operator === "array-contains-any") {
+              q = query(q, where(f.field, "array-contains-any", f.value));
+            } else if (
+              f.operator === "in" &&
+              (f.value as string[]).length <= 10
+            ) {
+              q = query(q, where(f.field, "in", f.value));
+            }
+          } else {
+            q = query(q, where(f.field, f.operator, f.value));
           }
-        } else {
-          q = query(q, where(f.field, f.operator, f.value));
+        });
+        const cursor = cursors.current[page - 1];
+        if (cursor) {
+          q = query(q, startAfter(cursor));
         }
-      });
-      const cursor = cursors.current[page - 1];
-      if (cursor) {
-        q = query(q, startAfter(cursor));
+        q = query(q, limit(pageSize));
+        const snapshot = await getDocs(q);
+        const docs = snapshot.docs.map(
+          (doc) => normalizeDailyAccount(doc.data()) as DailyAccount
+        );
+        if (snapshot.docs.length < pageSize) {
+          setHasMore(false);
+        }
+        if (!cursors.current[page]) {
+          cursors.current[page] = snapshot.docs.at(-1) ?? null;
+        }
+        setData(docs);
+        if (setExternalPage) {
+          setExternalPage(page);
+        } else {
+          setInternalPage(page);
+        }
+      } catch (err) {
+        console.error("Pagination fetch error:", err);
+      } finally {
+        setLoading(false);
       }
-      q = query(q, limit(pageSize));
-      const snapshot = await getDocs(q);
-      const docs = snapshot.docs.map(
-        (doc) => normalizeDailyAccount(doc.data()) as DailyAccount
-      );
-      if (snapshot.docs.length < pageSize) {
-        setHasMore(false);
-      }
-      if (!cursors.current[page]) {
-        cursors.current[page] = snapshot.docs.at(-1) ?? null;
-      }
-      setData(docs);
-      if (setExternalPage) {
-        setExternalPage(page);
-      } else {
-        setInternalPage(page);
-      }
-    } catch (err) {
-      console.error("Pagination fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [
+      collectionPath,
+      currentPage,
+      filters,
+      hasMore,
+      orderByDirection,
+      orderByField,
+      pageSize,
+      setExternalPage,
+    ]
+  );
 
   const resetPagination = () => {
     cursors.current = [null];
@@ -126,14 +139,22 @@ export const usePaginatedFirestore = ({
   useEffect(() => {
     const queryKey = JSON.stringify({
       collectionPath,
-      filters,
+      filtersKey,
       orderByField,
       orderByDirection,
     });
 
     if (prevQueryKey.current !== queryKey) {
       prevQueryKey.current = queryKey;
-      resetPagination();
+      cursors.current = [null];
+      setData([]);
+      setHasMore(true);
+      if (setExternalPage) {
+        setExternalPage(1);
+      } else {
+        setInternalPage(1);
+      }
+      loadPage(1);
 
       // Fetch total item count
       const fetchCount = async () => {
@@ -175,7 +196,15 @@ export const usePaginatedFirestore = ({
 
       fetchCount();
     }
-  }, [collectionPath, JSON.stringify(filters), orderByField, orderByDirection]);
+  }, [
+    collectionPath,
+    filters,
+    filtersKey,
+    loadPage,
+    orderByField,
+    orderByDirection,
+    setExternalPage,
+  ]);
 
   return {
     data,

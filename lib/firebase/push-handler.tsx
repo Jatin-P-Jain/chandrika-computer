@@ -8,8 +8,12 @@ import { useAuth } from "@/context/useAuth";
 
 export const PushHandler = () => {
   const auth = useAuth();
+  const authStatus = auth.authState.status;
+  const clientUser = authStatus === "ready" ? auth.authState.clientUser : null;
 
   useEffect(() => {
+    let unsubscribeOnMessage: (() => void) | undefined;
+
     const setup = async () => {
       console.log("sw:", "serviceWorker" in navigator);
       console.log("pushManager:", "PushManager" in window);
@@ -24,15 +28,14 @@ export const PushHandler = () => {
 
       const messaging = getMessaging(app);
 
-      onMessage(messaging, (payload) => {
+      unsubscribeOnMessage = onMessage(messaging, (payload) => {
         console.log("📥 Foreground message received:", payload);
 
         const title =
           payload.notification?.title ?? payload.data?.title ?? "No title";
         const body =
           payload.notification?.body ?? payload.data?.body ?? "No body";
-        const user =
-          auth.authState.status === "ready" ? auth.authState.clientUser : null;
+        const user = authStatus === "ready" ? clientUser : null;
         if (payload?.data?.uid === user?.uid) {
           // Show toast only if the message is intended for the current user
           toast.success(title, { description: body });
@@ -41,7 +44,13 @@ export const PushHandler = () => {
     };
 
     setup();
-  }, []);
+
+    return () => {
+      if (unsubscribeOnMessage) {
+        unsubscribeOnMessage();
+      }
+    };
+  }, [authStatus, clientUser]);
 
   return null;
 };

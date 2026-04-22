@@ -20,8 +20,6 @@ const CreatedOrUpdated: React.FC<CreatedOrUpdatedProps> = ({
   const tCommon = useTranslations("Common");
   const locale = useLocale();
   const isHi = locale === "hi";
-  const textHeadCls = isHi ? "text-xl! lg:text-base!" : "";
-  const textBodyCls = isHi ? "text-lg! lg:text-base!" : "";
   const textSmCls = isHi ? "text-sm!" : "text-xs";
   // If both dates are provided and are the same, show only created
   const createdDate = created ? new Date(created) : undefined;

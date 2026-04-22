@@ -4,7 +4,18 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toDocId } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
-import { FiltersSection } from "../filter-section/filters-section";
+import dynamic from "next/dynamic";
+
+const FiltersSection = dynamic(
+  () =>
+    import("../filter-section/filters-section").then((m) => m.FiltersSection),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-9 w-56 animate-pulse rounded-md border bg-muted/40" />
+    ),
+  },
+);
 
 export default function DailyAccountListHeader() {
   const tCommon = useTranslations("Common");
