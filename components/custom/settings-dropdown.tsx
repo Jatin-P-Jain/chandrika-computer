@@ -1,8 +1,8 @@
 "use client";
 
-import clsx from "clsx";
 import { Settings } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,9 +16,7 @@ import { KeyboardSwitch } from "./action-items/keyboard-switch";
 
 export function SettingsDropdown() {
   const tCommon = useTranslations("Common");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHiCls = clsx(isHi && "text-base! font-medium");
+  const { textLabelCls } = useLocaleTypography();
 
   return (
     <DropdownMenu>
@@ -37,21 +35,21 @@ export function SettingsDropdown() {
             className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0 mb-2"
             onSelect={(e) => e.preventDefault()}
           >
-            <KeyboardSwitch labelClassName={textHiCls} />
+            <KeyboardSwitch labelClassName={textLabelCls} />
           </DropdownMenuItem>
 
           <DropdownMenuItem
             className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0 mb-2"
             onSelect={(e) => e.preventDefault()}
           >
-            <ThemeModeToggle labelClassName={textHiCls} />
+            <ThemeModeToggle labelClassName={textLabelCls} />
           </DropdownMenuItem>
 
           <DropdownMenuItem
             className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0"
             onSelect={(e) => e.preventDefault()}
           >
-            <LocaleToggle labelClassName={textHiCls} />
+            <LocaleToggle labelClassName={textLabelCls} />
           </DropdownMenuItem>
         </div>
       </DropdownMenuContent>

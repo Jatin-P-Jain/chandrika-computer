@@ -16,7 +16,8 @@ import {
   FunnelX,
   CalendarRange,
 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { format, addDays } from "date-fns";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { DateRange } from "react-day-picker";
@@ -48,12 +49,11 @@ const SORT_FIELDS = [
 export function FiltersSection() {
   const tCommon = useTranslations("Common");
   const tFilters = useTranslations("Filters");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
-  const textSmCls = clsx(
-    isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!",
-  );
+  const { textBodyCls, isHi } = useLocaleTypography();
+  // textSmCls has a non-empty default for both locales – derive inline from isHi
+  const textSmCls = isHi
+    ? "text-sm! md:text-base! font-[inherit]"
+    : "text-xs! md:text-sm!";
 
   const router = useRouter();
   const searchParams = useSearchParams();

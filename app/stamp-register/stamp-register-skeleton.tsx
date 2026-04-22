@@ -8,7 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Layers } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 const DENOMS = [50, 100, 500, 1000] as const;
 
@@ -85,16 +86,13 @@ function MobileCards({ items = 4 }: { items?: number }) {
 
 export function StampRegisterSkeleton() {
   const tStampRegister = useTranslations("StampRegister");
-
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadingCls = isHi ? "text-lg! md:text-xl!" : "";
+  const { textPageHeadCls } = useLocaleTypography();
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Keep header area shape so layout doesn't jump */}
       <div className="flex items-center justify-between gap-3 w-full">
         <h1
-          className={`text-lg font-semibold flex items-center gap-2 ${textHeadingCls}`}
+          className={`text-lg font-semibold flex items-center gap-2 ${textPageHeadCls}`}
         >
           <Layers className="size-6" />
           {tStampRegister("StampRegister")}

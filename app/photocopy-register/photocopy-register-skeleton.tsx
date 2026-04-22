@@ -8,14 +8,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Newspaper } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import React from "react";
 
 function DesktopRows({ rows = 4 }: { rows?: number }) {
   const tCommon = useTranslations("Common");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textBodyCls = isHi ? "text-base!" : "text-sm";
+  const { textBodyCls } = useLocaleTypography();
 
   return (
     <div className="hidden md:flex rounded-md border w-full">
@@ -97,15 +96,15 @@ function MobileCards({ items = 4 }: { items?: number }) {
 
 export function PhotocopyRegisterSkeleton() {
   const tPhotocopy = useTranslations("PhotocopyRegister");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadingCls = isHi ? "text-lg! md:text-xl!" : "";
+  const { textPageHeadCls } = useLocaleTypography();
 
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Keep header area stable: real title text + switch skeleton */}
       <div className="flex items-center justify-between gap-3 w-full">
-        <h1 className={`text-lg font-semibold flex items-center gap-2 ${textHeadingCls}`}>
+        <h1
+          className={`text-lg font-semibold flex items-center gap-2 ${textPageHeadCls}`}
+        >
           <Newspaper className="size-6" />
           {tPhotocopy("PhotocopyRegister")}
         </h1>

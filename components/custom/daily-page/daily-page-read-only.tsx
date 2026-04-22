@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import clsx from "clsx";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useRouter } from "nextjs-toploader/app";
 import { useMemo, useState } from "react";
 
@@ -16,6 +16,7 @@ import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import CreatedOrUpdated from "../created-or-updated";
 import { ChevronsRight, ListTodo, PencilIcon } from "lucide-react";
 import type { NoteItem } from "@/types/daily-notes";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 const DailyReadingsDialog = dynamic(
   () => import("../daily-readings/daily-readings-dialog"),
@@ -186,11 +187,8 @@ export default function DailyPageReadOnly({
   const tDailyAccount = useTranslations("DailyAccount");
   const tReadings = useTranslations("Readings");
   const tNotes = useTranslations("Notes");
-  const locale = useLocale();
   const router = useRouter();
-  const isHi = locale === "hi";
-  const textBodyCls = clsx(isHi && "text-lg font-[inherit]");
-  const textHeadCls = clsx(isHi && "text-2xl! font-[inherit]");
+  const { textBodyCls, textDisplayCls } = useLocaleTypography();
   const baseData: DailyFormValues = initialData ?? {
     fixed: { sd: 0, sc: 0, fs: 0, flexnCard: 0, otherFixedExpenses: [] },
     earnings: { netIncome: 0, otherIncomes: [] },
@@ -237,7 +235,10 @@ export default function DailyPageReadOnly({
             startOpen={true}
             readings={localReadings}
             todayDateYmd={docId}
-            onSaved={(saved) => {
+            onSaved={(saved: {
+              photocopy?: PhotocopyReadingDoc;
+              stamp?: StampReadingDoc;
+            }) => {
               setLocalReadings((prev) => ({
                 success: true,
                 photocopy: saved.photocopy ?? prev?.photocopy ?? null,
@@ -301,7 +302,7 @@ export default function DailyPageReadOnly({
               ]}
               totalLabel={tDailyAccount("TotalFixedExpense")}
               totalValue={totalFixed}
-              textHeadCls={textHeadCls}
+              textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
             />
 
@@ -311,7 +312,7 @@ export default function DailyPageReadOnly({
               totalLabel={tDailyAccount("TotalIncome")}
               totalValue={totalEarnings}
               accentClassName="bg-green-100 text-green-900 rounded-md px-2"
-              textHeadCls={textHeadCls}
+              textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
             />
 
@@ -320,7 +321,7 @@ export default function DailyPageReadOnly({
               items={(baseData.businessExpenses ?? []) as LineItem[]}
               totalLabel={tDailyAccount("TotalBusinessExpense")}
               totalValue={totalBusiness}
-              textHeadCls={textHeadCls}
+              textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
             />
 
@@ -329,7 +330,7 @@ export default function DailyPageReadOnly({
               items={(baseData.dailySpends ?? []) as LineItem[]}
               totalLabel={tDailyAccount("TotalDailySpends")}
               totalValue={totalSpends}
-              textHeadCls={textHeadCls}
+              textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
             />
           </div>
@@ -338,13 +339,13 @@ export default function DailyPageReadOnly({
             <ReadOnlyAccountSection
               title={tDailyAccount("Credits")}
               items={baseData.creditItems ?? []}
-              textHeadCls={textHeadCls}
+              textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
             />
             <ReadOnlyAccountSection
               title={tDailyAccount("Debits")}
               items={baseData.debitItems ?? []}
-              textHeadCls={textHeadCls}
+              textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
             />
           </div>
@@ -363,7 +364,7 @@ export default function DailyPageReadOnly({
                 <span
                   className={clsx(
                     "text-xl font-semibold text-center text-primary",
-                    textHeadCls,
+                    textDisplayCls,
                   )}
                 >
                   {formatINR(baseData.totalCashCollected)}

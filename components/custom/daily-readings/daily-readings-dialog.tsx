@@ -38,9 +38,9 @@ import {
   stampReadingSchema,
 } from "@/schema/readings.schema";
 import { CheckCircle, ChevronsRight, TriangleAlert } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
-import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { useBreakpoints } from "@/hooks/useBreakPoints";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 const PhotocopyStep = dynamic(() => import("./steps/photocopy-step"), {
   loading: () => (
@@ -90,11 +90,7 @@ export default function DailyReadingsDialog({
 }: Props) {
   const tCommon = useTranslations("Common");
   const tReadings = useTranslations("Readings");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
-  const textSmCls = clsx(isHi && "text-sm! font-[inherit]");
-  const textXsCls = clsx(isHi && "text-xs! font-[inherit]");
+  const { textBodyCls, textSmCls, textXsCls } = useLocaleTypography();
 
   const { isTabletUp } = useBreakpoints();
 

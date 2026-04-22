@@ -14,7 +14,8 @@ import { useFilterOptions } from "@/hooks/useFilterOptions";
 import { FilterTag, FilterUser } from "@/types/filters";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 type FilterItem = FilterUser | FilterTag;
 
@@ -105,11 +106,11 @@ export function MoreFiltersPopover({
   updateSearchParams: (params: Record<string, string | string[]>) => void;
 }) {
   const tFilters = useTranslations("Filters");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textSmCls = clsx(
-    isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!",
-  );
+  const { isHi } = useLocaleTypography();
+  // textSmCls has a non-empty default for both locales – derive inline from isHi
+  const textSmCls = isHi
+    ? "text-sm! md:text-base! font-[inherit]"
+    : "text-xs! md:text-sm!";
 
   const searchParams = useSearchParams();
   const currentCreatedBy = searchParams.get("createdBy")?.split(",") || [];

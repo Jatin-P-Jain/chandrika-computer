@@ -6,8 +6,9 @@ import { formatINR } from "@/lib/utils";
 import { ChevronsRight } from "lucide-react";
 import { DateDisplay } from "../date-display";
 import CreatedOrUpdated from "../created-or-updated";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useRouter } from "nextjs-toploader/app";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 type DailyAccountCardProps = {
   dailyAccount: DailyAccount;
@@ -15,11 +16,7 @@ type DailyAccountCardProps = {
 
 export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   const tDailyAccount = useTranslations("DailyAccount");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadCls = isHi ? "font-semibold text-xl!" : "";
-  const textBodyCls = isHi ? "font-medium text-lg!" : "";
-  const textSmCls = isHi ? "text-sm! lg:text-base!" : "";
+  const { textHeadingCls, textBodyCls, textSmCls } = useLocaleTypography();
   const {
     id,
     totalEarnings,
@@ -49,7 +46,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
             >
               {tDailyAccount("DailyAccount")}:
             </span>{" "}
-            <span className={`font-semibold text-primary ${textHeadCls}`}>
+            <span className={`font-semibold text-primary ${textHeadingCls}`}>
               {<DateDisplay value={id} type="docId" />}
             </span>
           </div>
@@ -62,7 +59,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                   {tDailyAccount("TotalCashCollected")}:
                 </span>
                 <span
-                  className={`font-medium! tabular-nums text-primary ${textHeadCls}`}
+                  className={`font-medium! tabular-nums text-primary ${textHeadingCls}`}
                 >
                   {formatINR(Number(totalCashCollected || 0))}
                 </span>
@@ -74,7 +71,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                   {tDailyAccount("TotalExpenses")}:
                 </span>
                 <span
-                  className={`font-medium! tabular-nums text-red-600 ${textHeadCls}`}
+                  className={`font-medium! tabular-nums text-red-600 ${textHeadingCls}`}
                 >
                   {formatINR(Number(totalSpends || 0))}
                 </span>
@@ -87,7 +84,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                   {tDailyAccount("TotalIncome")}:
                 </span>
                 <span
-                  className={`font-bold tabular-nums text-green-600 ${textHeadCls}`}
+                  className={`font-bold tabular-nums text-green-600 ${textHeadingCls}`}
                 >
                   {formatINR(Number(totalEarnings || 0))}
                 </span>

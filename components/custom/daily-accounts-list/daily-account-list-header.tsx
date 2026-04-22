@@ -3,8 +3,9 @@ import { LayoutList, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toDocId } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 const FiltersSection = dynamic(
   () =>
@@ -20,13 +21,11 @@ const FiltersSection = dynamic(
 export default function DailyAccountListHeader() {
   const tCommon = useTranslations("Common");
   const tDailyAccount = useTranslations("DailyAccount");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadCls = isHi ? "text-xl!" : "";
+  const { textHeadingCls } = useLocaleTypography();
   return (
     <div className="flex justify-between lg:justify-end items-center w-full gap-4">
       <h1
-        className={`flex justify-center items-center gap-1 font-semibold text-primary min-w-fit! ${textHeadCls}`}
+        className={`flex justify-center items-center gap-1 font-semibold text-primary min-w-fit! ${textHeadingCls}`}
       >
         <LayoutList className="size-4 md:size-5" />
         {tDailyAccount("AllDailyAccounts")}

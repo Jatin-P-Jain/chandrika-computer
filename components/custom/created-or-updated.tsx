@@ -1,8 +1,9 @@
 import React from "react";
 import { DateDisplay } from "./date-display";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { UserMini } from "@/types/user";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 interface CreatedOrUpdatedProps {
   created?: string | Date;
@@ -18,9 +19,7 @@ const CreatedOrUpdated: React.FC<CreatedOrUpdatedProps> = ({
   updated,
 }) => {
   const tCommon = useTranslations("Common");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textSmCls = isHi ? "text-sm!" : "text-xs";
+  const { textSmCls } = useLocaleTypography();
   // If both dates are provided and are the same, show only created
   const createdDate = created ? new Date(created) : undefined;
   const updatedDate = updated ? new Date(updated) : undefined;

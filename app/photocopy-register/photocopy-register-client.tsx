@@ -4,7 +4,8 @@ import * as React from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { PhotocopyReadingRow } from "@/types/readings";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { Newspaper } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -37,16 +38,13 @@ export function PhotocopyRegisterClient({
   const tPhotocopyRegister = useTranslations("PhotocopyRegister");
   const [showReadings, setShowReadings] = React.useState(false);
 
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadingCls = isHi ? "text-lg! md:text-xl!" : "";
-  const textSmCls = isHi ? "text-sm md:text-base!" : "";
+  const { textPageHeadCls, textSmCls } = useLocaleTypography();
 
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex items-center justify-between gap-3 w-full">
         <h1
-          className={`text-lg font-semibold flex items-center gap-2 ${textHeadingCls}`}
+          className={`text-lg font-semibold flex items-center gap-2 ${textPageHeadCls}`}
         >
           <Newspaper className="size-6" />
           {tPhotocopyRegister("PhotocopyRegister")}

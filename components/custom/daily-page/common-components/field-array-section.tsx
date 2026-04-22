@@ -2,7 +2,8 @@
 "use client";
 
 import clsx from "clsx";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import {
@@ -40,10 +41,7 @@ export function FieldArraySection({
 }) {
   const tDailyAccount = useTranslations("DailyAccount");
   const { control } = useFormContext<DailyFormValues>();
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadCls = clsx(isHi && "text-lg font-[inherit]");
-  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
+  const { textSubheadingCls, textBodyCls } = useLocaleTypography();
 
   const fa = useFieldArray({ control, name: value });
   const otherFixedExpenses = useWatch({
@@ -70,7 +68,7 @@ export function FieldArraySection({
       <AccordionTrigger
         className={clsx(
           "p-2 text-base font-semibold text-primary justify-between lg:border-b items-center pb-0",
-          textHeadCls,
+          textSubheadingCls,
         )}
       >
         {title}
@@ -87,7 +85,7 @@ export function FieldArraySection({
             <div
               className={clsx(
                 "text-base tabular-nums font-semibold",
-                textHeadCls,
+                textSubheadingCls,
               )}
             >
               {formatINR(netForDay || 0)}
@@ -101,7 +99,7 @@ export function FieldArraySection({
               <ReadOnlyLineItem
                 key={f.id}
                 namePrefix={`${value}.${idx}`}
-                textHeadCls={textHeadCls}
+                textHeadCls={textSubheadingCls}
                 textBodyCls={textBodyCls}
               />
             ) : (
@@ -134,7 +132,7 @@ export function FieldArraySection({
         className={clsx("mt-auto", totalBarClassName)}
         label={<span className={textBodyCls}>{totalLabel}</span>}
         value={totalValue}
-        valueClassName={textHeadCls}
+        valueClassName={textSubheadingCls}
       />
     </AccordionItem>
   );

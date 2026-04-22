@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/table";
 import { formatINR } from "@/lib/utils";
 import type { PhotocopyReadingRow } from "@/types/readings";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import React from "react";
 
 export function PhotocopyReadingsResponsive({
@@ -22,10 +23,7 @@ export function PhotocopyReadingsResponsive({
   const tCommon = useTranslations("Common");
   const tReadings = useTranslations("Readings");
 
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textBodyCls = isHi ? "text-base md:text-lg!" : "text-sm";
-  const textSmCls = isHi ? "text-sm md:text-base!" : "text-xs";
+  const { textBodyCls, textSmCls } = useLocaleTypography();
 
   return (
     <div className="space-y-4 w-full">

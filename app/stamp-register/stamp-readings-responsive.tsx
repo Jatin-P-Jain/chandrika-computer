@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/table";
 import { formatINR } from "@/lib/utils";
 import type { StampReadingRow, Denomination } from "@/types/readings";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import React from "react";
 
 const DENOMS: Denomination[] = [50, 100, 500, 1000];
@@ -24,9 +25,7 @@ export function StampReadingsResponsive({
   const tCommon = useTranslations("Common");
   const tReadings = useTranslations("Readings");
 
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textBodyCls = isHi ? "text-base!" : "";
+  const { textBodyCls } = useLocaleTypography();
 
   return (
     <div className="space-y-4 w-full">

@@ -12,10 +12,11 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useRef } from "react";
 import { DailyAccountCard } from "./daily-account-card";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { DailyAccountCardSkeleton } from "./daily-account-loader";
 import { LoaderCircleIcon } from "lucide-react";
 import { FilterOperator, FirestoreFilter } from "@/types/filters";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 export default function DailyAccountsList({
   searchParamsValues,
@@ -32,9 +33,7 @@ export default function DailyAccountsList({
   };
 }) {
   const tCommon = useTranslations("Common");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textSmCls = isHi ? "text-sm! lg:text-base!" : "";
+  const { textSmCls } = useLocaleTypography();
 
   const router = useRouter();
   const searchParams = useSearchParams();
