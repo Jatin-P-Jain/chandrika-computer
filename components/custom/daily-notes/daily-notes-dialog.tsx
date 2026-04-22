@@ -41,6 +41,7 @@ import { noteItemTextSchema } from "@/schema/daily-notes-schema";
 type Props = {
   form: UseFormReturn<DailyFormValues>;
   readOnly?: boolean;
+  startOpen?: boolean;
 };
 
 function sortItems(items: NoteItem[]) {
@@ -57,9 +58,13 @@ function makeId() {
   return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
-export default function DailyNotesDialog({ form, readOnly = false }: Props) {
+export default function DailyNotesDialog({
+  form,
+  readOnly = false,
+  startOpen = false,
+}: Props) {
   const tNotes = useTranslations("Notes");
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(startOpen);
 
   const { control, setValue } = form;
   const watchedNotes = useWatch({ control, name: "notes" });

@@ -4,6 +4,28 @@ import { Firestore, getFirestore } from "firebase-admin/firestore";
 import { Auth, getAuth } from "firebase-admin/auth";
 import { getStorage, Storage } from "firebase-admin/storage";
 import { getMessaging, Messaging } from "firebase-admin/messaging";
+import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
+
+const requiredFirebaseAdminEnv = [
+  "FIREBASE_PROJECT_ID",
+  "FIREBASE_PRIVATE_KEY_ID",
+  "FIREBASE_PRIVATE_KEY",
+  "FIREBASE_CLIENT_EMAIL",
+  "FIREBASE_CLIENT_ID",
+  "FIREBASE_CLIENT_CERT_URL",
+] as const;
+
+const missingFirebaseAdminEnv = requiredFirebaseAdminEnv.filter(
+  (key) => !process.env[key]
+);
+
+if (missingFirebaseAdminEnv.length > 0) {
+  throw new Error(
+    `Missing Firebase Admin credentials in environment: ${missingFirebaseAdminEnv.join(
+      ", "
+    )}`
+  );
+}
 
 const serviceAccount = {
   type: "service_account",
@@ -18,6 +40,12 @@ const serviceAccount = {
   client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL,
   universe_domain: "googleapis.com",
 };
+
+if (!serviceAccount.private_key?.includes("BEGIN PRIVATE KEY")) {
+  throw new Error(
+    "Invalid FIREBASE_PRIVATE_KEY format. Ensure the full key is provided and newline characters are escaped as \\n in .env."
+  );
+}
 
 let messaging: Messaging;
 let fireStore: Firestore;
@@ -50,10 +78,19 @@ export const getTotalPages = async (
   >,
   pageSize: number
 ) => {
+  const done = startFirestoreMetric({
+    source: "server",
+    operation: "getTotalPages",
+    collection: "unknown",
+  });
+
   const queryCount = firestoreQuery.count();
   const countSnapshot = await queryCount.get();
   const countData = countSnapshot.data();
   const total = countData.count;
   const totalPages = Math.ceil(total / pageSize);
+
+  done({ success: true, docsRead: 1, details: { total, pageSize } });
+
   return { totalPages, totalItems: total };
 };

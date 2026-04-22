@@ -15,6 +15,7 @@ import {
   Redo2Icon,
   Send,
   SendHorizonalIcon,
+  Smartphone,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMobileOtp } from "@/hooks/useMobileOtp";
@@ -22,7 +23,6 @@ import { useRecaptcha } from "@/hooks/useRecaptcha";
 import { useEffect, useRef, useState } from "react";
 import OTPInput from "./otp-input";
 import { User } from "firebase/auth";
-import MobileFriendlyIcon from "@mui/icons-material/MobileFriendly";
 import { formatTime } from "@/lib/utils";
 import { toast } from "sonner";
 import clsx from "clsx";
@@ -190,7 +190,7 @@ export function PhoneVerification({
       <Card className="w-full">
         <CardHeader className="flex flex-col items-center text-center gap-1">
           <div>
-            <MobileFriendlyIcon className="size-8! md:size-10! text-primary" />
+            <Smartphone className="size-8 md:size-10 text-primary" />
           </div>
           <CardTitle className="text-lg md:text-2xl text-primary">
             {tMobileNumber("Verification")}

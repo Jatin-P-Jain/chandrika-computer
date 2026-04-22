@@ -3,11 +3,11 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = params;
+  const { locale } = await params;
 
   const tCommon = await getTranslations({
     locale,

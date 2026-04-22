@@ -10,6 +10,7 @@ import type {
   StampReadingRow,
   PhotocopyReadingRow,
 } from "@/types/readings";
+import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
 
 type GetReadingsOptions = {
   pagination?: {
@@ -60,6 +61,11 @@ function clamp0(n: number) {
 
 export async function getReadings(todayDateYmd: string, deltaDays = 0) {
   const yesterday = addDaysYmd(todayDateYmd, deltaDays);
+  const done = startFirestoreMetric({
+    source: "server",
+    operation: "getReadings",
+    collection: "photocopyReadings,stampReadings",
+  });
 
   const photoRef = fireStore.collection("photocopyReadings").doc(yesterday);
   const stampRef = fireStore.collection("stampReadings").doc(yesterday);
@@ -68,6 +74,12 @@ export async function getReadings(todayDateYmd: string, deltaDays = 0) {
     photoRef.get(),
     stampRef.get(),
   ]);
+
+  done({
+    success: true,
+    docsRead: (photoSnap.exists ? 1 : 0) + (stampSnap.exists ? 1 : 0),
+    details: { todayDateYmd, deltaDays },
+  });
 
   const photocopyRaw = photoSnap.exists
     ? (photoSnap.data() as PhotocopyReadingDoc)
@@ -109,6 +121,12 @@ export async function getReadings(todayDateYmd: string, deltaDays = 0) {
 export const getPhotocopyReadings = async (
   options?: GetReadingsOptions & { pageToken?: string },
 ) => {
+  const done = startFirestoreMetric({
+    source: "server",
+    operation: "getPhotocopyReadings",
+    collection: "photocopyReadings",
+  });
+
   const pageSize = options?.pagination?.pageSize || 10;
   const pageToken = options?.pageToken;
 
@@ -123,6 +141,12 @@ export const getPhotocopyReadings = async (
     }
   }
   const snapshot = await query.limit(pageSize).get();
+  done({
+    success: true,
+    docsRead: snapshot.size,
+    details: { pageSize, pageToken: pageToken || null },
+  });
+
   const photocopyReadings = snapshot.docs.map((doc) => {
     const rawReading = doc.data();
     const reading: PhotocopyReadingDoc = {
@@ -151,6 +175,12 @@ export async function savePhotocopyReading(opts: {
   todayReading: number;
   prevReading: number; // from yesterday
 }) {
+  const done = startFirestoreMetric({
+    source: "server",
+    operation: "savePhotocopyReading",
+    collection: "photocopyReadings",
+  });
+
   const rate = 1.5;
 
   const difference = clamp0(opts.todayReading - opts.prevReading);
@@ -172,12 +202,24 @@ export async function savePhotocopyReading(opts: {
   // set(..., {merge:true}) = upsert (create if missing, otherwise merge) [web:49]
   await ref.set(payload, { merge: true });
 
+  done({
+    success: true,
+    docsWritten: 1,
+    details: { todayDateYmd: opts.todayDateYmd },
+  });
+
   return { success: true as const, data: payload };
 }
 
 export const getStampReadings = async (
   options?: GetReadingsOptions & { pageToken?: string },
 ) => {
+  const done = startFirestoreMetric({
+    source: "server",
+    operation: "getStampReadings",
+    collection: "stampReadings",
+  });
+
   const pageSize = options?.pagination?.pageSize || 10;
   const pageToken = options?.pageToken;
 
@@ -192,6 +234,12 @@ export const getStampReadings = async (
     }
   }
   const snapshot = await query.limit(pageSize).get();
+  done({
+    success: true,
+    docsRead: snapshot.size,
+    details: { pageSize, pageToken: pageToken || null },
+  });
+
   const stampReadings = snapshot.docs.map((doc) => {
     const rawReading = doc.data();
     const reading: StampReadingDoc = {
@@ -217,6 +265,12 @@ export async function saveStampReading(opts: {
   partsTodayReadings: Record<Denomination, number>;
   prevPartsReadings: Record<Denomination, number>; // from yesterday
 }) {
+  const done = startFirestoreMetric({
+    source: "server",
+    operation: "saveStampReading",
+    collection: "stampReadings",
+  });
+
   const parts: Record<Denomination, StampPartDoc> = {
     50: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
     100: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
@@ -246,6 +300,12 @@ export async function saveStampReading(opts: {
   };
 
   await ref.set(payload, { merge: true }); // upsert merge [web:49]
+
+  done({
+    success: true,
+    docsWritten: 1,
+    details: { todayDateYmd: opts.todayDateYmd },
+  });
 
   return { success: true as const, data: payload };
 }

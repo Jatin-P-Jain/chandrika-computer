@@ -11,12 +11,14 @@ import {
   getCountFromServer,
   QueryDocumentSnapshot,
   DocumentData,
+  Query,
 } from "firebase/firestore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { firestore } from "@/firebase/client";
 import { DailyAccount } from "@/types/daily-account";
 import { normalizeDailyAccount } from "@/lib/server-utils";
 import { FirestoreFilter } from "@/types/filters";
+import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
 
 /**
  * usePaginatedFirestore
@@ -41,6 +43,67 @@ type UsePaginatedFirestoreOptions = {
   setExternalPage?: (page: number) => void;
 };
 
+type CachedPageEntry = {
+  createdAt: number;
+  data: DailyAccount[];
+  hasMore: boolean;
+  lastCursor: QueryDocumentSnapshot<DocumentData> | null;
+};
+
+const PAGE_CACHE_TTL_MS = 30 * 1000;
+const COUNT_CACHE_TTL_MS = 60 * 1000;
+const MAX_PAGE_CACHE_ENTRIES = 40;
+
+function normalizeFilters(filters: FirestoreFilter[]) {
+  return [...filters].sort((a, b) => {
+    const aKey = `${a.field}:${a.operator}:${JSON.stringify(a.value)}`;
+    const bKey = `${b.field}:${b.operator}:${JSON.stringify(b.value)}`;
+    return aKey.localeCompare(bKey);
+  });
+}
+
+function upsertBoundedPageCache(
+  cache: Map<string, CachedPageEntry>,
+  key: string,
+  entry: CachedPageEntry
+) {
+  if (cache.has(key)) {
+    cache.delete(key);
+  }
+  cache.set(key, entry);
+
+  while (cache.size > MAX_PAGE_CACHE_ENTRIES) {
+    const oldestKey = cache.keys().next().value;
+    if (!oldestKey) break;
+    cache.delete(oldestKey);
+  }
+}
+
+function applyFirestoreFilters(
+  baseQuery: Query<DocumentData>,
+  filters: FirestoreFilter[]
+) {
+  let filteredQuery = baseQuery;
+
+  filters.forEach((f) => {
+    if (Array.isArray(f.value)) {
+      if (f.operator === "array-contains-any") {
+        filteredQuery = query(
+          filteredQuery,
+          where(f.field, "array-contains-any", f.value)
+        );
+      } else if (f.operator === "in" && (f.value as string[]).length <= 10) {
+        filteredQuery = query(filteredQuery, where(f.field, "in", f.value));
+      }
+      return;
+    }
+
+    filteredQuery = query(filteredQuery, where(f.field, f.operator, f.value));
+  });
+
+  return filteredQuery;
+}
+
 export const usePaginatedFirestore = ({
   collectionPath,
   pageSize = 10,
@@ -56,34 +119,62 @@ export const usePaginatedFirestore = ({
   const [internalPage, setInternalPage] = useState(1);
   const currentPage = externalPage ?? internalPage;
   const [totalItems, setTotalItems] = useState(0);
-  const filtersKey = JSON.stringify(filters);
+  const normalizedFilters = normalizeFilters(filters);
+  const filtersKey = JSON.stringify(normalizedFilters);
+  const queryCacheKey = JSON.stringify({
+    collectionPath,
+    filtersKey,
+    orderByField,
+    orderByDirection,
+    pageSize,
+  });
+  const countCacheKey = JSON.stringify({
+    collectionPath,
+    filtersKey,
+  });
 
   const cursors = useRef<(QueryDocumentSnapshot<DocumentData> | null)[]>([
     null,
   ]);
   const prevQueryKey = useRef("");
+  const pageCache = useRef(new Map<string, CachedPageEntry>());
+  const countCache = useRef(
+    new Map<string, { createdAt: number; totalItems: number }>()
+  );
 
   const loadPage = useCallback(
     async (page: number) => {
       if (!hasMore && page > currentPage) return;
+
+      const pageCacheKey = `${queryCacheKey}:page:${page}`;
+      const cachedPage = pageCache.current.get(pageCacheKey);
+      if (cachedPage && Date.now() - cachedPage.createdAt < PAGE_CACHE_TTL_MS) {
+        setData(cachedPage.data);
+        setHasMore(cachedPage.hasMore);
+        cursors.current[page] = cachedPage.lastCursor;
+        if (setExternalPage && currentPage !== page) {
+          setExternalPage(page);
+        } else if (!setExternalPage && currentPage !== page) {
+          setInternalPage(page);
+        }
+        return;
+      }
+
       setLoading(true);
+      const doneMetric = startFirestoreMetric({
+        source: "client",
+        operation: "usePaginatedFirestore.loadPage",
+        collection: collectionPath,
+      });
+
       try {
-        let q = query(collection(firestore, collectionPath));
-        q = query(q, orderBy(orderByField, orderByDirection));
-        filters.forEach((f) => {
-          if (Array.isArray(f.value)) {
-            if (f.operator === "array-contains-any") {
-              q = query(q, where(f.field, "array-contains-any", f.value));
-            } else if (
-              f.operator === "in" &&
-              (f.value as string[]).length <= 10
-            ) {
-              q = query(q, where(f.field, "in", f.value));
-            }
-          } else {
-            q = query(q, where(f.field, f.operator, f.value));
-          }
-        });
+        const baseQuery = applyFirestoreFilters(
+          query(collection(firestore, collectionPath)),
+          normalizedFilters
+        );
+
+        let q = query(baseQuery, orderBy(orderByField, orderByDirection));
+
         const cursor = cursors.current[page - 1];
         if (cursor) {
           q = query(q, startAfter(cursor));
@@ -93,19 +184,42 @@ export const usePaginatedFirestore = ({
         const docs = snapshot.docs.map(
           (doc) => normalizeDailyAccount(doc.data()) as DailyAccount
         );
-        if (snapshot.docs.length < pageSize) {
-          setHasMore(false);
-        }
-        if (!cursors.current[page]) {
-          cursors.current[page] = snapshot.docs.at(-1) ?? null;
-        }
+        const nextHasMore = snapshot.docs.length >= pageSize;
+        const lastCursor = snapshot.docs.at(-1) ?? null;
+
+        setHasMore(nextHasMore);
+        cursors.current[page] = lastCursor;
+
+        upsertBoundedPageCache(pageCache.current, pageCacheKey, {
+          createdAt: Date.now(),
+          data: docs,
+          hasMore: nextHasMore,
+          lastCursor,
+        });
+
         setData(docs);
-        if (setExternalPage) {
+        if (setExternalPage && currentPage !== page) {
           setExternalPage(page);
-        } else {
+        } else if (!setExternalPage && currentPage !== page) {
           setInternalPage(page);
         }
+
+        doneMetric({
+          success: true,
+          docsRead: snapshot.size,
+          details: {
+            page,
+            pageSize,
+            filtersCount: normalizedFilters.length,
+            orderByField,
+            orderByDirection,
+          },
+        });
       } catch (err) {
+        doneMetric({
+          success: false,
+          error: err instanceof Error ? err.message : "Unknown error",
+        });
         console.error("Pagination fetch error:", err);
       } finally {
         setLoading(false);
@@ -114,11 +228,12 @@ export const usePaginatedFirestore = ({
     [
       collectionPath,
       currentPage,
-      filters,
       hasMore,
+      normalizedFilters,
       orderByDirection,
       orderByField,
       pageSize,
+      queryCacheKey,
       setExternalPage,
     ]
   );
@@ -127,6 +242,12 @@ export const usePaginatedFirestore = ({
     cursors.current = [null];
     setData([]);
     setHasMore(true);
+    countCache.current.delete(countCacheKey);
+    for (const key of pageCache.current.keys()) {
+      if (key.startsWith(`${queryCacheKey}:page:`)) {
+        pageCache.current.delete(key);
+      }
+    }
     if (setExternalPage) {
       setExternalPage(1);
     } else {
@@ -154,53 +275,66 @@ export const usePaginatedFirestore = ({
       } else {
         setInternalPage(1);
       }
-      loadPage(1);
+      void loadPage(1);
 
       // Fetch total item count
       const fetchCount = async () => {
+        const cachedCount = countCache.current.get(countCacheKey);
+        if (
+          cachedCount &&
+          Date.now() - cachedCount.createdAt < COUNT_CACHE_TTL_MS
+        ) {
+          setTotalItems(cachedCount.totalItems);
+          return;
+        }
+
+        const doneMetric = startFirestoreMetric({
+          source: "client",
+          operation: "usePaginatedFirestore.fetchCount",
+          collection: collectionPath,
+        });
+
         try {
-          let countQuery = query(collection(firestore, collectionPath));
-          countQuery = query(
-            countQuery,
-            orderBy(orderByField, orderByDirection)
+          const countQuery = applyFirestoreFilters(
+            query(collection(firestore, collectionPath)),
+            normalizedFilters
           );
 
-          filters.forEach((f) => {
-            if (Array.isArray(f.value)) {
-              if (f.operator === "array-contains-any") {
-                countQuery = query(
-                  countQuery,
-                  where(f.field, "array-contains-any", f.value)
-                );
-              } else if (
-                f.operator === "in" &&
-                (f.value as string[]).length <= 10
-              ) {
-                countQuery = query(countQuery, where(f.field, "in", f.value));
-              }
-            } else {
-              countQuery = query(
-                countQuery,
-                where(f.field, f.operator, f.value)
-              );
-            }
+          const snapshot = await getCountFromServer(countQuery);
+          const count = snapshot.data().count;
+          setTotalItems(count);
+          countCache.current.set(countCacheKey, {
+            createdAt: Date.now(),
+            totalItems: count,
           });
 
-          const snapshot = await getCountFromServer(countQuery);
-          setTotalItems(snapshot.data().count);
+          doneMetric({
+            success: true,
+            docsRead: 1,
+            details: {
+              filtersCount: normalizedFilters.length,
+              orderByField,
+              orderByDirection,
+            },
+          });
         } catch (error) {
+          doneMetric({
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
           console.error("Failed to fetch count:", error);
           setTotalItems(0);
         }
       };
 
-      fetchCount();
+      void fetchCount();
     }
   }, [
     collectionPath,
-    filters,
     filtersKey,
+    countCacheKey,
     loadPage,
+    normalizedFilters,
     orderByField,
     orderByDirection,
     setExternalPage,

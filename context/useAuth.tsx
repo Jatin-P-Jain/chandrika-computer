@@ -12,10 +12,7 @@ import { ConfirmationResult, RecaptchaVerifier, User } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { mapDbUserToClientUser } from "@/lib/firebase/mapDBUserToClient";
 import useMonitorInactivity from "@/hooks/useMonitorInactivity";
-import { getDeviceMetadata } from "@/lib/utils";
-import { getMessaging, getToken } from "firebase/messaging";
 import { UserData } from "@/types/user";
-import { saveFcmToken } from "@/lib/firebase/saveFcmToken";
 import { removeToken } from "./actions";
 import { createUserIfNotExists } from "@/lib/firebase/createUserIfNotExists";
 
@@ -148,7 +145,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         // Refresh FCM token
-        await refreshAndSaveFcmToken();
+        const { refreshAndSaveFcmToken } =
+          await import("@/lib/firebase/refreshAndSaveFcmToken");
+        await refreshAndSaveFcmToken(currentUser.uid);
 
         window.location.href = "/"; // Redirect to home
       } else {
@@ -157,24 +156,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (e) {
       console.error("completePhoneVerification failed", e);
       await logoutUser();
-    }
-  };
-
-  const refreshAndSaveFcmToken = async () => {
-    if (authState.status !== "ready") return;
-    const { currentUser } = authState;
-
-    try {
-      const messaging = getMessaging();
-      const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY!;
-      const token = await getToken(messaging, { vapidKey });
-      if (!token) return;
-
-      const metadata = getDeviceMetadata();
-      await saveFcmToken(currentUser.uid, token, metadata);
-      console.log("✅ FCM token refreshed & saved:", token);
-    } catch (error) {
-      console.error("Failed to refresh and save FCM token", error);
     }
   };
 

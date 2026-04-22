@@ -1,12 +1,21 @@
 // app/daily-account/page.tsx
 import { DailyFormValues } from "@/schema/daily-page.schema";
-import { getDailyAccountItem } from "../actions";
+import { getDailyAccountItem } from "../read-actions";
 import DailyAccountHeader from "../daily-account-header";
 import { clsx } from "clsx";
 import { DailyAccountDayNavigator } from "@/components/custom/daily-account-day-navigator";
 import { DailyAccount } from "@/types/daily-account";
 import { getReadings } from "../readings-actions";
-import DailyPage from "@/components/custom/daily-page/daily-page";
+import dynamic from "next/dynamic";
+
+const DailyPage = dynamic(
+  () => import("@/components/custom/daily-page/daily-page"),
+  {
+    loading: () => (
+      <div className="w-full min-h-[60vh] animate-pulse rounded-md border bg-muted/20" />
+    ),
+  },
+);
 
 type Props = {
   params: Promise<{

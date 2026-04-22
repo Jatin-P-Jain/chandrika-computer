@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { format, addDays } from "date-fns";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import clsx from "clsx";
@@ -57,6 +57,8 @@ export function FiltersSection() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const replaceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Current filter states from URL
   const dateRange = searchParams.get("dateRange");
@@ -77,6 +79,14 @@ export function FiltersSection() {
   const [date, setDate] = useState<DateRange | undefined>();
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [openSorting, setOpenSorting] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (replaceTimerRef.current) {
+        clearTimeout(replaceTimerRef.current);
+      }
+    };
+  }, []);
   const presetDateRange = useMemo<DateRange | undefined>(() => {
     if (dateRange === "3days") {
       return {
@@ -97,12 +107,15 @@ export function FiltersSection() {
   const updateSearchParams = (
     newParams: Record<string, string | string[]>,
     clearAll?: boolean,
+    options?: { immediate?: boolean },
   ) => {
     const params = new URLSearchParams(searchParams.toString());
 
     if (clearAll) {
       const params = new URLSearchParams(); // Fresh empty params
-      router.replace(`?${params.toString()}`);
+      startTransition(() => {
+        router.replace(`?${params.toString()}`);
+      });
       return;
     } else {
       // Normal update - only clear updated params
@@ -141,7 +154,23 @@ export function FiltersSection() {
       params.set("page", "1");
     }
 
-    router.replace(`?${params.toString()}`);
+    const nextUrl = `?${params.toString()}`;
+    const runReplace = () => {
+      startTransition(() => {
+        router.replace(nextUrl);
+      });
+    };
+
+    if (replaceTimerRef.current) {
+      clearTimeout(replaceTimerRef.current);
+    }
+
+    if (options?.immediate) {
+      runReplace();
+      return;
+    }
+
+    replaceTimerRef.current = setTimeout(runReplace, 120);
   };
 
   const clearAllFilters = () => {
@@ -167,22 +196,30 @@ export function FiltersSection() {
               // 🔥 TOGGLE LOGIC
               if (dateRange === filter.value) {
                 // Already active → Clear this preset
-                updateSearchParams({
-                  dateRange: "",
-                  fromDate: "",
-                  toDate: "",
-                });
+                updateSearchParams(
+                  {
+                    dateRange: "",
+                    fromDate: "",
+                    toDate: "",
+                  },
+                  undefined,
+                  { immediate: true },
+                );
               } else {
                 // Inactive → Set this preset
                 const today = new Date();
                 const daysAgo = filter.value === "3days" ? 3 : 7;
                 const fromDate = format(addDays(today, -daysAgo), "yyyy-MM-dd");
 
-                updateSearchParams({
-                  dateRange: filter.value,
-                  fromDate,
-                  toDate: format(today, "yyyy-MM-dd"),
-                });
+                updateSearchParams(
+                  {
+                    dateRange: filter.value,
+                    fromDate,
+                    toDate: format(today, "yyyy-MM-dd"),
+                  },
+                  undefined,
+                  { immediate: true },
+                );
               }
             }}
           >
@@ -253,11 +290,15 @@ export function FiltersSection() {
               size="sm"
               onClick={() => {
                 // 🔥 Clear ONLY date filters
-                updateSearchParams({
-                  dateRange: "",
-                  fromDate: "",
-                  toDate: "",
-                });
+                updateSearchParams(
+                  {
+                    dateRange: "",
+                    fromDate: "",
+                    toDate: "",
+                  },
+                  undefined,
+                  { immediate: true },
+                );
                 setDate(undefined);
                 setOpenDatePicker(false);
               }}
@@ -270,14 +311,18 @@ export function FiltersSection() {
               size="sm"
               onClick={() => {
                 if (effectiveDate?.from && effectiveDate?.to) {
-                  updateSearchParams({
-                    fromDate: effectiveDate.from
-                      ? format(effectiveDate.from, "yyyy-MM-dd")
-                      : "",
-                    toDate: effectiveDate.to
-                      ? format(effectiveDate.to, "yyyy-MM-dd")
-                      : "",
-                  });
+                  updateSearchParams(
+                    {
+                      fromDate: effectiveDate.from
+                        ? format(effectiveDate.from, "yyyy-MM-dd")
+                        : "",
+                      toDate: effectiveDate.to
+                        ? format(effectiveDate.to, "yyyy-MM-dd")
+                        : "",
+                    },
+                    undefined,
+                    { immediate: true },
+                  );
                   setOpenDatePicker(false);
                 }
               }}
@@ -334,10 +379,14 @@ export function FiltersSection() {
                       : "hover:bg-accent text-muted-foreground",
                   )}
                   onClick={() =>
-                    updateSearchParams({
-                      sortField: field.value,
-                      sortDir: sortDir,
-                    })
+                    updateSearchParams(
+                      {
+                        sortField: field.value,
+                        sortDir: sortDir,
+                      },
+                      undefined,
+                      { immediate: true },
+                    )
                   }
                 >
                   <ArrowUpDown className="size-4" />
@@ -356,10 +405,14 @@ export function FiltersSection() {
                   size="sm"
                   className="flex-1"
                   onClick={() =>
-                    updateSearchParams({
-                      sortField,
-                      sortDir: "asc",
-                    })
+                    updateSearchParams(
+                      {
+                        sortField,
+                        sortDir: "asc",
+                      },
+                      undefined,
+                      { immediate: true },
+                    )
                   }
                 >
                   <ArrowUp className="size-4" />
@@ -370,10 +423,14 @@ export function FiltersSection() {
                   size="sm"
                   className="flex-1"
                   onClick={() =>
-                    updateSearchParams({
-                      sortField,
-                      sortDir: "desc",
-                    })
+                    updateSearchParams(
+                      {
+                        sortField,
+                        sortDir: "desc",
+                      },
+                      undefined,
+                      { immediate: true },
+                    )
                   }
                 >
                   <ArrowDown className="size-4" />
@@ -390,6 +447,7 @@ export function FiltersSection() {
         disabled={clearFiltersDisabled}
         variant="outline"
         size="sm"
+        aria-busy={isPending}
         className="text-xs border-red-500 text-red-700 hover:bg-red-100/10 hover:text-red-800 mb-2 md:mb-0"
         onClick={clearAllFilters}
       >

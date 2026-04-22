@@ -23,15 +23,18 @@ import NextTopLoader from "nextjs-toploader";
 const amita = Amita({
   variable: "--font-amita",
   weight: ["400", "700"],
+  subsets: ["latin", "devanagari"],
 });
 
 const laila = Laila({
   variable: "--font-laila",
   weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin", "devanagari"],
 });
 const baloo = Baloo_2({
   variable: "--font-baloo",
   weight: ["400", "500", "600", "700", "800"],
+  subsets: ["latin", "devanagari"],
 });
 const inter = Inter({
   variable: "--font-inter",
