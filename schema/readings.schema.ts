@@ -29,3 +29,17 @@ export type StampFormValues = z.infer<
   ReturnType<typeof makeStampReadingSchema>
 >;
 export const stampReadingSchema = makeStampReadingSchema();
+
+export const makeStampStockAdditionSchema = (t?: TFunction) => {
+  return z.object({
+    s50: zNumberFromInput(t, 0),
+    s100: zNumberFromInput(t, 0),
+    s500: zNumberFromInput(t, 0),
+    s1000: zNumberFromInput(t, 0),
+  });
+};
+
+export type StampStockAdditionFormValues = z.infer<
+  ReturnType<typeof makeStampStockAdditionSchema>
+>;
+export const stampStockAdditionSchema = makeStampStockAdditionSchema();

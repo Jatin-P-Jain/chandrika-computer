@@ -19,6 +19,7 @@ type Props = {
   photoDiff: number;
   photoAmount: number;
   stampPrev: Record<Denomination, number>;
+  stampStockAdded: Record<Denomination, number>;
   stampSold: Record<Denomination, number>;
   stampAmounts: Record<Denomination, number>;
   stampTotal: number;
@@ -46,6 +47,7 @@ export default function ReviewStep({
   photoDiff,
   photoAmount,
   stampPrev,
+  stampStockAdded,
   stampSold,
   stampAmounts,
   stampTotal,
@@ -60,6 +62,8 @@ export default function ReviewStep({
   onConfirmSave,
   onClose,
 }: Props) {
+  const hasAnyStockAdded = denoms.some((denom) => stampStockAdded[denom] > 0);
+
   return (
     <div className="space-y-4 w-full">
       <div className="max-h-[50vh] overflow-auto no-scrollbar flex flex-col gap-4">
@@ -172,6 +176,20 @@ export default function ReviewStep({
                     {todayByDenom[d]}
                   </b>
                 </div>
+
+                {hasAnyStockAdded ? (
+                  <div
+                    className={clsx(
+                      "text-xs text-muted-foreground flex items-center justify-between",
+                      textSmCls,
+                    )}
+                  >
+                    {tReadings("AddStock")}:{" "}
+                    <b className="text-foreground tabular-nums">
+                      {stampStockAdded[d]}
+                    </b>
+                  </div>
+                ) : null}
 
                 <div
                   className={clsx(

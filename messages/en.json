@@ -182,7 +182,17 @@
     "TotalCopies": "Total Copies",
     "TotalStampDuty": "Total Stamp Duty",
     "Yesterday": "Yesterday",
-    "YesterdayReading": "Yesterday's Reading"
+    "YesterdayReading": "Yesterday's Reading",
+    "LoadingYesterdaysReadings": "Loading yesterday's readings...",
+    "AddStock": "Add Stock",
+    "CancelStockAddition": "Cancel Stock Addition",
+    "StockAddition": "Stock Addition",
+    "StampsAddedToStock": "Stamps added to stock",
+    "Quantity": "Quantity",
+    "Cost": "Cost",
+    "StockAdditionNote": "Enter the number of stamps added to your stock today. These will be excluded from the sales calculation.",
+    "StockAdditionExplanation1": "Stamps added to stock will not be counted as sales. This helps you accurately track only the stamps you sold.",
+    "StockAdditionExplanation2": "The actual sales = meter reading difference - stock added today."
   },
   "SaveReview": {
     "AddReadingsThenSave": "Please add readings and then save.",

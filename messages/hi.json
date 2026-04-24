@@ -182,7 +182,17 @@
     "TotalCopies": "कुल प्रतियां",
     "TotalStampDuty": "कुल स्टाम्प शुल्क",
     "Yesterday": "पिछला कल",
-    "YesterdayReading": "कल की रीडिंग"
+    "YesterdayReading": "कल की रीडिंग",
+    "LoadingYesterdaysReadings": "कल की रीडिंग लोड हो रही है...",
+    "AddStock": "स्टॉक जोड़ें",
+    "RemoveStockAddition": "स्टॉक न जोड़ें",
+    "StockAddition": "स्टॉक जोड़ना",
+    "StampsAddedToStock": "स्टॉक में जोड़े गए स्टैम्प",
+    "Quantity": "मात्रा",
+    "Cost": "लागत",
+    "StockAdditionNote": "आज अपने स्टॉक में जोड़े गए स्टैम्प की संख्या दर्ज करें। ये बिक्री गणना से बाहर रखे जाएंगे।",
+    "StockAdditionExplanation1": "स्टॉक में जोड़े गए स्टैम्प को बिक्री के रूप में नहीं गिना जाएगा। यह आपको केवल बेचे गए स्टैम्प को सटीक रूप से ट्रैक करने में मदद करता है।",
+    "StockAdditionExplanation2": "वास्तविक बिक्री = मीटर रीडिंग अंतर - आज जोड़ा गया स्टॉक।"
   },
   "SaveReview": {
     "AddReadingsThenSave": "कृपया रीडिंग जोड़ें और फिर सहेजें।",

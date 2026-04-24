@@ -14,8 +14,9 @@ export type PhotocopyReadingDoc = {
 export type StampPartDoc = {
   todayReading: number;
   prevReading: number; // yesterday's todayReading for that denom
-  difference: number;
-  amount: number;
+  stockAdded: number; // stamps added to stock today
+  difference: number; // (todayReading - prevReading) - stockAdded
+  amount: number; // difference × denomination
 };
 
 export type StampReadingDoc = {

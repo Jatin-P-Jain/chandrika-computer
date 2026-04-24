@@ -36,6 +36,7 @@ import {
 import {
   photocopyReadingSchema,
   stampReadingSchema,
+  stampStockAdditionSchema,
 } from "@/schema/readings.schema";
 import { CheckCircle, ChevronsRight, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -98,6 +99,7 @@ export default function DailyReadingsDialog({
   const [step, setStep] = React.useState<Step>("photocopy");
   const [loadingPrev, setLoadingPrev] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [includeStockAddition, setIncludeStockAddition] = React.useState(false);
 
   // yesterday readings
   const [photoPrev, setPhotoPrev] = React.useState(0);
@@ -127,6 +129,17 @@ export default function DailyReadingsDialog({
       r100: readings?.stamp?.parts?.[100]?.todayReading ?? 0,
       r500: readings?.stamp?.parts?.[500]?.todayReading ?? 0,
       r1000: readings?.stamp?.parts?.[1000]?.todayReading ?? 0,
+    },
+    mode: "onChange",
+  });
+
+  const stockForm = useForm<z.input<typeof stampStockAdditionSchema>>({
+    resolver: zodResolver(stampStockAdditionSchema),
+    defaultValues: {
+      s50: 0,
+      s100: 0,
+      s500: 0,
+      s1000: 0,
     },
     mode: "onChange",
   });
@@ -170,6 +183,22 @@ export default function DailyReadingsDialog({
       { keepDirty: false },
     );
 
+    stockForm.reset(
+      {
+        s50: readings?.stamp?.parts?.[50]?.stockAdded ?? 0,
+        s100: readings?.stamp?.parts?.[100]?.stockAdded ?? 0,
+        s500: readings?.stamp?.parts?.[500]?.stockAdded ?? 0,
+        s1000: readings?.stamp?.parts?.[1000]?.stockAdded ?? 0,
+      },
+      { keepDirty: false },
+    );
+
+    setIncludeStockAddition(
+      DENOMS.some(
+        (denom) => (readings?.stamp?.parts?.[denom]?.stockAdded ?? 0) > 0,
+      ),
+    );
+
     setHasEdits(false);
   }, [
     open,
@@ -177,6 +206,7 @@ export default function DailyReadingsDialog({
     readings?.stamp?.parts,
     photoForm,
     stampForm,
+    stockForm,
   ]);
 
   // NEW: detect user edits when readings were already saved
@@ -184,7 +214,11 @@ export default function DailyReadingsDialog({
     if (!open) return;
     if (!readingsFound) return;
 
-    if (photoForm.formState.isDirty || stampForm.formState.isDirty) {
+    if (
+      photoForm.formState.isDirty ||
+      stampForm.formState.isDirty ||
+      stockForm.formState.isDirty
+    ) {
       setHasEdits(true);
     }
   }, [
@@ -192,6 +226,7 @@ export default function DailyReadingsDialog({
     readingsFound,
     photoForm.formState.isDirty,
     stampForm.formState.isDirty,
+    stockForm.formState.isDirty,
   ]);
 
   // Fetch yesterday on open
@@ -232,6 +267,10 @@ export default function DailyReadingsDialog({
   const r100 = stampForm.watch("r100") ?? 0;
   const r500 = stampForm.watch("r500") ?? 0;
   const r1000 = stampForm.watch("r1000") ?? 0;
+  const s50 = includeStockAddition ? (stockForm.watch("s50") ?? 0) : 0;
+  const s100 = includeStockAddition ? (stockForm.watch("s100") ?? 0) : 0;
+  const s500 = includeStockAddition ? (stockForm.watch("s500") ?? 0) : 0;
+  const s1000 = includeStockAddition ? (stockForm.watch("s1000") ?? 0) : 0;
 
   const stampFieldByDenom: Record<
     Denomination,
@@ -243,18 +282,35 @@ export default function DailyReadingsDialog({
     1000: "r1000",
   };
 
+  const stockFieldByDenom: Record<
+    Denomination,
+    "s50" | "s100" | "s500" | "s1000"
+  > = {
+    50: "s50",
+    100: "s100",
+    500: "s500",
+    1000: "s1000",
+  };
+
   const stampSold = {
-    50: clamp0(r50 - stampPrev[50]),
-    100: clamp0(r100 - stampPrev[100]),
-    500: clamp0(r500 - stampPrev[500]),
-    1000: clamp0(r1000 - stampPrev[1000]),
+    50: clamp0(r50 - stampPrev[50] - s50),
+    100: clamp0(r100 - stampPrev[100] - s100),
+    500: clamp0(r500 - stampPrev[500] - s500),
+    1000: clamp0(r1000 - stampPrev[1000] - s1000),
   } as const;
 
   const stampAmounts = {
-    50: clamp0((r50 - stampPrev[50]) * 50),
-    100: clamp0((r100 - stampPrev[100]) * 100),
-    500: clamp0((r500 - stampPrev[500]) * 500),
-    1000: clamp0((r1000 - stampPrev[1000]) * 1000),
+    50: clamp0(stampSold[50] * 50),
+    100: clamp0(stampSold[100] * 100),
+    500: clamp0(stampSold[500] * 500),
+    1000: clamp0(stampSold[1000] * 1000),
+  } as const;
+
+  const stampStockAdded = {
+    50: s50,
+    100: s100,
+    500: s500,
+    1000: s1000,
   } as const;
 
   const stampTotal = DENOMS.reduce((acc, d) => acc + stampAmounts[d], 0);
@@ -279,9 +335,7 @@ export default function DailyReadingsDialog({
   };
 
   const goBack = () => {
-    setStep((s) =>
-      s === "review" ? "stamp" : s === "stamp" ? "photocopy" : "photocopy",
-    );
+    setStep((s) => (s === "review" ? "stamp" : "photocopy"));
   };
 
   // FINAL confirm: write to DB only here
@@ -301,8 +355,17 @@ export default function DailyReadingsDialog({
         return;
       }
 
+      if (includeStockAddition) {
+        const skv = await stockForm.trigger();
+        if (!skv) {
+          setStep("stamp");
+          return;
+        }
+      }
+
       const photoValues = photoForm.getValues();
       const stampValues = stampForm.getValues();
+      const stockValues = includeStockAddition ? stockForm.getValues() : null;
 
       // Save both; if you want strict atomicity, you can create one server action that writes both in a transaction.
       const [photoRes, stampRes] = await Promise.all([
@@ -320,6 +383,14 @@ export default function DailyReadingsDialog({
             1000: stampValues.r1000,
           },
           prevPartsReadings: stampPrev,
+          partsStockAdded: includeStockAddition
+            ? {
+                50: stockValues?.s50 ?? 0,
+                100: stockValues?.s100 ?? 0,
+                500: stockValues?.s500 ?? 0,
+                1000: stockValues?.s1000 ?? 0,
+              }
+            : undefined,
         }),
       ]);
 
@@ -340,6 +411,17 @@ export default function DailyReadingsDialog({
         },
         { keepDirty: false },
       );
+      if (includeStockAddition) {
+        stockForm.reset(
+          {
+            s50: 0,
+            s100: 0,
+            s500: 0,
+            s1000: 0,
+          },
+          { keepDirty: false },
+        );
+      }
       setHasEdits(false);
 
       setOpen(false);
@@ -361,7 +443,7 @@ export default function DailyReadingsDialog({
       ].join(" ");
 
     return (
-      <div className="flex items-center justify-between gap-1 border rounded-md px-3 py-2">
+      <div className="flex items-center justify-between gap-1 border rounded-md px-3 py-2 overflow-x-auto">
         <span className={itemCls(step === "photocopy")}>
           1. {tReadings("Photocopy")}
         </span>
@@ -437,6 +519,9 @@ export default function DailyReadingsDialog({
             control={stampForm.control}
             errors={stampForm.formState.errors}
             stampFieldByDenom={stampFieldByDenom}
+            stockControl={stockForm.control}
+            stockErrors={stockForm.formState.errors}
+            stockFieldByDenom={stockFieldByDenom}
             denoms={DENOMS}
             stampPrev={stampPrev}
             stampSold={stampSold}
@@ -448,8 +533,10 @@ export default function DailyReadingsDialog({
             tReadings={tReadings}
             saving={saving}
             loadingPrev={loadingPrev}
+            includeStockAddition={includeStockAddition}
             onBack={goBack}
             onNext={goNextFromStamp}
+            onToggleStockAddition={setIncludeStockAddition}
           />
         ) : null}
 
@@ -466,6 +553,7 @@ export default function DailyReadingsDialog({
             photoDiff={photoDiff}
             photoAmount={photoAmount}
             stampPrev={stampPrev}
+            stampStockAdded={stampStockAdded}
             stampSold={stampSold}
             stampAmounts={stampAmounts}
             stampTotal={stampTotal}

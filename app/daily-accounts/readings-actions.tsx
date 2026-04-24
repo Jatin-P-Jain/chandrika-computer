@@ -264,6 +264,7 @@ export async function saveStampReading(opts: {
   todayDateYmd: string;
   partsTodayReadings: Record<Denomination, number>;
   prevPartsReadings: Record<Denomination, number>; // from yesterday
+  partsStockAdded?: Record<Denomination, number>; // stock added today
 }) {
   const done = startFirestoreMetric({
     source: "server",
@@ -272,19 +273,44 @@ export async function saveStampReading(opts: {
   });
 
   const parts: Record<Denomination, StampPartDoc> = {
-    50: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
-    100: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
-    500: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
-    1000: { todayReading: 0, prevReading: 0, difference: 0, amount: 0 },
+    50: {
+      todayReading: 0,
+      prevReading: 0,
+      stockAdded: 0,
+      difference: 0,
+      amount: 0,
+    },
+    100: {
+      todayReading: 0,
+      prevReading: 0,
+      stockAdded: 0,
+      difference: 0,
+      amount: 0,
+    },
+    500: {
+      todayReading: 0,
+      prevReading: 0,
+      stockAdded: 0,
+      difference: 0,
+      amount: 0,
+    },
+    1000: {
+      todayReading: 0,
+      prevReading: 0,
+      stockAdded: 0,
+      difference: 0,
+      amount: 0,
+    },
   };
 
   for (const d of DENOMS) {
     const prevReading = nn(opts.prevPartsReadings[d] ?? 0);
     const todayReading = nn(opts.partsTodayReadings[d] ?? 0);
-    const difference = clamp0(todayReading - prevReading);
+    const stockAdded = nn(opts.partsStockAdded?.[d] ?? 0);
+    const difference = clamp0(todayReading - prevReading - stockAdded);
     const amount = clamp0(difference * d);
 
-    parts[d] = { todayReading, prevReading, difference, amount };
+    parts[d] = { todayReading, prevReading, stockAdded, difference, amount };
   }
 
   const totalAmount = DENOMS.reduce((acc, d) => acc + parts[d].amount, 0);

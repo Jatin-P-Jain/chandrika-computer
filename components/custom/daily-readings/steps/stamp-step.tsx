@@ -1,23 +1,36 @@
 "use client";
 
-import { Controller, Control, FieldErrors } from "react-hook-form";
+import { Controller, Control, FieldErrors, useWatch } from "react-hook-form";
 import { z } from "zod";
 import clsx from "clsx";
-import { ChevronLeft, ChevronRight, Loader2Icon } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2Icon,
+  PlusCircle,
+  XCircle,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ReadingInput } from "@/components/custom/daily-page/common-components/reading-input";
-import { stampReadingSchema } from "@/schema/readings.schema";
+import {
+  stampReadingSchema,
+  stampStockAdditionSchema,
+} from "@/schema/readings.schema";
 import { formatINR } from "@/lib/utils";
 import type { Denomination } from "@/types/readings";
 
 type StampFormInput = z.input<typeof stampReadingSchema>;
+type StockFormInput = z.input<typeof stampStockAdditionSchema>;
 
 type Props = {
   control: Control<StampFormInput>;
   errors: FieldErrors<StampFormInput>;
   stampFieldByDenom: Record<Denomination, "r50" | "r100" | "r500" | "r1000">;
+  stockControl: Control<StockFormInput>;
+  stockErrors: FieldErrors<StockFormInput>;
+  stockFieldByDenom: Record<Denomination, "s50" | "s100" | "s500" | "s1000">;
   denoms: Denomination[];
   stampPrev: Record<Denomination, number>;
   stampSold: Record<Denomination, number>;
@@ -29,14 +42,19 @@ type Props = {
   tReadings: (key: string) => string;
   saving: boolean;
   loadingPrev: boolean;
+  includeStockAddition: boolean;
   onBack: () => void;
   onNext: () => void;
+  onToggleStockAddition?: (include: boolean) => void;
 };
 
 export default function StampStep({
   control,
   errors,
   stampFieldByDenom,
+  stockControl,
+  stockErrors,
+  stockFieldByDenom,
   denoms,
   stampPrev,
   stampSold,
@@ -48,9 +66,23 @@ export default function StampStep({
   tReadings,
   saving,
   loadingPrev,
+  includeStockAddition,
   onBack,
   onNext,
+  onToggleStockAddition,
 }: Props) {
+  const s50 = useWatch({ control: stockControl, name: "s50" }) ?? 0;
+  const s100 = useWatch({ control: stockControl, name: "s100" }) ?? 0;
+  const s500 = useWatch({ control: stockControl, name: "s500" }) ?? 0;
+  const s1000 = useWatch({ control: stockControl, name: "s1000" }) ?? 0;
+
+  const stockByDenom: Record<Denomination, number> = {
+    50: s50,
+    100: s100,
+    500: s500,
+    1000: s1000,
+  };
+
   return (
     <div className="space-y-4 w-full">
       <div className="space-y-3 max-h-[50vh] overflow-auto no-scrollbar">
@@ -65,6 +97,8 @@ export default function StampStep({
           {denoms.map((denom) => {
             const fieldName = stampFieldByDenom[denom];
             const fieldError = errors[fieldName];
+            const stockFieldName = stockFieldByDenom[denom];
+            const stockFieldError = stockErrors[stockFieldName];
 
             return (
               <div key={denom} className="rounded-md border p-3 space-y-1">
@@ -82,6 +116,35 @@ export default function StampStep({
                 >
                   {tReadings("Yesterday")}: <b>{stampPrev[denom]}</b>
                 </div>
+                {includeStockAddition ? (
+                  <div className="flex items-center gap-2 justify-between">
+                    <Label
+                      className={clsx(
+                        "text-xs text-muted-foreground w-full",
+                        textSmCls,
+                      )}
+                    >
+                      {tReadings("AddStock")} :
+                    </Label>
+                    <Controller
+                      control={stockControl}
+                      name={stockFieldName}
+                      render={({ field }) => (
+                        <ReadingInput
+                          value={(field.value as number) ?? 0}
+                          onChange={field.onChange}
+                          placeholder="0"
+                          inputClassName="w-fit! text-right"
+                        />
+                      )}
+                    />
+                  </div>
+                ) : null}
+                {stockFieldError ? (
+                  <p className="text-xs text-destructive">
+                    {String(stockFieldError.message)}
+                  </p>
+                ) : null}
                 <div className="flex items-center gap-2 justify-between">
                   <Label
                     className={clsx(
@@ -135,28 +198,56 @@ export default function StampStep({
             {tReadings("TotalStampDuty")} (SD):{" "}
             <b className="text-base tabular-nums">{formatINR(stampTotal)}</b>
           </span>
+          {includeStockAddition ? (
+            <span className="text-xs text-muted-foreground">
+              {tReadings("StockAdditionExplanation2")}
+            </span>
+          ) : null}
           <span className="text-xs text-amber-700 italic">
             {tReadings("NoteValuesUsedDirectly")}
           </span>
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-between gap-2">
         <Button
-          variant="secondary"
-          onClick={onBack}
+          variant="outline"
+          onClick={() => onToggleStockAddition?.(!includeStockAddition)}
           disabled={saving}
-          className="gap-0"
+          className={clsx(
+            "gap-0 border-primary border text-primary hover:bg-primary/10 hover:text-primary",
+            includeStockAddition ? "border-red-600 text-red-600" : "",
+          )}
         >
-          <ChevronLeft className="size-4" /> {tCommon("Back")}
+          {includeStockAddition ? (
+            <span className="flex items-center gap-1">
+              <XCircle className="size-4" />
+              {tReadings("StockAddition")}{" "}
+            </span>
+          ) : (
+            <span className="flex items-center gap-1">
+              <PlusCircle className="size-4" />
+              {tReadings("AddStock")}
+            </span>
+          )}
         </Button>
-        <Button
-          onClick={onNext}
-          disabled={saving || loadingPrev}
-          className="gap-0"
-        >
-          {tCommon("Next")} <ChevronRight className="size-4" />
-        </Button>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="secondary"
+            onClick={onBack}
+            disabled={saving}
+            className="gap-0"
+          >
+            <ChevronLeft className="size-4" /> {tCommon("Back")}
+          </Button>
+          <Button
+            onClick={onNext}
+            disabled={saving || loadingPrev}
+            className="gap-0"
+          >
+            {tCommon("Next")} <ChevronRight className="size-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
