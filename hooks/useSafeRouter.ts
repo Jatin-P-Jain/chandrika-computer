@@ -14,6 +14,22 @@ export function useSafeRouter() {
   const router = useRouter();
   const { isNavigating, lock } = useNavigationLock();
 
+  const isSameRoute = useCallback((href: string) => {
+    if (typeof window === "undefined") return false;
+
+    try {
+      const currentUrl = new URL(window.location.href);
+      const destinationUrl = new URL(href, window.location.href);
+
+      return (
+        currentUrl.pathname === destinationUrl.pathname &&
+        currentUrl.search === destinationUrl.search
+      );
+    } catch {
+      return false;
+    }
+  }, []);
+
   const push = useCallback(
     (href: string, options?: SafeRouterOptions) => {
       const {
@@ -21,6 +37,10 @@ export function useSafeRouter() {
         skipLock = false,
         ...navigateOptions
       } = options || {};
+
+      if (isSameRoute(href)) {
+        return;
+      }
 
       // Block navigation if already navigating (unless explicitly allowed)
       if (isNavigating && !allowDuringNav) {
@@ -34,7 +54,7 @@ export function useSafeRouter() {
 
       router.push(href, navigateOptions);
     },
-    [router, isNavigating, lock]
+    [router, isNavigating, lock, isSameRoute]
   );
 
   const replace = useCallback(
@@ -44,6 +64,10 @@ export function useSafeRouter() {
         skipLock = false,
         ...navigateOptions
       } = options || {};
+
+      if (isSameRoute(href)) {
+        return;
+      }
 
       // Block navigation if already navigating (unless explicitly allowed)
       if (isNavigating && !allowDuringNav) {
@@ -57,7 +81,7 @@ export function useSafeRouter() {
 
       router.replace(href, navigateOptions);
     },
-    [router, isNavigating, lock]
+    [router, isNavigating, lock, isSameRoute]
   );
 
   const back = useCallback(

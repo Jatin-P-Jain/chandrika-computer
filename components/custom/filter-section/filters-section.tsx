@@ -179,7 +179,7 @@ export function FiltersSection() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 ml-auto md:justify-end">
+    <div className="flex flex-wrap md:flex-1 items-center gap-2 ml-auto md:justify-end">
       {/* Preset Date Filters */}
       <div className="hidden md:flex gap-1">
         {PRESET_FILTERS.map((filter) => (

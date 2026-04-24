@@ -51,6 +51,25 @@ export const SafeLink = React.forwardRef<HTMLAnchorElement, SafeLinkProps>(
         return;
       }
 
+      // Avoid locking when destination is effectively current route.
+      // This prevents controls from appearing disabled for the failsafe duration.
+      try {
+        const currentUrl = new URL(window.location.href);
+        const destinationUrl = new URL(
+          (e.currentTarget as HTMLAnchorElement).href,
+          window.location.href,
+        );
+
+        if (
+          currentUrl.pathname === destinationUrl.pathname &&
+          currentUrl.search === destinationUrl.search
+        ) {
+          return;
+        }
+      } catch {
+        // If URL parsing fails, continue with existing lock behavior.
+      }
+
       // Lock for in-app navigation
       lock();
     };
@@ -64,7 +83,8 @@ export const SafeLink = React.forwardRef<HTMLAnchorElement, SafeLinkProps>(
         style={{
           pointerEvents:
             disableWhileNavigating && isNavigating ? "none" : "auto",
-          opacity: disableWhileNavigating && isNavigating ? 0.6 : 1,
+          opacity: disableWhileNavigating && isNavigating ? 0.8 : 1,
+          transition: "opacity 150ms ease-out",
         }}
         {...props}
       >

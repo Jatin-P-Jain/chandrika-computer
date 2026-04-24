@@ -23,7 +23,7 @@ export default function DailyAccountListHeader() {
   const tDailyAccount = useTranslations("DailyAccount");
   const { textHeadingCls } = useLocaleTypography();
   return (
-    <div className="flex justify-between lg:justify-end items-center w-full gap-4">
+    <div className="flex justify-between lg:justify-end items-center w-full gap-3">
       <h1
         className={`flex justify-center items-center gap-1 font-semibold text-primary min-w-fit! ${textHeadingCls}`}
       >
@@ -40,7 +40,7 @@ export default function DailyAccountListHeader() {
           {tCommon("Create")} <PlusCircle className="size-5" />
         </SafeLink>
       </Button>
-      <div className="lg:flex hidden ml-auto">
+      <div className="lg:flex hidden ml-auto flex-1 items-center gap-4">
         <FiltersSection />
       </div>
     </div>

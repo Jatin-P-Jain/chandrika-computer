@@ -184,8 +184,13 @@ export default function DailyNotesDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className={clsx("shadow-md font-medium!")}>
-          <ListTodo className="size-4" /> {tNotes("Notes")}
+        <Button
+          variant="secondary"
+          className={clsx(
+            "text-sm p-1 h-fit! flex justify-center items-center text-primary border",
+          )}
+        >
+          <ListTodo className="size-3" /> {tNotes("Notes")}
         </Button>
       </DialogTrigger>
 

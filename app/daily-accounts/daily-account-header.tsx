@@ -12,7 +12,7 @@ const DailyAccountHeader = () => {
   const { textSubheadingCls } = useLocaleTypography();
   return (
     <div className="flex justify-between items-center w-full">
-      <h1 className="flex justify-center items-center gap-1 font-semibold text-primary text-lg md:text-xl">
+      <h1 className="flex justify-between items-center gap-1 font-semibold text-primary md:text-lg">
         <ClipboardListIcon className="size-5" />
         {tDailyAccount("Title")}
       </h1>

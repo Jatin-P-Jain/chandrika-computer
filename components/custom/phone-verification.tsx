@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  CheckCircle,
   Loader2,
   Loader2Icon,
   Redo2Icon,
@@ -187,7 +188,7 @@ export function PhoneVerification({
 
   return (
     <section className="flex items-center justify-center">
-      <Card className="w-full">
+      <Card className="w-full gap-2 p-3 px-0">
         <CardHeader className="flex flex-col items-center text-center gap-1">
           <div>
             <Smartphone className="size-8 md:size-10 text-primary" />
@@ -351,7 +352,7 @@ export function PhoneVerification({
                         {isVerifying ? (
                           <Loader2Icon className="size-4 animate-spin" />
                         ) : (
-                          <SendHorizonalIcon className="ml-2 size-4!" />
+                          <CheckCircle className="ml-2 size-4!" />
                         )}
                       </div>
                     </Button>

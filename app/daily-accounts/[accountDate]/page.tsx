@@ -46,12 +46,12 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
   const readings = await getReadings(docId);
 
   return (
-    <div className="flex flex-col justify-center items-center w-full">
+    <div className="flex flex-col justify-center items-center w-full gap-1">
       <DailyAccountHeader />
       <DailyAccountDayNavigator docId={docId} />
       <div
         className={clsx(
-          "flex w-full overflow-auto max-h-[calc(100vh-13rem)] no-scrollbar rounded-md p-1 md:p-2",
+          "flex w-full overflow-auto max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-13rem)] no-scrollbar p-0.5 md:p-2 border-0",
         )}
       >
         <DailyPage

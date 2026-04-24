@@ -9,16 +9,20 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { UserData } from "@/types/user";
+import { Button } from "@/components/ui/button";
 
 export function AccountDropdown({
   user,
   userStatus,
+  onLogout,
 }: {
   user: UserData | null;
   userStatus: string;
+  onLogout?: () => Promise<void>;
 }) {
   const tCommon = useTranslations("Common");
   const locale = useLocale();
@@ -38,7 +42,7 @@ export function AccountDropdown({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <div className="flex items-center gap-3 p-2 hover:bg-accent rounded-md cursor-pointer h-12">
+        <div className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 hover:bg-accent md:px-3 md:py-1.5">
           <Avatar className="size-8 ring-1 p-0.5 ring-primary">
             <AvatarImage
               src={profileImage}
@@ -73,7 +77,7 @@ export function AccountDropdown({
               {email}
             </p>
           </div>
-          <ChevronDown className="hidden md:flex size-4 ml-auto text-muted-foreground" />
+          <ChevronDown className="flex size-4 ml-auto text-muted-foreground" />
         </div>
       </DropdownMenuTrigger>
 
@@ -122,6 +126,21 @@ export function AccountDropdown({
               </p>
             </div>
           </div>
+          {/* Logout Section */}
+          {userReady && onLogout && (
+            <>
+              <DropdownMenuSeparator className="my-1" />
+              <Button
+                variant="ghost"
+                onClick={onLogout}
+                className="w-full justify-center text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 font-semibold bg-red-50/50 dark:bg-red-900/20 border-red-600 hover:shadow-md hover:translate-x-0.5 transition-all duration-300"
+                size="sm"
+              >
+                {tCommon("Logout")}
+                <LogOut className="size-4 mr-2" />
+              </Button>
+            </>
+          )}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

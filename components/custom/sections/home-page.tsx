@@ -45,7 +45,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   );
 
   return (
-    <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-4 md:p-6 relative">
+    <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-3 md:p-6 relative">
       {sessionExpired && sessionExpiredPopupShown && (
         <div className="w-full relative flex justify-center items-center md:w-1/2 mx-auto p-3 text-sm text-yellow-700 bg-yellow-200 border border-yellow-200 rounded-md gap-2">
           <div className="flex flex-col gap-1">
@@ -88,12 +88,12 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
             <LockKeyholeIcon className="size-5" />
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-foreground ">
+            <span className="text-foreground text-sm">
               {tHomePage("SecureServices")}
             </span>
             <p
               className={clsx(
-                "text-sm text-justify",
+                "text-xs text-justify",
                 locale === "hi" && "text-sm! md:text-base!",
               )}
             >

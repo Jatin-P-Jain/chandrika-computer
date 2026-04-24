@@ -1,6 +1,6 @@
 {
   "Common": {
-    "Account": "You are logged in with",
+    "Account": "You are logged in as",
     "Add": "Add",
     "Amount": "Amount",
     "Back": "Back",
@@ -131,7 +131,7 @@
     "OTPExpired": "OTP Expired!",
     "OTPExpiresIn": "Your OTP will expire in {time} seconds",
     "OTPSentTo": "OTP sent to : {phone}",
-    "OTPWillSendTo": "An OTP will be sent to your mobile number : {phone}",
+    "OTPWillSendTo": "An OTP will be sent on : {phone}",
     "ResendingOTP": "Resending OTP",
     "ResendOTP": "Resend OTP",
     "ResendOTPIn": "Resend OTP in {timer} seconds",

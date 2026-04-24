@@ -398,7 +398,7 @@ export default function DailyPageEditor({
           />
           <DailyNotesDialog form={form} />
         </div>
-        <Card className="w-full p-2 md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto">
+        <div className="bg-card p-1 w-full md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto">
           <div
             className={clsx(
               "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col",
@@ -542,7 +542,7 @@ export default function DailyPageEditor({
               </div>
             </form>
           </Form>
-        </Card>
+        </div>
       </div>
       <SaveReviewDialog
         open={reviewOpen}

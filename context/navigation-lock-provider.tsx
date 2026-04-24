@@ -20,7 +20,7 @@ const NavigationLockContext = createContext<NavigationLockContextType | null>(
   null,
 );
 
-const FAILSAFE_TIMEOUT = 10000; // 10 seconds
+const FAILSAFE_TIMEOUT = 3000; // 3 seconds failsafe, typically unlock happens on route change
 
 export function NavigationLockProvider({
   children,
@@ -31,14 +31,26 @@ export function NavigationLockProvider({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const previousRouteRef = useRef<string>("");
+  const previousRouteRef = useRef<string | null>(null);
+  const isFirstRenderRef = useRef(true);
 
   // Track URL changes to detect successful navigation
   useEffect(() => {
     const currentRoute = `${pathname}?${searchParams.toString()}`;
 
+    // On first render, just set the initial route
+    if (isFirstRenderRef.current) {
+      previousRouteRef.current = currentRoute;
+      isFirstRenderRef.current = false;
+      return;
+    }
+
     // If URL changed and we were navigating, unlock
-    if (isNavigating && previousRouteRef.current !== currentRoute) {
+    if (
+      isNavigating &&
+      previousRouteRef.current !== null &&
+      previousRouteRef.current !== currentRoute
+    ) {
       setIsNavigating(false);
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);

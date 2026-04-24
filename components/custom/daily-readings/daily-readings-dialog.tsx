@@ -379,8 +379,8 @@ export default function DailyReadingsDialog({
 
   const TriggerButton = (
     <Button
-      className="text-sm p-0! flex justify-center items-center text-primary"
-      variant={"ghost"}
+      className="text-sm p-0! px-2! flex justify-center items-center text-primary border"
+      variant={"secondary"}
     >
       <span className="hidden md:flex">
         {tReadings("PhotocopyStampReadings")}{" "}
