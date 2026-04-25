@@ -148,14 +148,18 @@ export default function DailyReadingsDialog({
     mode: "onChange",
   });
 
-  const readingsFound = readings?.success;
+  const readingsFound = !!(
+    readings?.success ||
+    readings?.photocopy ||
+    readings?.stamp
+  );
 
-  // In read-only mode, always show review step
+  // In read-only mode, always reset back to review on open/close.
   React.useEffect(() => {
     if (readOnly) {
       setStep("review");
     }
-  }, [readOnly]);
+  }, [readOnly, open]);
 
   // reset step when dialog opens/closes (optional but keeps UX clean)
   React.useEffect(() => {
@@ -472,12 +476,24 @@ export default function DailyReadingsDialog({
   };
 
   const TriggerButton = (
-    <Button className="shadow-md font-medium! text-primary" variant={"outline"}>
+    <Button
+      className={[
+        "shadow-md font-medium!",
+        readingsFound
+          ? "border-green-700 text-green-700 hover:text-green-800"
+          : "text-primary",
+      ].join(" ")}
+      variant={"outline"}
+    >
       <span className="hidden md:flex">
         {tReadings("PhotocopyStampReadings")}{" "}
       </span>
       <span className="md:hidden">{tReadings("SD&FSReadings")} </span>
-      <ChevronsRight className="size-4" />
+      {readingsFound ? (
+        <CheckCircle className="size-4 text-green-700" />
+      ) : (
+        <ChevronsRight className="size-4" />
+      )}
     </Button>
   );
 

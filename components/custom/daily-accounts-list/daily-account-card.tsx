@@ -39,7 +39,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
       }}
       className={clsx(
         "cursor-pointer w-full flex p-1 lg:p-0 shadow-md border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
-        !totalCashCollected && !totalSpends && !totalEarnings && "bg-amber-50",
+        !totalCashCollected && !totalSpends && !totalEarnings && "bg-amber-50/60",
       )}
     >
       <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-0 justify-center p-1 lg:pl-4">

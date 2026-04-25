@@ -55,7 +55,9 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                 {tHomePage("SessionExpiredMessage")}
               </span>
             </span>
-            <span className="text-xs">{tHomePage("SessionExpiredMessageDesc")}</span>
+            <span className="text-xs">
+              {tHomePage("SessionExpiredMessageDesc")}
+            </span>
           </div>
           <XIcon
             className="inline size-6 absolute -right-1 -top-1 cursor-pointer p-1 bg-white text-yellow-900 rounded-full border-yellow-300 border"
@@ -126,7 +128,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
             push("/daily-accounts");
           }}
         >
-          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
+          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md">
             <CardHeader className="flex flex-row items-center gap-3">
               <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-indigo-100 text-indigo-900/90 ">
                 {/* replace with your own icon */}
@@ -135,23 +137,25 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                 </span>
               </div>
               <div className="flex flex-col gap-1 md:gap-2 items-start">
-                <CardTitle className="leading-6">
+                <CardTitle className="leading-6 flex items-start justify-between w-full">
                   {tDailyAccount("Title")}
+                  {authState.status !== "ready" ? (
+                    isUserLoading ? (
+                      <div className="text-primary bg-primary/10 p-1 rounded-md">
+                        <Loader2 className="animate-spin size-8" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center p-1 bg-primary/10 rounded-md">
+                        <LockKeyholeIcon className="size-5 text-primary rounded-md" />
+                      </div>
+                    )
+                  ) : null}
                 </CardTitle>
                 <CardDescription className="">
                   {tDailyAccount("Desc")}
                 </CardDescription>
               </div>
             </CardHeader>
-            {authState.status !== "ready" ? (
-              isUserLoading ? (
-                <div className="absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md">
-                  <Loader2 className="animate-spin size-5" />
-                </div>
-              ) : (
-                <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
-              )
-            ) : null}
           </Card>
         </div>
 
@@ -167,7 +171,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
             push("/stamp-register");
           }}
         >
-          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
+          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md">
             <CardHeader className="flex flex-row items-center gap-3">
               <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
                 {/* replace with your own icon */}
@@ -176,23 +180,25 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                 </span>
               </div>
               <div className="flex flex-col gap-1 md:gap-2">
-                <CardTitle className={clsx("leading-6")}>
+                <CardTitle className={clsx("leading-6 flex items-start gap-2")}>
                   {tStampRegister("Title")}
+                  {authState.status !== "ready" ? (
+                    isUserLoading ? (
+                      <div className="text-primary bg-primary/10 p-1 rounded-md">
+                        <Loader2 className="animate-spin size-8" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center p-1 bg-primary/10 rounded-md">
+                        <LockKeyholeIcon className="size-5 text-primary rounded-md" />
+                      </div>
+                    )
+                  ) : null}
                 </CardTitle>
                 <CardDescription className="">
                   {tStampRegister("Desc")}
                 </CardDescription>
               </div>
             </CardHeader>
-            {authState.status !== "ready" ? (
-              isUserLoading ? (
-                <div className="absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md">
-                  <Loader2 className="animate-spin size-5" />
-                </div>
-              ) : (
-                <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
-              )
-            ) : null}
           </Card>
         </div>
         <div
@@ -207,7 +213,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
             push("/photocopy-register");
           }}
         >
-          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md relative">
+          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md">
             <CardHeader className="flex flex-row items-center gap-3">
               <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-300">
                 {/* replace with your own icon */}
@@ -216,23 +222,29 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                 </span>
               </div>
               <div className="flex flex-col gap-1 md:gap-2">
-                <CardTitle className={clsx("leading-6")}>
+                <CardTitle
+                  className={clsx(
+                    "leading-6 flex items-start justify-between w-full",
+                  )}
+                >
                   {tPhotocopyRegister("Title")}
+                  {authState.status !== "ready" ? (
+                    isUserLoading ? (
+                      <div className="text-primary bg-primary/10 p-1 rounded-md">
+                        <Loader2 className="animate-spin size-8" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center p-1 bg-primary/10 rounded-md">
+                        <LockKeyholeIcon className="size-5 text-primary rounded-md" />
+                      </div>
+                    )
+                  ) : null}
                 </CardTitle>
                 <CardDescription className="">
                   {tPhotocopyRegister("Desc")}
                 </CardDescription>
               </div>
             </CardHeader>
-            {authState.status !== "ready" ? (
-              isUserLoading ? (
-                <div className="absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md">
-                  <Loader2 className="animate-spin size-5" />
-                </div>
-              ) : (
-                <LockKeyholeIcon className="size-7 absolute top-4 right-4 text-primary bg-primary/10 p-1 rounded-md" />
-              )
-            ) : null}
           </Card>
         </div>
       </div>

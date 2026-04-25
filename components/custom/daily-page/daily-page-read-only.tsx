@@ -13,7 +13,7 @@ import { DailyAccount } from "@/types/daily-account";
 import { formatINR, sumAmounts } from "@/lib/utils";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import CreatedOrUpdated from "../created-or-updated";
-import { ChevronsRight, ListTodo, PencilIcon } from "lucide-react";
+import { PencilIcon } from "lucide-react";
 import type { NoteItem } from "@/types/daily-notes";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
@@ -185,9 +185,7 @@ export default function DailyPageReadOnly({
 }: DailyPageProps) {
   const tCommon = useTranslations("Common");
   const tDailyAccount = useTranslations("DailyAccount");
-  const tReadings = useTranslations("Readings");
   const tCreditsDebits = useTranslations("CreditsDebits");
-  const tNotes = useTranslations("Notes");
   const { push, refresh } = useSafeRouter();
   const { textBodyCls, textDisplayCls } = useLocaleTypography();
   const baseData: DailyFormValues = initialData ?? {
@@ -225,45 +223,31 @@ export default function DailyPageReadOnly({
   const totalSpends = sumAmounts(baseData.dailySpends);
   const totalEarnings =
     baseData.earnings.netIncome + sumAmounts(baseData.earnings.otherIncomes);
-  const [readingsDialogMounted, setReadingsDialogMounted] = useState(false);
   const [localNotes, setLocalNotes] = useState<NoteItem[]>(
     (baseData.notes as NoteItem[]) ?? [],
   );
 
+  const readingsSaved = !!(localReadings?.photocopy || localReadings?.stamp);
+
   return (
     <div className="flex flex-col justify-start items-start w-full">
       <div className="flex w-full justify-between items-center mb-2">
-        {readingsDialogMounted ? (
-          <DailyReadingsDialog
-            startOpen={true}
-            readings={localReadings}
-            todayDateYmd={docId}
-            readOnly={true}
-            onSaved={(saved: {
-              photocopy?: PhotocopyReadingDoc;
-              stamp?: StampReadingDoc;
-            }) => {
-              setLocalReadings((prev) => ({
-                success: true,
-                photocopy: saved.photocopy ?? prev?.photocopy ?? null,
-                stamp: saved.stamp ?? prev?.stamp ?? null,
-              }));
-              refresh();
-            }}
-          />
-        ) : (
-          <Button
-            className="shadow-md font-medium! text-primary"
-            variant={"outline"}
-            onClick={() => setReadingsDialogMounted(true)}
-          >
-            <span className="hidden md:flex">
-              {tReadings("PhotocopyStampReadings")}
-            </span>
-            <span className="md:hidden">{tReadings("SD&FSReadings")}</span>
-            <ChevronsRight className="size-4" />
-          </Button>
-        )}
+        <DailyReadingsDialog
+          readings={localReadings}
+          todayDateYmd={docId}
+          readOnly={readingsSaved}
+          onSaved={(saved: {
+            photocopy?: PhotocopyReadingDoc;
+            stamp?: StampReadingDoc;
+          }) => {
+            setLocalReadings((prev) => ({
+              success: true,
+              photocopy: saved.photocopy ?? prev?.photocopy ?? null,
+              stamp: saved.stamp ?? prev?.stamp ?? null,
+            }));
+            refresh();
+          }}
+        />
         <DailyNotesReadOnlyDialog
           notes={localNotes}
           docId={docId}
