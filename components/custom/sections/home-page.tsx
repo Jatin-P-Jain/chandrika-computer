@@ -51,11 +51,11 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
           <div className="flex flex-col gap-1">
             <span className="text-center flex gap-2 justify-center items-center font-medium">
               <Info className="inline size-4" />
-              <span className="text-lg">
+              <span className="text-sm font-medium md:text-base">
                 {tHomePage("SessionExpiredMessage")}
               </span>
             </span>
-            <span className="">{tHomePage("SessionExpiredMessageDesc")}</span>
+            <span className="text-xs">{tHomePage("SessionExpiredMessageDesc")}</span>
           </div>
           <XIcon
             className="inline size-6 absolute -right-1 -top-1 cursor-pointer p-1 bg-white text-yellow-900 rounded-full border-yellow-300 border"

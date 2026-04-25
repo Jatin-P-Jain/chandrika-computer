@@ -62,6 +62,7 @@
     "SelectAccount": "Select an account"
   },
   "DailyAccount": {
+    "ViewAccount": "View Account",
     "AddExpense": "Add Expense",
     "AddFixedExpense": "Add Fixed Expense",
     "AddIncome": "Add Income",
@@ -77,6 +78,7 @@
     "Income": "Income (Chandrika)",
     "NetIncome": "Net Income",
     "NoDailyAccountFound": "No Daily Account found for the day.",
+    "OnlyNotesAdded": "Only notes added!",
     "OtherEarnings": "Other Earnings",
     "Photocopy": "Photocopy (FS)",
     "StampDuty": "Stamp Duty (SD)",
@@ -119,7 +121,7 @@
     "SecureServices": "Secured Services",
     "SecureServicesDesc": "To protect your data, access to the services below requires you to be signed in. Please log in to continue.",
     "SessionExpiredMessage": "You’ve been logged out",
-    "SessionExpiredMessageDesc": "Looks like you were away for a bit—please sign in again.",
+    "SessionExpiredMessageDesc": "Looks like you were away for a bit. Please sign in again.",
     "WelcomeMessage": "Welcome to Chandrika Computer!"
   },
   "MobileNumber": {

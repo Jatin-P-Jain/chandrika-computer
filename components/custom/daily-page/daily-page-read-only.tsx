@@ -100,7 +100,7 @@ function ReadOnlyListSection({
 
       <div
         className={clsx(
-          "mt-auto flex justify-between items-center border-t pt-2",
+          "flex justify-between items-center border-t py-1",
           accentClassName,
         )}
       >
@@ -186,6 +186,7 @@ export default function DailyPageReadOnly({
   const tCommon = useTranslations("Common");
   const tDailyAccount = useTranslations("DailyAccount");
   const tReadings = useTranslations("Readings");
+  const tCreditsDebits = useTranslations("CreditsDebits");
   const tNotes = useTranslations("Notes");
   const { push, refresh } = useSafeRouter();
   const { textBodyCls, textDisplayCls } = useLocaleTypography();
@@ -225,7 +226,9 @@ export default function DailyPageReadOnly({
   const totalEarnings =
     baseData.earnings.netIncome + sumAmounts(baseData.earnings.otherIncomes);
   const [readingsDialogMounted, setReadingsDialogMounted] = useState(false);
-  const [notesDialogMounted, setNotesDialogMounted] = useState(false);
+  const [localNotes, setLocalNotes] = useState<NoteItem[]>(
+    (baseData.notes as NoteItem[]) ?? [],
+  );
 
   return (
     <div className="flex flex-col justify-start items-start w-full">
@@ -235,6 +238,7 @@ export default function DailyPageReadOnly({
             startOpen={true}
             readings={localReadings}
             todayDateYmd={docId}
+            readOnly={true}
             onSaved={(saved: {
               photocopy?: PhotocopyReadingDoc;
               stamp?: StampReadingDoc;
@@ -249,8 +253,8 @@ export default function DailyPageReadOnly({
           />
         ) : (
           <Button
-            className="text-sm p-0! flex justify-center items-center text-primary"
-            variant={"ghost"}
+            className="shadow-md font-medium! text-primary"
+            variant={"outline"}
             onClick={() => setReadingsDialogMounted(true)}
           >
             <span className="hidden md:flex">
@@ -260,20 +264,11 @@ export default function DailyPageReadOnly({
             <ChevronsRight className="size-4" />
           </Button>
         )}
-        {notesDialogMounted ? (
-          <DailyNotesReadOnlyDialog
-            notes={(baseData.notes as NoteItem[]) ?? []}
-            startOpen={true}
-          />
-        ) : (
-          <Button
-            variant="outline"
-            className={clsx("shadow-md font-medium!")}
-            onClick={() => setNotesDialogMounted(true)}
-          >
-            <ListTodo className="size-4" /> {tNotes("Notes")}
-          </Button>
-        )}
+        <DailyNotesReadOnlyDialog
+          notes={localNotes}
+          docId={docId}
+          onNotesUpdated={setLocalNotes}
+        />
       </div>
       <Card className="w-full p-2 md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto">
         <div
@@ -300,7 +295,7 @@ export default function DailyPageReadOnly({
                 },
                 ...((fixedData.otherFixedExpenses ?? []) as LineItem[]),
               ]}
-              totalLabel={tDailyAccount("TotalFixedExpense")}
+              totalLabel={tDailyAccount("TotalFixed")}
               totalValue={totalFixed}
               textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
@@ -311,7 +306,7 @@ export default function DailyPageReadOnly({
               items={(baseData.earnings.otherIncomes ?? []) as LineItem[]}
               totalLabel={tDailyAccount("TotalIncome")}
               totalValue={totalEarnings}
-              accentClassName="bg-green-100 text-green-900 rounded-md px-2"
+              accentClassName="bg-green-100 text-green-900 rounded-md px-1"
               textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
             />
@@ -337,13 +332,13 @@ export default function DailyPageReadOnly({
 
           <div className="grid grid-cols-1 md:grid-cols-2 md:gap-36 gap-4 mt-2">
             <ReadOnlyAccountSection
-              title={tDailyAccount("Credits")}
+              title={tCreditsDebits("Credits")}
               items={baseData.creditItems ?? []}
               textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
             />
             <ReadOnlyAccountSection
-              title={tDailyAccount("Debits")}
+              title={tCreditsDebits("Debits")}
               items={baseData.debitItems ?? []}
               textHeadCls={textDisplayCls}
               textBodyCls={textBodyCls}
@@ -351,8 +346,8 @@ export default function DailyPageReadOnly({
           </div>
 
           <div className="flex gap-4 w-full justify-center items-center mt-4 flex-col">
-            <div className="flex flex-col md:flex-row justify-center w-full">
-              <div className="flex flex-col gap-4 items-center justify-center w-full lg:pl-42">
+            <div className="flex flex-col md:flex-row justify-center w-full gap-3">
+              <div className="flex flex-col items-center justify-center w-full lg:pl-42">
                 <span
                   className={clsx(
                     "text-base text-center font-semibold text-muted-foreground",
@@ -370,15 +365,13 @@ export default function DailyPageReadOnly({
                   {formatINR(baseData.totalCashCollected)}
                 </span>
               </div>
-              <div className="flex justify-end items-center mt-3 md:mt-0">
-                <div className="flex ">
-                  <CreatedOrUpdated
-                    createdBy={dailyItemData?.createdBy}
-                    updatedBy={dailyItemData?.updatedBy}
-                    created={dailyItemData?.created}
-                    updated={dailyItemData?.updated}
-                  />
-                </div>
+              <div className="flex justify-end items-center w-full bg-muted p-1.5 rounded-md">
+                <CreatedOrUpdated
+                  createdBy={dailyItemData?.createdBy}
+                  updatedBy={dailyItemData?.updatedBy}
+                  created={dailyItemData?.created}
+                  updated={dailyItemData?.updated}
+                />
               </div>
             </div>
 
@@ -386,10 +379,10 @@ export default function DailyPageReadOnly({
               variant={"outline"}
               type="button"
               onClick={() => push(`/daily-accounts/${docId}?mode=edit`)}
-              className="text-primary border-primary flex gap-2 lg:absolute lg:top-4 lg:right-4 font-semibold text-sm w-full lg:w-fit justify-center items-center"
+              className="p-1! px-2! h-fit! text-primary border-primary flex gap-1 absolute top-4 right-4 font-semibold text-xs w-fit justify-center items-center"
             >
+              <PencilIcon className="size-3" />
               <span>{tCommon("Edit")}</span>
-              <PencilIcon className="size-4" />
             </Button>
           </div>
         </div>

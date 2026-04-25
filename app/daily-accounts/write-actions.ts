@@ -55,8 +55,11 @@ export const createDailyAccountItem = async (
       const allTags = extractAllTags(validation.data);
       const totals = calculateTotals(validation.data);
 
+      // Extract notes before saving (they go to subcollection)
+      const { notes, ...accountData } = validation.data as any;
+
       txn.set(docRef, {
-        ...validation.data,
+        ...accountData,
         id: documentId,
         createdBy: user,
         created: Timestamp.now(),
@@ -65,6 +68,7 @@ export const createDailyAccountItem = async (
         totalEarnings: totals.earnings,
         totalSpends: totals.spends,
         lastCalculated: Timestamp.now(),
+        // notes array is NOT stored here - they go to subcollection
       });
     });
 
@@ -134,14 +138,18 @@ export const updateDailyAccountItem = async (
       const allTags = extractAllTags(validation.data);
       const totals = calculateTotals(validation.data);
 
+      // Extract notes before saving (they go to subcollection, not to document)
+      const { notes, ...accountData } = validation.data as any;
+
       txn.update(docRef, {
-        ...validation.data,
+        ...accountData,
         id: docId,
         updated: Timestamp.now(),
         updatedBy: user,
         allTags,
         totalEarnings: totals.earnings,
         totalSpends: totals.spends,
+        // notes array is NOT stored here - they remain in subcollection
       });
     });
 

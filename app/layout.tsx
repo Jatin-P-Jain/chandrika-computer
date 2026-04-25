@@ -92,7 +92,7 @@ export default async function RootLayout({
                     <Navbar />
                     <DateTimeDisplay />
                     <main className="flex ">
-                      <div className="w-full overflow-auto no-scrollbar! mx-auto md:mt-22 mt-20  p-4 max-w-7xl">
+                      <div className="w-full overflow-auto no-scrollbar! mx-auto md:mt-26 mt-22 p-2.5 max-w-6xl">
                         {children}
                       </div>
                     </main>

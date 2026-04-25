@@ -5,6 +5,46 @@ import { normalizeDailyAccount } from "@/lib/server-utils";
 import { FilterTag, FilterUser } from "@/types/filters";
 import { unstable_cache } from "next/cache";
 import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
+import { NoteItem, NoteItemStatus } from "@/types/daily-notes";
+import { toMillis } from "@/lib/server-utils";
+
+/**
+ * Load notes from subcollection for a given daily account
+ */
+async function loadNotesForAccount(docId: string): Promise<NoteItem[]> {
+  try {
+    const notesSnap = await fireStore
+      .collection("daily-accounts")
+      .doc(docId)
+      .collection("notes")
+      .orderBy("createdAt", "asc")
+      .get();
+
+    return notesSnap.docs.map((doc) => {
+      const data = doc.data();
+      const status: NoteItemStatus =
+        data.status === "open" ||
+        data.status === "done" ||
+        data.status === "dismissed"
+          ? data.status
+          : "open";
+
+      const createdMillis = toMillis(data.createdAt);
+      const updatedMillis = toMillis(data.updatedAt);
+
+      return {
+        id: String(data.id || ""),
+        text: String(data.text || ""),
+        status,
+        createdAt: createdMillis ? new Date(createdMillis) : new Date(0),
+        updatedAt: updatedMillis ? new Date(updatedMillis) : new Date(0),
+      } as NoteItem;
+    });
+  } catch (e) {
+    console.warn("Failed to load notes for account:", e);
+    return [];
+  }
+}
 
 const getDailyAccountByIdCached = (docId: string) =>
   unstable_cache(
@@ -19,14 +59,32 @@ const getDailyAccountByIdCached = (docId: string) =>
         .collection("daily-accounts")
         .doc(docId)
         .get();
+
+      if (!docSnap.exists) {
+        done({
+          success: true,
+          docsRead: 0,
+          details: { docId },
+        });
+        return { data: null, error: "Not found" as const };
+      }
+
+      // Load notes from subcollection
+      const notes = await loadNotesForAccount(docId);
+
+      const normalized = normalizeDailyAccount(docSnap.data());
+      const result = {
+        ...normalized,
+        notes, // Include notes from subcollection (always an array, empty if none)
+      };
+
       done({
         success: true,
-        docsRead: docSnap.exists ? 1 : 0,
+        docsRead: 1 + notes.length, // Account + all notes
         details: { docId },
       });
 
-      if (!docSnap.exists) return { data: null, error: "Not found" as const };
-      return { data: normalizeDailyAccount(docSnap.data()), error: null };
+      return { data: result, error: null };
     },
     ["daily-account-by-id", docId],
     {
@@ -53,10 +111,26 @@ const getLatestDailyAccountCached = unstable_cache(
       .limit(1)
       .get();
 
-    done({ success: true, docsRead: snap.size });
+    if (snap.empty) {
+      done({ success: true, docsRead: 0 });
+      return { data: null, error: "Not found" as const };
+    }
 
-    if (snap.empty) return { data: null, error: "Not found" as const };
-    return { data: normalizeDailyAccount(snap.docs[0].data()), error: null };
+    const docSnap = snap.docs[0];
+    const notes = await loadNotesForAccount(docSnap.id);
+
+    const normalized = normalizeDailyAccount(docSnap.data());
+    const result = {
+      ...normalized,
+      notes, // Include notes from subcollection
+    };
+
+    done({
+      success: true,
+      docsRead: 1 + notes.length, // Account + all notes
+    });
+
+    return { data: result, error: null };
   },
   ["daily-account-latest"],
   {

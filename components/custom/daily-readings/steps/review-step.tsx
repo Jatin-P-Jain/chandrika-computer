@@ -28,6 +28,7 @@ type Props = {
   hasEdits: boolean;
   saving: boolean;
   loadingPrev: boolean;
+  readOnly?: boolean;
   onEditPhotocopy: () => void;
   onEditStamp: () => void;
   onBack: () => void;
@@ -56,6 +57,7 @@ export default function ReviewStep({
   hasEdits,
   saving,
   loadingPrev,
+  readOnly = false,
   onEditPhotocopy,
   onEditStamp,
   onBack,
@@ -234,7 +236,14 @@ export default function ReviewStep({
         </div>
       </div>
 
-      {!readingsFound || hasEdits ? (
+      {readOnly ? (
+        // Read-only mode: Show only OK button
+        <div className="flex justify-end gap-2">
+          <Button onClick={onClose} className="gap-1">
+            <span className={textSmCls}>{tCommon("Ok")} 👍🏻</span>
+          </Button>
+        </div>
+      ) : !readingsFound || hasEdits ? (
         <div className="flex justify-end gap-2">
           <Button
             variant="secondary"

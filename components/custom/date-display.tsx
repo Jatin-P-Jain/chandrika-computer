@@ -42,17 +42,17 @@ export function DateDisplay({
     return (
       <span className={className}>
         {formatted}{" "}
-        <span className="md:text-sm text-xs">({dayName.toString()})</span>
+        <span className="">({dayName.toString()})</span>
       </span>
     );
   }
 
   // timestamp
-  const dayName = format(date, "EEE", { locale: dfLocale });
-  let formatted = format(date, "dd MMMM, yy", { locale: dfLocale });
+  const dayName = format(date, "EEEE", { locale: dfLocale });
+  let formatted = format(date, "dd MMMM, yyyy", { locale: dfLocale });
 
   if (smallDay) {
-    formatted += ` (${dayName.toString()})`;
+    formatted += ` ${dayName.toString()}`;
   }
 
   formatted += ` at ${format(date, "HH:mm", { locale: dfLocale })}`;

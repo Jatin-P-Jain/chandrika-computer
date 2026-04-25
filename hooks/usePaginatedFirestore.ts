@@ -50,7 +50,7 @@ type CachedPageEntry = {
   lastCursor: QueryDocumentSnapshot<DocumentData> | null;
 };
 
-const PAGE_CACHE_TTL_MS = 30 * 1000;
+const PAGE_CACHE_TTL_MS = 3 * 1000; // 3 seconds for faster refresh during dev
 const COUNT_CACHE_TTL_MS = 60 * 1000;
 const MAX_PAGE_CACHE_ENTRIES = 40;
 
@@ -180,12 +180,32 @@ export const usePaginatedFirestore = ({
           q = query(q, startAfter(cursor));
         }
         q = query(q, limit(pageSize));
+
+        console.log("🔍 Query built:", {
+          collection: collectionPath,
+          orderBy: `${orderByField} (${orderByDirection})`,
+          filters: normalizedFilters.map((f) => ({
+            field: f.field,
+            operator: f.operator,
+          })),
+          page,
+          pageSize,
+        });
+
         const snapshot = await getDocs(q);
         const docs = snapshot.docs.map(
           (doc) => normalizeDailyAccount(doc.data()) as DailyAccount
         );
         const nextHasMore = snapshot.docs.length >= pageSize;
         const lastCursor = snapshot.docs.at(-1) ?? null;
+
+        console.log("✅ Fetched daily accounts:", {
+          count: docs.length,
+          page,
+          pageSize,
+          nextHasMore,
+          docs: docs.map((d) => ({ id: d.id, totalEarnings: d.totalEarnings })),
+        });
 
         setHasMore(nextHasMore);
         cursors.current[page] = lastCursor;
@@ -220,7 +240,14 @@ export const usePaginatedFirestore = ({
           success: false,
           error: err instanceof Error ? err.message : "Unknown error",
         });
-        console.error("Pagination fetch error:", err);
+        console.error("❌ Pagination fetch error:", err);
+        console.error("❌ Query details:", {
+          collectionPath,
+          orderByField,
+          orderByDirection,
+          filtersCount: normalizedFilters.length,
+          filters: normalizedFilters,
+        });
       } finally {
         setLoading(false);
       }

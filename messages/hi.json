@@ -62,6 +62,7 @@
     "SelectAccount": "एक खाता चुनें"
   },
   "DailyAccount": {
+    "ViewAccount": "खाता देखें",
     "AddExpense": "खर्च जोड़ें",
     "AddFixedExpense": "अन्य व्यय जोड़ें",
     "AddIncome": "आय जोड़ें",
@@ -77,6 +78,7 @@
     "Income": "आय (चंद्रिका)",
     "NetIncome": "शुद्ध आय",
     "NoDailyAccountFound": "इस दिन का कोई दैनिक खता नहीं मिला।",
+    "OnlyNotesAdded": "केवल नोट्स जोड़े गए हैं।",
     "OtherEarnings": "अन्य आय",
     "Photocopy": "फोटोकॉपी (FS)",
     "StampDuty": "स्टाम्प शुल्क (SD)",

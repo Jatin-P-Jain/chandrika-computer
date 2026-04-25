@@ -79,6 +79,7 @@ type Props = {
     stamp?: StampReadingDoc | null;
   };
   startOpen?: boolean;
+  readOnly?: boolean;
 };
 
 type Step = "photocopy" | "stamp" | "review";
@@ -88,6 +89,7 @@ export default function DailyReadingsDialog({
   onSaved,
   readings,
   startOpen = false,
+  readOnly = false,
 }: Props) {
   const tCommon = useTranslations("Common");
   const tReadings = useTranslations("Readings");
@@ -96,7 +98,9 @@ export default function DailyReadingsDialog({
   const { isTabletUp } = useBreakpoints();
 
   const [open, setOpen] = React.useState(startOpen);
-  const [step, setStep] = React.useState<Step>("photocopy");
+  const [step, setStep] = React.useState<Step>(
+    readOnly ? "review" : "photocopy",
+  );
   const [loadingPrev, setLoadingPrev] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [includeStockAddition, setIncludeStockAddition] = React.useState(false);
@@ -146,14 +150,22 @@ export default function DailyReadingsDialog({
 
   const readingsFound = readings?.success;
 
+  // In read-only mode, always show review step
+  React.useEffect(() => {
+    if (readOnly) {
+      setStep("review");
+    }
+  }, [readOnly]);
+
   // reset step when dialog opens/closes (optional but keeps UX clean)
   React.useEffect(() => {
+    if (readOnly) return; // Skip this for read-only mode
     if (open && !readingsFound) {
       setStep("photocopy");
     } else {
       setStep("review");
     }
-  }, [open, readingsFound]);
+  }, [open, readingsFound, readOnly]);
 
   // NEW: reset edit state when dialog opens/closes
   React.useEffect(() => {
@@ -460,10 +472,7 @@ export default function DailyReadingsDialog({
   };
 
   const TriggerButton = (
-    <Button
-      className="text-sm p-0! px-2! flex justify-center items-center text-primary border"
-      variant={"secondary"}
-    >
+    <Button className="shadow-md font-medium! text-primary" variant={"outline"}>
       <span className="hidden md:flex">
         {tReadings("PhotocopyStampReadings")}{" "}
       </span>
@@ -472,7 +481,88 @@ export default function DailyReadingsDialog({
     </Button>
   );
 
-  const Content = (
+  const Content = readOnly ? (
+    // Read-only mode: Show review step with option to view other steps
+    <div className="w-full flex flex-col gap-2 overflow-auto">
+      {step !== "review" && <StepHeader />}
+
+      {step === "photocopy" ? (
+        <PhotocopyStep
+          control={photoForm.control}
+          todayReadingError={
+            photoForm.formState.errors.todayReading
+              ? String(photoForm.formState.errors.todayReading.message)
+              : undefined
+          }
+          loadingPrev={loadingPrev}
+          saving={saving}
+          photoPrev={photoPrev}
+          photoDiff={photoDiff}
+          photoAmount={photoAmount}
+          textBodyCls={textBodyCls}
+          textSmCls={textSmCls}
+          tCommon={tCommon}
+          tReadings={tReadings}
+          onCancel={() => setOpen(false)}
+          onNext={() => setStep("review")}
+        />
+      ) : step === "stamp" ? (
+        <StampStep
+          control={stampForm.control}
+          errors={stampForm.formState.errors}
+          stampFieldByDenom={stampFieldByDenom}
+          stockControl={stockForm.control}
+          stockErrors={stockForm.formState.errors}
+          stockFieldByDenom={stockFieldByDenom}
+          denoms={DENOMS}
+          stampPrev={stampPrev}
+          stampSold={stampSold}
+          stampAmounts={stampAmounts}
+          stampTotal={stampTotal}
+          textBodyCls={textBodyCls}
+          textSmCls={textSmCls}
+          tCommon={tCommon}
+          tReadings={tReadings}
+          saving={saving}
+          loadingPrev={loadingPrev}
+          includeStockAddition={includeStockAddition}
+          onBack={() => setStep("review")}
+          onNext={() => setStep("review")}
+          onToggleStockAddition={setIncludeStockAddition}
+        />
+      ) : (
+        <ReviewStep
+          denoms={DENOMS}
+          textBodyCls={textBodyCls}
+          textSmCls={textSmCls}
+          textXsCls={textXsCls}
+          tCommon={tCommon}
+          tReadings={tReadings}
+          photoPrev={photoPrev}
+          photoToday={photoToday ?? 0}
+          photoDiff={photoDiff}
+          photoAmount={photoAmount}
+          stampPrev={stampPrev}
+          stampStockAdded={stampStockAdded}
+          stampSold={stampSold}
+          stampAmounts={stampAmounts}
+          stampTotal={stampTotal}
+          todayByDenom={todayByDenom}
+          readingsFound={readingsFound}
+          hasEdits={hasEdits}
+          saving={saving}
+          loadingPrev={loadingPrev}
+          readOnly={readOnly}
+          onEditPhotocopy={() => setStep("photocopy")}
+          onEditStamp={() => setStep("stamp")}
+          onBack={goBack}
+          onConfirmSave={onConfirmSave}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </div>
+  ) : (
+    // Edit mode: Show full workflow
     <>
       <div className="w-full flex flex-col gap-2 overflow-auto">
         <StepHeader />
@@ -562,6 +652,7 @@ export default function DailyReadingsDialog({
             hasEdits={hasEdits}
             saving={saving}
             loadingPrev={loadingPrev}
+            readOnly={false}
             onEditPhotocopy={() => setStep("photocopy")}
             onEditStamp={() => setStep("stamp")}
             onBack={goBack}
@@ -584,7 +675,11 @@ export default function DailyReadingsDialog({
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>{tReadings("EnterReadings")}</DialogTitle>
+            <DialogTitle>
+              {readOnly
+                ? tReadings("SD&PhotocopyStampReadings")
+                : tReadings("EnterReadings")}
+            </DialogTitle>
           </DialogHeader>
 
           {Content}
@@ -603,7 +698,11 @@ export default function DailyReadingsDialog({
         onCloseAutoFocus={(e: Event) => e.preventDefault()}
       >
         <DrawerHeader>
-          <DrawerTitle>{tReadings("EnterReadings")}</DrawerTitle>
+          <DrawerTitle>
+            {readOnly
+              ? tReadings("PhotocopyStampReadings")
+              : tReadings("EnterReadings")}
+          </DrawerTitle>
         </DrawerHeader>
         {Content}
       </DrawerContent>

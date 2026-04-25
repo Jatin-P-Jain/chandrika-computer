@@ -8,7 +8,6 @@ import dynamic from "next/dynamic";
 
 import { Accordion } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Form,
   FormField,
@@ -396,7 +395,7 @@ export default function DailyPageEditor({
               refresh();
             }}
           />
-          <DailyNotesDialog form={form} />
+          <DailyNotesDialog form={form} docId={docId} />
         </div>
         <div className="bg-card p-1 w-full md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto">
           <div
@@ -499,7 +498,7 @@ export default function DailyPageEditor({
                   <Button
                     disabled={!canSubmit || isSubmitting}
                     type="submit"
-                    className="flex gap-2 font-semibold text-sm w-full lg:w-fit justify-center items-center"
+                    className="flex gap-2 font-semibold text-sm flex-1 justify-center items-center"
                   >
                     <span>
                       {updateMode

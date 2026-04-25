@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -37,9 +38,17 @@ import { UseFormReturn, useWatch } from "react-hook-form";
 import { DailyFormValues } from "@/schema/daily-page.schema";
 import type { NoteItem, NoteItemStatus } from "@/types/daily-notes";
 import { noteItemTextSchema } from "@/schema/daily-notes-schema";
+import { useAuth } from "@/context/useAuth";
+import {
+  addNoteItem,
+  updateNoteStatus,
+  dismissNote,
+  undoDismissNote,
+} from "@/app/daily-accounts/notes-actions";
 
 type Props = {
   form: UseFormReturn<DailyFormValues>;
+  docId: string; // Required: document ID for independent persistence
   readOnly?: boolean;
   startOpen?: boolean;
 };
@@ -60,15 +69,21 @@ function makeId() {
 
 export default function DailyNotesDialog({
   form,
+  docId,
   readOnly = false,
   startOpen = false,
 }: Props) {
   const tNotes = useTranslations("Notes");
   const [open, setOpen] = React.useState(startOpen);
+  const { authState } = useAuth();
 
   const { control, setValue } = form;
   const watchedNotes = useWatch({ control, name: "notes" });
   const notes = React.useMemo(() => watchedNotes ?? [], [watchedNotes]);
+
+  // Loading states per operation
+  const [savingNoteId, setSavingNoteId] = React.useState<string | null>(null);
+  const [addingNote, setAddingNote] = React.useState(false);
 
   // add-item composer
   const [composerOpen, setComposerOpen] = React.useState(false);
@@ -76,9 +91,6 @@ export default function DailyNotesDialog({
 
   // dismissed collapsible
   const [dismissedOpen, setDismissedOpen] = React.useState(false);
-
-  // purely local "loading" (no DB calls now), keep to avoid UI changes
-  const loading = false;
 
   React.useEffect(() => {
     if (!open) return;
@@ -92,7 +104,6 @@ export default function DailyNotesDialog({
   const startAdd = () => {
     if (readOnly) return;
     setComposerOpen(true);
-    setDraft("");
   };
 
   const discardAdd = () => {
@@ -101,13 +112,15 @@ export default function DailyNotesDialog({
   };
 
   const commitAdd = async () => {
-    if (readOnly) return;
+    if (readOnly || authState.status !== "ready") return;
 
     const parsed = noteItemTextSchema.safeParse(draft);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Invalid");
       return;
     }
+
+    setAddingNote(true);
 
     const now = new Date();
     const newItem: NoteItem = {
@@ -118,17 +131,48 @@ export default function DailyNotesDialog({
       updatedAt: now,
     };
 
-    setValue("notes", [...notes, newItem], {
+    // Update local state optimistically
+    const updatedNotes = [...notes, newItem];
+    setValue("notes", updatedNotes, {
       shouldDirty: true,
       shouldValidate: true,
     });
 
+    // Save to database
+    const token = await authState.currentUser?.getIdToken();
+    if (!token) {
+      toast.error("Authentication failed");
+      setAddingNote(false);
+      return;
+    }
+
+    const result = await addNoteItem(
+      docId,
+      newItem,
+      authState.clientUser,
+      token,
+    );
+
+    setAddingNote(false);
+
+    if (!result.success) {
+      toast.error("Error", {
+        description: result.error || "Failed to save note",
+      });
+      // Revert optimistic update
+      setValue("notes", notes, { shouldDirty: false });
+      return;
+    }
+
+    // ✅ Success: close composer, keep dialog open, clear draft
+    toast.success("Success", { description: "Note saved" });
     setComposerOpen(false);
     setDraft("");
+    // Dialog stays open - user can add more notes
   };
 
   const toggleCheckbox = async (item: NoteItem) => {
-    if (readOnly) return;
+    if (readOnly || authState.status !== "ready") return;
 
     const nextStatus: NoteItemStatus =
       item.status === "dismissed"
@@ -137,38 +181,114 @@ export default function DailyNotesDialog({
           ? "done"
           : "open";
 
+    setSavingNoteId(item.id);
+
+    // Update local state optimistically
     const now = new Date();
     const next = notes.map((x) =>
       x.id === item.id ? { ...x, status: nextStatus, updatedAt: now } : x,
     );
-
     setValue("notes", next, { shouldDirty: true, shouldValidate: true });
+
+    // Save to database
+    const token = await authState.currentUser?.getIdToken();
+    if (!token) {
+      toast.error("Authentication failed");
+      setSavingNoteId(null);
+      return;
+    }
+
+    const result = await updateNoteStatus(
+      docId,
+      item.id,
+      nextStatus,
+      authState.clientUser,
+      token,
+    );
+
+    if (!result.success) {
+      toast.error("Error updating note");
+      // Revert optimistic update
+      setValue("notes", notes, { shouldDirty: false });
+    }
+
+    setSavingNoteId(null);
   };
 
   const dismiss = async (item: NoteItem) => {
-    if (readOnly) return;
+    if (readOnly || authState.status !== "ready") return;
 
+    setSavingNoteId(item.id);
+
+    // Update local state optimistically
     const now = new Date();
     const next = notes.map((x) =>
       x.id === item.id
         ? { ...x, status: "dismissed" as NoteItemStatus, updatedAt: now }
         : x,
     );
-
     setValue("notes", next, { shouldDirty: true, shouldValidate: true });
+
+    // Save to database
+    const token = await authState.currentUser?.getIdToken();
+    if (!token) {
+      toast.error("Authentication failed");
+      setSavingNoteId(null);
+      return;
+    }
+
+    const result = await dismissNote(
+      docId,
+      item.id,
+      authState.clientUser,
+      token,
+    );
+
+    if (!result.success) {
+      toast.error("Error dismissing note");
+      // Revert optimistic update
+      setValue("notes", notes, { shouldDirty: false });
+    }
+
+    setSavingNoteId(null);
   };
 
   const undoDismiss = async (item: NoteItem) => {
-    if (readOnly) return;
+    if (readOnly || authState.status !== "ready") return;
 
+    setSavingNoteId(item.id);
+
+    // Update local state optimistically
     const now = new Date();
     const next = notes.map((x) =>
       x.id === item.id
         ? { ...x, status: "open" as NoteItemStatus, updatedAt: now }
         : x,
     );
-
     setValue("notes", next, { shouldDirty: true, shouldValidate: true });
+
+    // Save to database
+    const token = await authState.currentUser?.getIdToken();
+    if (!token) {
+      toast.error("Authentication failed");
+      setSavingNoteId(null);
+      return;
+    }
+
+    const result = await undoDismissNote(
+      docId,
+      item.id,
+      authState.clientUser,
+      token,
+    );
+
+    if (!result.success) {
+      toast.error("Error restoring note");
+      // Revert optimistic update
+      setValue("notes", notes, { shouldDirty: false });
+    }
+
+    setSavingNoteId(null);
   };
 
   const activeItems = React.useMemo(
@@ -186,11 +306,14 @@ export default function DailyNotesDialog({
       <DialogTrigger asChild>
         <Button
           variant="secondary"
-          className={clsx(
-            "text-sm p-1 h-fit! flex justify-center items-center text-primary border",
-          )}
+          className={clsx("bg-primary/5 text-primary font-medium! gap-1 border", notes.length > 0 && "ring-1 ring-primary")}
         >
-          <ListTodo className="size-3" /> {tNotes("Notes")}
+          <ListTodo className="size-4" /> {tNotes("Notes")}
+          {notes.length > 0 && (
+            <Badge variant="default" className="size-4">
+              {notes.length}
+            </Badge>
+          )}
         </Button>
       </DialogTrigger>
 
@@ -202,7 +325,6 @@ export default function DailyNotesDialog({
         </DialogHeader>
 
         <div className="space-y-3">
-          {/* Add item */}
           {!readOnly ? (
             !composerOpen ? (
               <div className="flex justify-end">
@@ -210,7 +332,7 @@ export default function DailyNotesDialog({
                   variant="secondary"
                   className="gap-2 text-sm!"
                   onClick={startAdd}
-                  disabled={loading}
+                  disabled={addingNote}
                   size={"sm"}
                 >
                   <Plus className="size-4" /> {tNotes("AddMemoryItem")}
@@ -223,13 +345,13 @@ export default function DailyNotesDialog({
                   onChange={(e) => setDraft(e.target.value)}
                   placeholder={tNotes("MemoryItemPlaceholder")}
                   className="min-h-22.5 max-h-80"
-                  disabled={loading}
+                  disabled={addingNote}
                 />
                 <div className="flex flex-row justify-end md:flex-col md:justify-between items-center gap-2">
                   <Button
                     variant="secondary"
                     onClick={discardAdd}
-                    disabled={loading}
+                    disabled={addingNote}
                     className="gap-2"
                     size={"icon-sm"}
                   >
@@ -237,11 +359,15 @@ export default function DailyNotesDialog({
                   </Button>
                   <Button
                     onClick={commitAdd}
-                    disabled={loading}
+                    disabled={addingNote}
                     className="gap-2"
                     size={"icon-sm"}
                   >
-                    <Check className="size-4" />
+                    {addingNote ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Check className="size-4" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -250,30 +376,34 @@ export default function DailyNotesDialog({
 
           {/* Active list (open + done) */}
           <div className="space-y-2 max-h-[45vh] overflow-auto no-scrollbar">
-            {loading ? (
-              <div className="text-sm text-muted-foreground flex gap-2 items-center">
-                {tNotes("LoadingMemoryItems")}
-                <Loader2 className="size-4 animate-spin" />
-              </div>
-            ) : activeItems.length === 0 ? (
+            {activeItems.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 {tNotes("NoMemoryItems")}
               </div>
             ) : (
               activeItems.map((item) => {
                 const isDone = item.status === "done";
+                const isSaving = savingNoteId === item.id;
                 return (
                   <div
                     key={item.id}
-                    className="rounded-md border px-2 flex items-start justify-between gap-3"
+                    className={clsx(
+                      "rounded-md border px-2 flex items-start justify-between gap-3",
+                      isSaving && "opacity-60",
+                    )}
                   >
                     <label className="flex items-start py-2 justify-center gap-3 w-full">
-                      <Checkbox
-                        checked={isDone}
-                        disabled={readOnly}
-                        onCheckedChange={() => toggleCheckbox(item)}
-                        className=""
-                      />
+                      <div className="relative">
+                        <Checkbox
+                          checked={isDone}
+                          disabled={readOnly || isSaving}
+                          onCheckedChange={() => toggleCheckbox(item)}
+                          className=""
+                        />
+                        {isSaving && (
+                          <Loader2 className="absolute inset-0 size-4 animate-spin" />
+                        )}
+                      </div>
                       <span
                         className={clsx(
                           "text-sm leading-5 w-full",
@@ -289,11 +419,15 @@ export default function DailyNotesDialog({
                       size="icon"
                       aria-label="Dismiss"
                       onClick={() => dismiss(item)}
-                      disabled={readOnly}
+                      disabled={readOnly || isSaving}
                       className="shrink-0"
                       title={readOnly ? undefined : "Dismiss"}
                     >
-                      <XCircle className="size-4 text-muted-foreground" />
+                      {isSaving ? (
+                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <XCircle className="size-4 text-muted-foreground" />
+                      )}
                     </Button>
                   </div>
                 );
@@ -328,35 +462,50 @@ export default function DailyNotesDialog({
 
               <CollapsibleContent>
                 <div className="mt-2 space-y-2 max-h-40 overflow-auto no-scrollbar">
-                  {dismissedItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="rounded-md border px-2 flex items-start justify-between gap-3"
-                    >
-                      <label className="flex items-start py-2 justify-center gap-3 w-full">
-                        <Checkbox
-                          checked={false}
-                          disabled={readOnly}
-                          onCheckedChange={() => toggleCheckbox(item)}
-                        />
-                        <span className="text-sm leading-5 w-full line-through text-muted-foreground">
-                          {item.text}
-                        </span>
-                      </label>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Undo Dismiss"
-                        onClick={() => undoDismiss(item)}
-                        disabled={readOnly}
-                        className="shrink-0"
-                        title={readOnly ? undefined : "Undo Dismiss"}
+                  {dismissedItems.map((item) => {
+                    const isSaving = savingNoteId === item.id;
+                    return (
+                      <div
+                        key={item.id}
+                        className={clsx(
+                          "rounded-md border px-2 flex items-start justify-between gap-3",
+                          isSaving && "opacity-60",
+                        )}
                       >
-                        <Undo2 className="size-4 text-muted-foreground" />
-                      </Button>
-                    </div>
-                  ))}
+                        <label className="flex items-start py-2 justify-center gap-3 w-full">
+                          <div className="relative">
+                            <Checkbox
+                              checked={false}
+                              disabled={readOnly || isSaving}
+                              onCheckedChange={() => toggleCheckbox(item)}
+                            />
+                            {isSaving && (
+                              <Loader2 className="absolute inset-0 size-4 animate-spin" />
+                            )}
+                          </div>
+                          <span className="text-sm leading-5 w-full line-through text-muted-foreground">
+                            {item.text}
+                          </span>
+                        </label>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Undo Dismiss"
+                          onClick={() => undoDismiss(item)}
+                          disabled={readOnly || isSaving}
+                          className="shrink-0"
+                          title={readOnly ? undefined : "Undo Dismiss"}
+                        >
+                          {isSaving ? (
+                            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                          ) : (
+                            <Undo2 className="size-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               </CollapsibleContent>
             </Collapsible>
