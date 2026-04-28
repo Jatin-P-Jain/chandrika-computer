@@ -43,4 +43,6 @@ export type DailyAccount = {
   updatedBy: UserData;
   created: string;
   updated?: string;
+  lastNotedAt?: string;
+  lastReadingAt?: string;
 };

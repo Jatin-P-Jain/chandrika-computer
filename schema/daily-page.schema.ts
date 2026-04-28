@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { noteItemSchema } from "./daily-notes-schema";
 
 type TFunction = (key: string) => string;
 
@@ -33,9 +32,6 @@ export const makeDailySchema = (t?: TFunction) => {
 
     creditItems: z.array(accountLineItemSchema),
     debitItems: z.array(accountLineItemSchema),
-
-    // NEW:
-    notes: z.array(noteItemSchema),
 
     accountsCache: z.record(z.string(), z.string()).optional(), // { [accountId]: accountName }
 

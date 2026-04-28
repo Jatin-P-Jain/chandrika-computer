@@ -28,6 +28,7 @@ type Props = {
 
 const DailyAccountPage = async ({ params, searchParams }: Props) => {
   const { accountDate: docId } = await params;
+  const { mode: modeParam } = await searchParams;
 
   let initialData: DailyFormValues | undefined;
   let dailyItemData: DailyAccount | undefined;
@@ -36,8 +37,12 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
   if (docId) {
     const { data } = await getDailyAccountItem(docId);
     if (data) {
-      const { mode: modeParam } = await searchParams;
-      mode = modeParam === "edit" ? "edit" : "view";
+      const hasRealAccountOwner = Boolean(data.createdBy?.uid);
+      mode = hasRealAccountOwner
+        ? modeParam === "view"
+          ? "view"
+          : "edit"
+        : "create";
       initialData = data as unknown as DailyFormValues;
       dailyItemData = data;
     }

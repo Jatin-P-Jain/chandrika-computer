@@ -203,6 +203,8 @@ export const normalizeDailyAccount = (raw: unknown): DailyAccount => {
 
   const createdMillis = toMillis(getNested(r, "created"));
   const updatedMillis = toMillis(getNested(r, "updated"));
+  const lastNotedAtMillis = toMillis(getNested(r, "lastNotedAt"));
+  const lastReadingAtMillis = toMillis(getNested(r, "lastReadingAt"));
 
   return {
     id: toStringSafe(getNested(r, "id")),
@@ -238,6 +240,12 @@ export const normalizeDailyAccount = (raw: unknown): DailyAccount => {
 
     created: createdMillis ? new Date(createdMillis).toISOString() : "",
     updated: updatedMillis ? new Date(updatedMillis).toISOString() : "",
+    lastNotedAt: lastNotedAtMillis
+      ? new Date(lastNotedAtMillis).toISOString()
+      : "",
+    lastReadingAt: lastReadingAtMillis
+      ? new Date(lastReadingAtMillis).toISOString()
+      : "",
 
     createdBy: toUser(getNested(r, "createdBy")),
     updatedBy: toUser(getNested(r, "updatedBy")),

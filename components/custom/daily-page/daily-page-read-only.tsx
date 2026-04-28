@@ -195,7 +195,6 @@ export default function DailyPageReadOnly({
     dailySpends: [],
     creditItems: [],
     debitItems: [],
-    notes: [],
     accountsCache: {},
     totalCashCollected: 0,
   };
@@ -223,8 +222,12 @@ export default function DailyPageReadOnly({
   const totalSpends = sumAmounts(baseData.dailySpends);
   const totalEarnings =
     baseData.earnings.netIncome + sumAmounts(baseData.earnings.otherIncomes);
-  const [localNotes, setLocalNotes] = useState<NoteItem[]>(
-    (baseData.notes as NoteItem[]) ?? [],
+  const [localNotes, setLocalNotes] = useState<NoteItem[]>(() =>
+    (dailyItemData?.notes ?? []).map((n) => ({
+      ...n,
+      createdAt: new Date(n.createdAt),
+      updatedAt: new Date(n.updatedAt),
+    })),
   );
 
   const readingsSaved = !!(localReadings?.photocopy || localReadings?.stamp);

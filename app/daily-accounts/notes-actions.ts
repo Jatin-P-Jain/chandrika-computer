@@ -63,7 +63,7 @@ export const addNoteItem = async (
       totalEarnings: 0,
       totalSpends: 0,
       totalCashCollected: 0,
-      createdBy: user,
+      createdBy: accountSnap.data()?.createdBy ?? null,
       updatedBy: user,
       created: Timestamp.now(),
       updated: Timestamp.now(),

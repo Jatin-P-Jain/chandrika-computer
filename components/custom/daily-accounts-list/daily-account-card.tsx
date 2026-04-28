@@ -3,7 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DailyAccount } from "@/types/daily-account";
 import { formatINR } from "@/lib/utils";
-import { BookOpenCheck, ChevronsRight } from "lucide-react";
+import {
+  BookOpenCheck,
+  ChevronsRight,
+  CircleCheck,
+  CircleX,
+} from "lucide-react";
 import { DateDisplay } from "../date-display";
 import CreatedOrUpdated from "../created-or-updated";
 import { useTranslations } from "next-intl";
@@ -20,6 +25,10 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   const { textHeadingCls, textBodyCls, textSmCls } = useLocaleTypography();
   const {
     id,
+    fixed,
+    notes,
+    lastNotedAt,
+    lastReadingAt,
     totalEarnings,
     totalSpends,
     totalCashCollected,
@@ -30,20 +39,33 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
     updatedBy,
   } = dailyAccount as DailyAccount;
 
+  const hasFinancialSummary =
+    Number(totalCashCollected || 0) > 0 ||
+    Number(totalSpends || 0) > 0 ||
+    Number(totalEarnings || 0) > 0;
+
+  const hasNotesTaken =
+    (notes?.length ?? 0) > 0 || Boolean(lastNotedAt && lastNotedAt.length > 0);
+
+  const hasReadingsTaken =
+    Boolean(lastReadingAt && lastReadingAt.length > 0) ||
+    Number(fixed?.sd || 0) > 0 ||
+    Number(fixed?.fs || 0) > 0;
+
   const { push } = useSafeRouter();
 
   return (
     <Card
       onClick={() => {
-        push(`/daily-accounts/${id}`);
+        push(`/daily-accounts/${id}?mode=view`);
       }}
       className={clsx(
         "cursor-pointer w-full flex p-1 lg:p-0 shadow-md border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
-        !totalCashCollected && !totalSpends && !totalEarnings && "bg-amber-50/60",
+        !hasFinancialSummary && "bg-amber-50/60",
       )}
     >
       <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-0 justify-center p-1 lg:pl-4">
-        <div className="flex flex-col md:col-span-5 gap-1 lg:gap-2 p-2 relative">
+        <div className="flex flex-col md:col-span-5 gap-2 p-2 relative">
           <div className="flex items-center gap-2 justify-start">
             <span
               className={`hidden lg:flex text-xs text-muted-foreground ${textSmCls}`}
@@ -54,16 +76,10 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
               className={`flex w-full justify-between  items-center font-semibold text-primary text-sm ${textBodyCls}`}
             >
               {<DateDisplay value={id} type="docId" />}
-              {!totalCashCollected && !totalSpends && !totalEarnings && (
-                <div className=" text-xs text-amber-700 italic flex items-center gap-1 font-medium">
-                  <BookOpenCheck className="w-4 h-4" />
-                  {tDailyAccount("OnlyNotesAdded")}
-                </div>
-              )}
             </span>
           </div>
-          <div className="flex flex-col lg:flex-row w-full justify-between items-end gap-2 lg:gap-16">
-            {!totalCashCollected && !totalSpends && !totalEarnings ? null : (
+          <div className="flex flex-col lg:flex-row w-full justify-between items-start gap-2 lg:gap-16">
+            {hasFinancialSummary ? (
               <div className="flex flex-col gap-0 w-full pl-2">
                 <div className="flex items-center justify-between gap-4">
                   <span
@@ -103,6 +119,25 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                   </span>
                 </div>
               </div>
+            ) : (
+              <div className="text-xs italic flex flex-col gap-2 font-medium">
+                {hasNotesTaken && (
+                  <div className="flex items-center gap-1 text-green-800 font-normal">
+                    <BookOpenCheck className="w-4 h-4" />
+                    {tDailyAccount("NotesTaken")}
+                  </div>
+                )}
+                {hasReadingsTaken && (
+                  <div className="flex items-center gap-1 text-green-800 font-normal">
+                    <CircleCheck className="w-4 h-4" />
+                    {tDailyAccount("ReadingsTaken")}
+                  </div>
+                )}
+                <div className="flex items-center gap-1 text-red-600">
+                  <CircleX className="w-4 h-4" />
+                  {tDailyAccount("DailyAccountNotSaved")}
+                </div>
+              </div>
             )}
             <div className="flex flex-col lg:flex-row w-full justify-between items-start lg:items-end gap-1 lg:gap-0">
               <div className="flex flex-col lg:flex-row w-full justify-end gap-1">
@@ -135,8 +170,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
         </div>
 
         <Button className="w-full md:h-full lg:rounded-l-none! text-sm sm:flex-row md:flex-col lg:flex-row">
-          {tDailyAccount("ViewAccount")}{" "}
-          <ChevronsRight className="size-4" />
+          {tDailyAccount("ViewAccount")} <ChevronsRight className="size-4" />
         </Button>
       </CardContent>
     </Card>

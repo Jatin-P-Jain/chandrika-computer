@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
 import { useForm, useWatch } from "react-hook-form";
+import type { FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import dynamic from "next/dynamic";
 
@@ -29,6 +30,7 @@ import {
   updateDailyAccountItem,
 } from "@/app/daily-accounts/write-actions";
 import { DailyAccount } from "@/types/daily-account";
+import type { NoteItem } from "@/types/daily-notes";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import type { ReviewItem } from "./save-review-dialog";
 import type { CreditDebitImperative } from "../accounts/credit-debit-section";
@@ -119,9 +121,36 @@ function formatLineItemSummary(
     : parts.join(", ");
 }
 
+function collectInvalidPaths(
+  errors: FieldErrors<DailyFormValues>,
+  prefix = "",
+): string[] {
+  const out: string[] = [];
+
+  for (const [key, val] of Object.entries(errors)) {
+    if (!val) continue;
+    const path = prefix ? `${prefix}.${key}` : key;
+    const node = val as unknown as { message?: string };
+
+    if (typeof node.message === "string") {
+      out.push(path);
+      continue;
+    }
+
+    if (typeof val === "object") {
+      out.push(
+        ...collectInvalidPaths(val as FieldErrors<DailyFormValues>, path),
+      );
+    }
+  }
+
+  return out;
+}
+
 export default function DailyPageEditor({
   mode,
   initialData,
+  dailyItemData,
   docId,
   readings,
 }: DailyPageProps) {
@@ -137,6 +166,14 @@ export default function DailyPageEditor({
   const tErrors = useTranslations("Validation");
   const dailySchema = useMemo(() => makeDailySchema(tErrors), [tErrors]);
 
+  const initialNotes = useMemo<NoteItem[]>(() => {
+    return (dailyItemData?.notes ?? []).map((n) => ({
+      ...n,
+      createdAt: new Date(n.createdAt),
+      updatedAt: new Date(n.updatedAt),
+    }));
+  }, [dailyItemData?.notes]);
+
   const updateMode = mode === "edit";
   const areReadingsDone = readings?.success;
 
@@ -149,7 +186,6 @@ export default function DailyPageEditor({
       dailySpends: [],
       creditItems: [],
       debitItems: [],
-      notes: [],
       accountsCache: {},
       totalCashCollected: 0,
     },
@@ -249,126 +285,146 @@ export default function DailyPageEditor({
   };
 
   const isFormReady = form.formState.isSubmitted || form.formState.isDirty;
-  const canSubmit = form.formState.isValid && isFormReady;
+  const hasPositiveNetIncome = netForDay > 0;
+  const canSubmit = isFormReady && (!updateMode || hasPositiveNetIncome);
   const isSubmitting = form.formState.isSubmitting;
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    void form.handleSubmit(async (data) => {
-      const fs = Number(form.getValues("fixed.fs") ?? 0);
-      const sd = Number(form.getValues("fixed.sd") ?? 0);
+    void form.handleSubmit(
+      async (data) => {
+        const fs = Number(form.getValues("fixed.fs") ?? 0);
+        const sd = Number(form.getValues("fixed.sd") ?? 0);
 
-      const creditItems = form.getValues("creditItems") ?? [];
-      const debitItems = form.getValues("debitItems") ?? [];
+        const creditItems = form.getValues("creditItems") ?? [];
+        const debitItems = form.getValues("debitItems") ?? [];
 
-      const dailySpendsNow = form.getValues("dailySpends") ?? [];
-      const businessExpensesNow = form.getValues("businessExpenses") ?? [];
-      const extraEarnings = form.getValues("earnings.otherIncomes") ?? [];
+        const dailySpendsNow = form.getValues("dailySpends") ?? [];
+        const businessExpensesNow = form.getValues("businessExpenses") ?? [];
+        const extraEarnings = form.getValues("earnings.otherIncomes") ?? [];
 
-      const blocking: ReviewItem[] = [];
-      const readingsData = readings;
-      if (readingsData?.photocopy == null) {
-        blocking.push({
-          id: "missing-photocopy",
-          title: tSaveReview("PhotocopyReadingMissing"),
-          description: tSaveReview("PleaseAddReadingsAndSave"),
-        });
-      }
-      if (readingsData?.stamp == null) {
-        blocking.push({
-          id: "missing-stamp",
-          title: tSaveReview("StampReadingMissing"),
-          description: tSaveReview("PleaseAddReadingsAndSave"),
-        });
-      }
+        const blocking: ReviewItem[] = [];
+        const readingsData = readings;
+        if (readingsData?.photocopy == null) {
+          blocking.push({
+            id: "missing-photocopy",
+            title: tSaveReview("PhotocopyReadingMissing"),
+            description: tSaveReview("PleaseAddReadingsAndSave"),
+          });
+        }
+        if (readingsData?.stamp == null) {
+          blocking.push({
+            id: "missing-stamp",
+            title: tSaveReview("StampReadingMissing"),
+            description: tSaveReview("PleaseAddReadingsAndSave"),
+          });
+        }
 
-      const items: ReviewItem[] = [];
+        const items: ReviewItem[] = [];
 
-      items.push({
-        id: "readings-summary",
-        title: tSaveReview("Readings"),
-        description:
-          fs === 0 || sd === 0
-            ? tSaveReview("ReadingsMissingDesc")
-            : tSaveReview("ReadingsPresentDesc"),
-      });
-
-      items.push({
-        id: "credits-summary",
-        title: `${tCreditsDebits("Credits")} (${creditItems.length})`,
-        description: isNonEmptyArray(creditItems)
-          ? formatLineItemSummary(creditItems)
-          : (tSaveReview("NoCreditsAdded") ?? "No credits added."),
-        actionLabel: isNonEmptyArray(creditItems) ? tCommon("Add") : undefined,
-        onAction: isNonEmptyArray(creditItems)
-          ? () => {
-              setReviewOpen(false);
-              creditDebitAnchorRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
-              creditDebitRef.current?.addCredit();
-            }
-          : undefined,
-      });
-
-      items.push({
-        id: "debits-summary",
-        title: `${tCreditsDebits("Debits")} (${debitItems.length})`,
-        description: isNonEmptyArray(debitItems)
-          ? formatLineItemSummary(debitItems)
-          : tSaveReview("NoDebitsAdded"),
-        actionLabel: isNonEmptyArray(debitItems)
-          ? (tCommon("Add") ?? "Add")
-          : undefined,
-        onAction: isNonEmptyArray(debitItems)
-          ? () => {
-              setReviewOpen(false);
-              creditDebitAnchorRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
-              creditDebitRef.current?.addDebit();
-            }
-          : undefined,
-      });
-
-      items.push({
-        id: "extra-earnings",
-        title: `${tDailyAccount("OtherEarnings")} (${extraEarnings.length})`,
-        description: isNonEmptyArray(extraEarnings)
-          ? formatLineItemSummary(extraEarnings)
-          : tSaveReview("NoExtraEarnings"),
-      });
-
-      if (!isNonEmptyArray(dailySpendsNow)) {
         items.push({
-          id: "dailyspends-empty",
-          title: tDailyAccount("DailySpends"),
-          description: tSaveReview("DailySpendsEmptyConfirm"),
+          id: "readings-summary",
+          title: tSaveReview("Readings"),
+          description:
+            fs === 0 || sd === 0
+              ? tSaveReview("ReadingsMissingDesc")
+              : tSaveReview("ReadingsPresentDesc"),
         });
-      }
 
-      if (!isNonEmptyArray(businessExpensesNow)) {
         items.push({
-          id: "businessexpenses-empty",
-          title: tDailyAccount("BusinessExpense") ?? "Business expense",
-          description: tSaveReview("BusinessExpenseEmptyConfirm"),
+          id: "credits-summary",
+          title: `${tCreditsDebits("Credits")} (${creditItems.length})`,
+          description: isNonEmptyArray(creditItems)
+            ? formatLineItemSummary(creditItems)
+            : (tSaveReview("NoCreditsAdded") ?? "No credits added."),
+          actionLabel: isNonEmptyArray(creditItems)
+            ? tCommon("Add")
+            : undefined,
+          onAction: isNonEmptyArray(creditItems)
+            ? () => {
+                setReviewOpen(false);
+                creditDebitAnchorRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+                creditDebitRef.current?.addCredit();
+              }
+            : undefined,
         });
-      }
 
-      if (blocking.length > 0) {
-        setReviewMode("BLOCK_READINGS");
-        setReviewItems([...blocking, ...items]);
-        setPendingData(null);
+        items.push({
+          id: "debits-summary",
+          title: `${tCreditsDebits("Debits")} (${debitItems.length})`,
+          description: isNonEmptyArray(debitItems)
+            ? formatLineItemSummary(debitItems)
+            : tSaveReview("NoDebitsAdded"),
+          actionLabel: isNonEmptyArray(debitItems)
+            ? (tCommon("Add") ?? "Add")
+            : undefined,
+          onAction: isNonEmptyArray(debitItems)
+            ? () => {
+                setReviewOpen(false);
+                creditDebitAnchorRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+                creditDebitRef.current?.addDebit();
+              }
+            : undefined,
+        });
+
+        items.push({
+          id: "extra-earnings",
+          title: `${tDailyAccount("OtherEarnings")} (${extraEarnings.length})`,
+          description: isNonEmptyArray(extraEarnings)
+            ? formatLineItemSummary(extraEarnings)
+            : tSaveReview("NoExtraEarnings"),
+        });
+
+        if (!isNonEmptyArray(dailySpendsNow)) {
+          items.push({
+            id: "dailyspends-empty",
+            title: tDailyAccount("DailySpends"),
+            description: tSaveReview("DailySpendsEmptyConfirm"),
+          });
+        }
+
+        if (!isNonEmptyArray(businessExpensesNow)) {
+          items.push({
+            id: "businessexpenses-empty",
+            title: tDailyAccount("BusinessExpense") ?? "Business expense",
+            description: tSaveReview("BusinessExpenseEmptyConfirm"),
+          });
+        }
+
+        if (blocking.length > 0) {
+          setReviewMode("BLOCK_READINGS");
+          setReviewItems([...blocking, ...items]);
+          setPendingData(null);
+          setReviewOpen(true);
+          return;
+        }
+
+        setReviewMode("SOFT_CONFIRM");
+        setReviewItems(items);
+        setPendingData(data);
         setReviewOpen(true);
-        return;
-      }
+      },
+      (errors) => {
+        const invalidPaths = collectInvalidPaths(errors);
+        const firstFew = invalidPaths.slice(0, 4).join(", ");
+        const more =
+          invalidPaths.length > 4 ? ` +${invalidPaths.length - 4} more` : "";
 
-      setReviewMode("SOFT_CONFIRM");
-      setReviewItems(items);
-      setPendingData(data);
-      setReviewOpen(true);
-    })(event);
+        toast.error("Please fix validation errors", {
+          description:
+            invalidPaths.length > 0
+              ? `Invalid fields: ${firstFew}${more}`
+              : "Some fields are invalid. Review highlighted inputs.",
+        });
+
+        console.error("Daily form validation errors", errors);
+      },
+    )(event);
   };
 
   return renderForm ? (
@@ -395,7 +451,7 @@ export default function DailyPageEditor({
               refresh();
             }}
           />
-          <DailyNotesDialog form={form} docId={docId} />
+          <DailyNotesDialog initialNotes={initialNotes} docId={docId} />
         </div>
         <div className="bg-card p-1 w-full md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto">
           <div

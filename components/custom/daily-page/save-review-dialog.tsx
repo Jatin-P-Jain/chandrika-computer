@@ -61,18 +61,17 @@ export function SaveReviewDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-4xl">
-        <AlertDialogHeader>
+      <AlertDialogContent className="w-[95vw] md:max-w-4xl max-h-[90vh] flex flex-col">
+        <AlertDialogHeader className="shrink-0">
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description ? (
             <AlertDialogDescription>{description}</AlertDialogDescription>
           ) : null}
         </AlertDialogHeader>
 
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-y-auto min-h-0 flex-1 pr-1">
           {items.map((it) => {
             const checked = checkedIds[it.id] === true;
-            console.log(it);
 
             return (
               <div
@@ -119,7 +118,7 @@ export function SaveReviewDialog({
           })}
         </div>
 
-        <AlertDialogFooter>
+        <AlertDialogFooter className="shrink-0">
           <AlertDialogCancel type="button">{cancelText}</AlertDialogCancel>
 
           {!hideConfirm && (

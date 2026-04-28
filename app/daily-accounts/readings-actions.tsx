@@ -11,6 +11,8 @@ import type {
   PhotocopyReadingRow,
 } from "@/types/readings";
 import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
+import { Timestamp } from "firebase-admin/firestore";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 type GetReadingsOptions = {
   pagination?: {
@@ -20,6 +22,81 @@ type GetReadingsOptions = {
 };
 
 const DENOMS: Denomination[] = [50, 100, 500, 1000];
+
+async function syncDailyAccountFromReadings(opts: {
+  docId: string;
+  fsAmount?: number;
+  sdAmount?: number;
+}) {
+  const accountRef = fireStore.collection("daily-accounts").doc(opts.docId);
+  const accountSnap = await accountRef.get();
+
+  const existing = accountSnap.data() as
+    | {
+        fixed?: {
+          sd?: number;
+          fs?: number;
+          sc?: number;
+          flexnCard?: number;
+          otherFixedExpenses?: unknown[];
+        };
+        earnings?: { netIncome?: number; otherIncomes?: unknown[] };
+        businessExpenses?: unknown[];
+        dailySpends?: unknown[];
+        creditItems?: unknown[];
+        debitItems?: unknown[];
+        allTags?: unknown[];
+        totalEarnings?: number;
+        totalSpends?: number;
+        totalCashCollected?: number;
+        created?: unknown;
+        createdBy?: unknown;
+        updatedBy?: unknown;
+      }
+    | undefined;
+
+  const nextSd = nn(opts.sdAmount ?? existing?.fixed?.sd ?? 0);
+  const nextFs = nn(opts.fsAmount ?? existing?.fixed?.fs ?? 0);
+  const nextSc = nn(nextSd * 0.3);
+  const now = Timestamp.now();
+
+  const requiredFields = {
+    id: opts.docId,
+    fixed: {
+      sd: nextSd,
+      fs: nextFs,
+      sc: nextSc,
+      flexnCard: nn(existing?.fixed?.flexnCard ?? 0),
+      otherFixedExpenses: existing?.fixed?.otherFixedExpenses ?? [],
+    },
+    earnings: {
+      netIncome: nn(existing?.earnings?.netIncome ?? 0),
+      otherIncomes: existing?.earnings?.otherIncomes ?? [],
+    },
+    businessExpenses: existing?.businessExpenses ?? [],
+    dailySpends: existing?.dailySpends ?? [],
+    creditItems: existing?.creditItems ?? [],
+    debitItems: existing?.debitItems ?? [],
+    notes: [],
+    allTags: Array.isArray(existing?.allTags) ? existing?.allTags : [],
+    totalEarnings: nn(existing?.totalEarnings ?? 0),
+    totalSpends: nn(existing?.totalSpends ?? 0),
+    totalCashCollected: nn(existing?.totalCashCollected ?? 0),
+    createdBy: existing?.createdBy ?? null,
+    updatedBy: existing?.updatedBy ?? existing?.createdBy ?? null,
+    created: existing?.created ?? now,
+    updated: now,
+    lastReadingAt: now,
+  };
+
+  await accountRef.set(requiredFields, { merge: true });
+
+  revalidatePath(`/daily-accounts/${opts.docId}`);
+  revalidatePath(`/daily-accounts`);
+  revalidateTag("daily-account-list", "max");
+  revalidateTag("daily-account-latest", "max");
+  revalidateTag(`daily-account:${opts.docId}`, "max");
+}
 
 type TimestampLike = { toMillis: () => number };
 
@@ -202,6 +279,11 @@ export async function savePhotocopyReading(opts: {
   // set(..., {merge:true}) = upsert (create if missing, otherwise merge) [web:49]
   await ref.set(payload, { merge: true });
 
+  await syncDailyAccountFromReadings({
+    docId: opts.todayDateYmd,
+    fsAmount: amount,
+  });
+
   done({
     success: true,
     docsWritten: 1,
@@ -326,6 +408,11 @@ export async function saveStampReading(opts: {
   };
 
   await ref.set(payload, { merge: true }); // upsert merge [web:49]
+
+  await syncDailyAccountFromReadings({
+    docId: opts.todayDateYmd,
+    sdAmount: totalAmount,
+  });
 
   done({
     success: true,

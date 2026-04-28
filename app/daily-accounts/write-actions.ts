@@ -48,7 +48,15 @@ export const createDailyAccountItem = async (
 
     await fireStore.runTransaction(async (txn) => {
       const existing = await txn.get(docRef);
-      if (existing.exists) {
+      const existingData = existing.data() as
+        | {
+            created?: unknown;
+            createdBy?: { uid?: string | null } | null;
+          }
+        | undefined;
+      const hasRealAccountOwner = Boolean(existingData?.createdBy?.uid);
+
+      if (existing.exists && hasRealAccountOwner) {
         throw new Error(`${accountExistsErrorMessage}`);
       }
 
@@ -62,7 +70,8 @@ export const createDailyAccountItem = async (
         ...accountData,
         id: documentId,
         createdBy: user,
-        created: Timestamp.now(),
+        created: existingData?.created ?? Timestamp.now(),
+        updatedBy: user,
         updated: Timestamp.now(),
         allTags,
         totalEarnings: totals.earnings,

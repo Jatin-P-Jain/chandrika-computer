@@ -34,8 +34,6 @@ import {
 } from "@/components/ui/collapsible";
 
 import { useTranslations } from "next-intl";
-import { UseFormReturn, useWatch } from "react-hook-form";
-import { DailyFormValues } from "@/schema/daily-page.schema";
 import type { NoteItem, NoteItemStatus } from "@/types/daily-notes";
 import { noteItemTextSchema } from "@/schema/daily-notes-schema";
 import { useAuth } from "@/context/useAuth";
@@ -47,7 +45,7 @@ import {
 } from "@/app/daily-accounts/notes-actions";
 
 type Props = {
-  form: UseFormReturn<DailyFormValues>;
+  initialNotes?: NoteItem[];
   docId: string; // Required: document ID for independent persistence
   readOnly?: boolean;
   startOpen?: boolean;
@@ -58,7 +56,7 @@ function sortItems(items: NoteItem[]) {
   return [...items].sort((a, b) => {
     const r = rank(a.status) - rank(b.status);
     if (r !== 0) return r;
-    return a.createdAt.getTime() - b.createdAt.getTime();
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
 }
 
@@ -68,7 +66,7 @@ function makeId() {
 }
 
 export default function DailyNotesDialog({
-  form,
+  initialNotes = [],
   docId,
   readOnly = false,
   startOpen = false,
@@ -76,10 +74,23 @@ export default function DailyNotesDialog({
   const tNotes = useTranslations("Notes");
   const [open, setOpen] = React.useState(startOpen);
   const { authState } = useAuth();
+  const [notes, setNotes] = React.useState<NoteItem[]>(() =>
+    (initialNotes ?? []).map((n) => ({
+      ...n,
+      createdAt: new Date(n.createdAt),
+      updatedAt: new Date(n.updatedAt),
+    })),
+  );
 
-  const { control, setValue } = form;
-  const watchedNotes = useWatch({ control, name: "notes" });
-  const notes = React.useMemo(() => watchedNotes ?? [], [watchedNotes]);
+  React.useEffect(() => {
+    setNotes(
+      (initialNotes ?? []).map((n) => ({
+        ...n,
+        createdAt: new Date(n.createdAt),
+        updatedAt: new Date(n.updatedAt),
+      })),
+    );
+  }, [initialNotes]);
 
   // Loading states per operation
   const [savingNoteId, setSavingNoteId] = React.useState<string | null>(null);
@@ -133,10 +144,7 @@ export default function DailyNotesDialog({
 
     // Update local state optimistically
     const updatedNotes = [...notes, newItem];
-    setValue("notes", updatedNotes, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
+    setNotes(updatedNotes);
 
     // Save to database
     const token = await authState.currentUser?.getIdToken();
@@ -160,7 +168,7 @@ export default function DailyNotesDialog({
         description: result.error || "Failed to save note",
       });
       // Revert optimistic update
-      setValue("notes", notes, { shouldDirty: false });
+      setNotes(notes);
       return;
     }
 
@@ -188,7 +196,7 @@ export default function DailyNotesDialog({
     const next = notes.map((x) =>
       x.id === item.id ? { ...x, status: nextStatus, updatedAt: now } : x,
     );
-    setValue("notes", next, { shouldDirty: true, shouldValidate: true });
+    setNotes(next);
 
     // Save to database
     const token = await authState.currentUser?.getIdToken();
@@ -209,7 +217,7 @@ export default function DailyNotesDialog({
     if (!result.success) {
       toast.error("Error updating note");
       // Revert optimistic update
-      setValue("notes", notes, { shouldDirty: false });
+      setNotes(notes);
     }
 
     setSavingNoteId(null);
@@ -227,7 +235,7 @@ export default function DailyNotesDialog({
         ? { ...x, status: "dismissed" as NoteItemStatus, updatedAt: now }
         : x,
     );
-    setValue("notes", next, { shouldDirty: true, shouldValidate: true });
+    setNotes(next);
 
     // Save to database
     const token = await authState.currentUser?.getIdToken();
@@ -247,7 +255,7 @@ export default function DailyNotesDialog({
     if (!result.success) {
       toast.error("Error dismissing note");
       // Revert optimistic update
-      setValue("notes", notes, { shouldDirty: false });
+      setNotes(notes);
     }
 
     setSavingNoteId(null);
@@ -265,7 +273,7 @@ export default function DailyNotesDialog({
         ? { ...x, status: "open" as NoteItemStatus, updatedAt: now }
         : x,
     );
-    setValue("notes", next, { shouldDirty: true, shouldValidate: true });
+    setNotes(next);
 
     // Save to database
     const token = await authState.currentUser?.getIdToken();
@@ -285,7 +293,7 @@ export default function DailyNotesDialog({
     if (!result.success) {
       toast.error("Error restoring note");
       // Revert optimistic update
-      setValue("notes", notes, { shouldDirty: false });
+      setNotes(notes);
     }
 
     setSavingNoteId(null);
@@ -306,7 +314,10 @@ export default function DailyNotesDialog({
       <DialogTrigger asChild>
         <Button
           variant="secondary"
-          className={clsx("bg-primary/5 text-primary font-medium! gap-1 border", notes.length > 0 && "ring-1 ring-primary")}
+          className={clsx(
+            "bg-primary/5 text-primary font-medium! gap-1 border",
+            notes.length > 0 && "ring-1 ring-primary",
+          )}
         >
           <ListTodo className="size-4" /> {tNotes("Notes")}
           {notes.length > 0 && (
