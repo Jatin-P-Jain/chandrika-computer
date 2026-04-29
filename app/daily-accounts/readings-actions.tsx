@@ -13,6 +13,9 @@ import type {
 import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
 import { Timestamp } from "firebase-admin/firestore";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { AuditEvent } from "@/types/daily-account";
+import { UserData } from "@/types/user";
+import { FieldValue } from "@/firebase/server";
 
 type GetReadingsOptions = {
   pagination?: {
@@ -27,6 +30,7 @@ async function syncDailyAccountFromReadings(opts: {
   docId: string;
   fsAmount?: number;
   sdAmount?: number;
+  user?: UserData | null;
 }) {
   const accountRef = fireStore.collection("daily-accounts").doc(opts.docId);
   const accountSnap = await accountRef.get();
@@ -89,7 +93,22 @@ async function syncDailyAccountFromReadings(opts: {
     lastReadingAt: now,
   };
 
-  await accountRef.set(requiredFields, { merge: true });
+  // Create audit event for reading save/update
+  const auditEvent: AuditEvent = {
+    type: accountSnap.exists ? "reading_updated" : "reading_saved",
+    action: accountSnap.exists ? "Updated" : "Saved",
+    entity: "reading",
+    user: opts.user || null,
+    timestamp: new Date().toISOString(),
+  };
+
+  await accountRef.set(
+    {
+      ...requiredFields,
+      auditTrail: FieldValue.arrayUnion(auditEvent),
+    },
+    { merge: true },
+  );
 
   revalidatePath(`/daily-accounts/${opts.docId}`);
   revalidatePath(`/daily-accounts`);
@@ -282,6 +301,7 @@ export async function savePhotocopyReading(opts: {
   await syncDailyAccountFromReadings({
     docId: opts.todayDateYmd,
     fsAmount: amount,
+    user: undefined,
   });
 
   done({
@@ -412,6 +432,7 @@ export async function saveStampReading(opts: {
   await syncDailyAccountFromReadings({
     docId: opts.todayDateYmd,
     sdAmount: totalAmount,
+    user: undefined,
   });
 
   done({

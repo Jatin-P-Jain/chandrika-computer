@@ -3,14 +3,27 @@
 import { fireStore } from "@/firebase/server";
 import { toMillis } from "@/lib/server-utils";
 
-
 export type AccountDoc = {
   id: string;
   name: string;
   createdAt: Date; // stored in Firestore as Timestamp
+  mentions?: string[]; // daily-account IDs where this account was tagged
+  mentionsCount?: number; // total count of daily-accounts referencing this account
 };
 
 const ACCOUNTS_COL = "accounts";
+
+/** "Abc XYZ 123" → "abc-xyz-123" */
+function normalizeAccountId(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `${slug}-${Date.now()}`;
+}
 
 export async function listAccounts(): Promise<{ data: AccountDoc[] }> {
   const snap = await fireStore
@@ -65,11 +78,13 @@ export async function createAccount(
     };
   }
 
-  // Create new account
-  const ref = await fireStore.collection(ACCOUNTS_COL).add({
+  // Create new account with normalized slug ID
+  const normalizedId = normalizeAccountId(trimmed);
+  const ref = fireStore.collection(ACCOUNTS_COL).doc(normalizedId);
+  await ref.set({
     name: trimmed,
     createdAt: now,
   });
 
-  return { data: { id: ref.id, name: trimmed, createdAt: now } };
+  return { data: { id: normalizedId, name: trimmed, createdAt: now } };
 }

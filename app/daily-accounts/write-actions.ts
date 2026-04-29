@@ -16,8 +16,9 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { DailyAccountInput } from "@/lib/daily-accounts/types";
 import { ensureAdminAccess } from "@/lib/daily-accounts/policy";
 import { validateDailyAccountInput } from "@/lib/daily-accounts/validation";
-import { DailyAccount } from "@/types/daily-account";
+import { DailyAccount, AuditEvent } from "@/types/daily-account";
 import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
+import { FieldValue } from "@/firebase/server";
 
 export const createDailyAccountItem = async (
   data: DailyAccountInput,
@@ -63,10 +64,18 @@ export const createDailyAccountItem = async (
       const allTags = extractAllTags(validation.data);
       const totals = calculateTotals(validation.data);
 
-      // Extract notes before saving (they go to subcollection)
-      const { notes, ...accountData } = validation.data as any;
+      const accountData = validation.data;
 
-      txn.set(docRef, {
+      const auditEvent: AuditEvent = {
+        type: "account_created",
+        action: "Created",
+        entity: "account",
+        user,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Initialize auditTrail array
+      const baseData = {
         ...accountData,
         id: documentId,
         createdBy: user,
@@ -77,8 +86,11 @@ export const createDailyAccountItem = async (
         totalEarnings: totals.earnings,
         totalSpends: totals.spends,
         lastCalculated: Timestamp.now(),
+        auditTrail: [auditEvent],
         // notes array is NOT stored here - they go to subcollection
-      });
+      };
+
+      txn.set(docRef, baseData);
     });
 
     done({
@@ -147,8 +159,15 @@ export const updateDailyAccountItem = async (
       const allTags = extractAllTags(validation.data);
       const totals = calculateTotals(validation.data);
 
-      // Extract notes before saving (they go to subcollection, not to document)
-      const { notes, ...accountData } = validation.data as any;
+      const accountData = validation.data;
+
+      const auditEvent: AuditEvent = {
+        type: "account_updated",
+        action: "Updated",
+        entity: "account",
+        user,
+        timestamp: new Date().toISOString(),
+      };
 
       txn.update(docRef, {
         ...accountData,
@@ -158,6 +177,7 @@ export const updateDailyAccountItem = async (
         allTags,
         totalEarnings: totals.earnings,
         totalSpends: totals.spends,
+        auditTrail: FieldValue.arrayUnion(auditEvent),
         // notes array is NOT stored here - they remain in subcollection
       });
     });

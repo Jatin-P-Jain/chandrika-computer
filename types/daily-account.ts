@@ -1,6 +1,22 @@
 import { UserData } from "./user";
 import { NoteItem } from "./daily-notes";
 
+export type AuditEventType =
+  | "reading_saved"
+  | "reading_updated"
+  | "notes_saved"
+  | "notes_updated"
+  | "account_created"
+  | "account_updated";
+
+export type AuditEvent = {
+  type: AuditEventType;
+  action: string; // "Saved", "Updated", etc.
+  entity: "reading" | "notes" | "account";
+  user: UserData | null;
+  timestamp: string;
+};
+
 export type DailyAccountLineItem = {
   label: string;
   amount: number;
@@ -30,8 +46,6 @@ export type DailyAccount = {
   creditItems: AccountAttachedLineItem[];
   debitItems: AccountAttachedLineItem[];
 
-  accountsCache?: Record<string, { name: string }>; // NEW: Cache for account names to avoid extra lookups
-
   // NEW:
   notes: NoteItem[];
 
@@ -45,4 +59,5 @@ export type DailyAccount = {
   updated?: string;
   lastNotedAt?: string;
   lastReadingAt?: string;
+  auditTrail?: AuditEvent[]; // Timeline of all changes to readings, notes, and account
 };

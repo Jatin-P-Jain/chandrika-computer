@@ -70,6 +70,7 @@ if (!currentApps.length) {
 }
 
 export { fireStore, auth, storage, messaging };
+export const FieldValue = admin.firestore.FieldValue;
 
 export const getTotalPages = async (
   firestoreQuery: FirebaseFirestore.Query<

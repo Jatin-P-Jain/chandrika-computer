@@ -7,6 +7,8 @@ import { Timestamp } from "firebase-admin/firestore";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { ensureAdminAccess } from "@/lib/daily-accounts/policy";
 import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
+import { AuditEvent } from "@/types/daily-account";
+import { FieldValue } from "@/firebase/server";
 
 /**
  * Add a new note to a daily account (subcollection).
@@ -73,17 +75,42 @@ export const addNoteItem = async (
     if (accountSnap.exists) {
       // Update with merge: preserve existing data and add/update required fields
       const existingData = accountSnap.data();
+
+      // Create audit event for note save/update
+      const auditEvent: AuditEvent = {
+        type: "notes_saved",
+        action: "Saved",
+        entity: "notes",
+        user,
+        timestamp: new Date().toISOString(),
+      };
+
       await accountRef.set(
         {
           ...existingData,
           ...requiredFields,
           created: existingData?.created || requiredFields.created,
+          auditTrail: FieldValue.arrayUnion(auditEvent),
         },
         { merge: true }
       );
     } else {
       // Create new document with all required fields
-      await accountRef.set(requiredFields, { merge: true });
+      const auditEvent: AuditEvent = {
+        type: "notes_saved",
+        action: "Saved",
+        entity: "notes",
+        user,
+        timestamp: new Date().toISOString(),
+      };
+
+      await accountRef.set(
+        {
+          ...requiredFields,
+          auditTrail: FieldValue.arrayUnion(auditEvent),
+        },
+        { merge: true }
+      );
     }
 
     done({ success: true, docsRead: 0, docsWritten: 1, details: { docId } });

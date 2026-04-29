@@ -12,7 +12,7 @@ import { DailyFormValues } from "@/schema/daily-page.schema";
 import { DailyAccount } from "@/types/daily-account";
 import { formatINR, sumAmounts } from "@/lib/utils";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
-import CreatedOrUpdated from "../created-or-updated";
+import AuditTrail from "../audit-trail";
 import { PencilIcon } from "lucide-react";
 import type { NoteItem } from "@/types/daily-notes";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
@@ -195,7 +195,6 @@ export default function DailyPageReadOnly({
     dailySpends: [],
     creditItems: [],
     debitItems: [],
-    accountsCache: {},
     totalCashCollected: 0,
   };
 
@@ -353,12 +352,7 @@ export default function DailyPageReadOnly({
                 </span>
               </div>
               <div className="flex justify-end items-center w-full bg-muted p-1.5 rounded-md">
-                <CreatedOrUpdated
-                  createdBy={dailyItemData?.createdBy}
-                  updatedBy={dailyItemData?.updatedBy}
-                  created={dailyItemData?.created}
-                  updated={dailyItemData?.updated}
-                />
+                <AuditTrail auditTrail={dailyItemData?.auditTrail} />
               </div>
             </div>
 

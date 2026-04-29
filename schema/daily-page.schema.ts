@@ -33,8 +33,6 @@ export const makeDailySchema = (t?: TFunction) => {
     creditItems: z.array(accountLineItemSchema),
     debitItems: z.array(accountLineItemSchema),
 
-    accountsCache: z.record(z.string(), z.string()).optional(), // { [accountId]: accountName }
-
     totalCashCollected: money,
   });
 };

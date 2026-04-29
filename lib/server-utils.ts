@@ -41,6 +41,23 @@ type NoteItem = {
   updatedAt: Date;
 };
 
+type AuditEntity = "reading" | "notes" | "account";
+type AuditType =
+  | "reading_saved"
+  | "reading_updated"
+  | "notes_saved"
+  | "notes_updated"
+  | "account_created"
+  | "account_updated";
+
+type AuditEventShape = {
+  type: AuditType;
+  action: string;
+  entity: AuditEntity;
+  user: UserShape | null;
+  timestamp: string;
+};
+
 function isNoteStatus(v: unknown): v is NoteItemStatus {
   return v === "open" || v === "done" || v === "dismissed";
 }
@@ -67,6 +84,49 @@ function toNoteItem(v: unknown): NoteItem {
 function toNoteItems(arr: unknown): NoteItem[] {
   if (!Array.isArray(arr)) return [];
   return arr.map(toNoteItem);
+}
+
+function isAuditEntity(v: unknown): v is AuditEntity {
+  return v === "reading" || v === "notes" || v === "account";
+}
+
+function isAuditType(v: unknown): v is AuditType {
+  return (
+    v === "reading_saved" ||
+    v === "reading_updated" ||
+    v === "notes_saved" ||
+    v === "notes_updated" ||
+    v === "account_created" ||
+    v === "account_updated"
+  );
+}
+
+function toAuditEvent(v: unknown): AuditEventShape | null {
+  const r = getObj(v);
+
+  const typeRaw = getNested(r, "type");
+  const entityRaw = getNested(r, "entity");
+  const action = toStringSafe(getNested(r, "action"));
+  const timestamp = toStringSafe(getNested(r, "timestamp"));
+  const userRaw = getNested(r, "user");
+
+  if (!isAuditType(typeRaw) || !isAuditEntity(entityRaw)) return null;
+  if (!action || !timestamp) return null;
+
+  return {
+    type: typeRaw,
+    action,
+    entity: entityRaw,
+    user: userRaw == null ? null : toUser(userRaw),
+    timestamp,
+  };
+}
+
+function toAuditTrail(arr: unknown): AuditEventShape[] {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map(toAuditEvent)
+    .filter((event): event is AuditEventShape => event !== null);
 }
 
 function isRecord(v: unknown): v is UnknownRecord {
@@ -249,6 +309,7 @@ export const normalizeDailyAccount = (raw: unknown): DailyAccount => {
 
     createdBy: toUser(getNested(r, "createdBy")),
     updatedBy: toUser(getNested(r, "updatedBy")),
+    auditTrail: toAuditTrail(getNested(r, "auditTrail")),
   };
 };
 

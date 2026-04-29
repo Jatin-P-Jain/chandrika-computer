@@ -103,6 +103,64 @@ export const updateAccountUpdaterIndex = onDocumentWritten(
   }
 );
 
+function extractAccountIds(data) {
+  const ids = new Set();
+  if (Array.isArray(data?.creditItems)) {
+    data.creditItems.forEach((item) => {
+      if (item.accountId) ids.add(item.accountId);
+    });
+  }
+  if (Array.isArray(data?.debitItems)) {
+    data.debitItems.forEach((item) => {
+      if (item.accountId) ids.add(item.accountId);
+    });
+  }
+  return [...ids];
+}
+
+export const updateAccountMentionsIndex = onDocumentWritten(
+  "daily-accounts/{docId}",
+  async (event) => {
+    const { before, after } = event.data;
+    const docId = event.params.docId;
+
+    const newData = after.exists ? after.data() : null;
+    const oldData = before.exists ? before.data() : null;
+
+    const newIds = extractAccountIds(newData);
+    const oldIds = extractAccountIds(oldData);
+
+    const added = newIds.filter((id) => !oldIds.includes(id));
+    const removed = oldIds.filter((id) => !newIds.includes(id));
+
+    const batch = db.batch();
+
+    added.forEach((accountId) => {
+      batch.set(
+        db.collection("accounts").doc(accountId),
+        {
+          mentions: FieldValue.arrayUnion(docId),
+          mentionsCount: FieldValue.increment(1),
+        },
+        { merge: true }
+      );
+    });
+
+    removed.forEach((accountId) => {
+      batch.set(
+        db.collection("accounts").doc(accountId),
+        {
+          mentions: FieldValue.arrayRemove(docId),
+          mentionsCount: FieldValue.increment(-1),
+        },
+        { merge: true }
+      );
+    });
+
+    await batch.commit().catch(() => {});
+  }
+);
+
 function extractAllTags(data) {
   const tags = [];
 

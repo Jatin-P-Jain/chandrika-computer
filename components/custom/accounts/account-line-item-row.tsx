@@ -28,19 +28,12 @@ type Props = {
   disabled?: boolean;
 };
 
-type AccountsCache = Record<string, string>;
-
 export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
   const tCommon = useTranslations("Common");
-  const { control, setValue } = useFormContext<DailyFormValues>();
+  const { control } = useFormContext<DailyFormValues>();
 
   // Watch this row live (so view mode always shows latest values)
   const row = useWatch({ control, name: namePrefix });
-
-  // Watch cache map: { [accountId]: accountName }
-  const accountsCache = useWatch({ control, name: "accountsCache" }) as
-    | AccountsCache
-    | undefined;
 
   const accountId =
     row && typeof row === "object" && "accountId" in row
@@ -55,8 +48,7 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
   const amount =
     row && typeof row === "object" && "amount" in row ? row.amount : 0;
 
-  const accountName =
-    (accountsCache && accountId && accountsCache[accountId]) || "";
+  const [accountName, setAccountName] = React.useState("");
 
   const [isEditing, setIsEditing] = React.useState(true);
 
@@ -101,20 +93,9 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
                       value={field.value || ""}
                       onChange={field.onChange}
                       disabled={disabled}
-                      /**
-                       * IMPORTANT: this is how we get account name without server calls.
-                       * AccountComboBox should call this when it knows the selected account's name.
-                       */
                       onAccountMeta={(meta) => {
                         if (!meta?.id || !meta?.name) return;
-                        setValue(
-                          "accountsCache",
-                          {
-                            ...(accountsCache ?? {}),
-                            [meta.id]: meta.name,
-                          },
-                          { shouldDirty: false },
-                        );
+                        setAccountName(meta.name);
                       }}
                     />
                   </FormControl>

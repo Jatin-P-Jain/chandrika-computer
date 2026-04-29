@@ -10,7 +10,6 @@ import {
   CircleX,
 } from "lucide-react";
 import { DateDisplay } from "../date-display";
-import CreatedOrUpdated from "../created-or-updated";
 import { useTranslations } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
@@ -33,10 +32,6 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
     totalSpends,
     totalCashCollected,
     allTags,
-    created,
-    updated,
-    createdBy,
-    updatedBy,
   } = dailyAccount as DailyAccount;
 
   const hasFinancialSummary =
@@ -158,12 +153,6 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                     </span>
                   )}
                 </div>
-                <CreatedOrUpdated
-                  createdBy={createdBy}
-                  updatedBy={updatedBy}
-                  created={created}
-                  updated={updated}
-                />
               </div>
             </div>
           </div>

@@ -186,7 +186,6 @@ export default function DailyPageEditor({
       dailySpends: [],
       creditItems: [],
       debitItems: [],
-      accountsCache: {},
       totalCashCollected: 0,
     },
     mode: "onChange",

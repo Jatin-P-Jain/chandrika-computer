@@ -39,9 +39,9 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
     if (data) {
       const hasRealAccountOwner = Boolean(data.createdBy?.uid);
       mode = hasRealAccountOwner
-        ? modeParam === "view"
-          ? "view"
-          : "edit"
+        ? modeParam === "edit"
+          ? "edit"
+          : "view"
         : "create";
       initialData = data as unknown as DailyFormValues;
       dailyItemData = data;

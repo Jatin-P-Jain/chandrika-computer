@@ -9,7 +9,6 @@ export type DailyAccountInput = Omit<
   | "updatedBy"
   | "notes"
   | "allTags"
-  | "accountsCache"
   | "totalEarnings"
   | "totalSpends"
 >;

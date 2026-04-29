@@ -53,6 +53,11 @@ export function AccountComboBox({
     [accounts, value],
   );
 
+  React.useEffect(() => {
+    if (!selected) return;
+    onAccountMeta?.({ id: selected.id, name: selected.name });
+  }, [selected, onAccountMeta]);
+
   const refresh = React.useCallback(async () => {
     setLoading(true);
     try {
