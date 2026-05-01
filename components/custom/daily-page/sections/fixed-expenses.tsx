@@ -34,6 +34,7 @@ export function FixedExpensesSection({
   totalFixed,
   totalBarClassName,
   readings,
+  onPersist,
 }: {
   readOnly: boolean;
   totalFixed: number;
@@ -42,6 +43,7 @@ export function FixedExpensesSection({
     photocopy: PhotocopyReadingDoc | null;
     stamp: StampReadingDoc | null;
   };
+  onPersist?: () => void | Promise<void>;
 }) {
   const tDailyAccount = useTranslations("DailyAccount");
   const tReadings = useTranslations("Readings");
@@ -261,6 +263,7 @@ export function FixedExpensesSection({
                       <AmountInput
                         value={Number(field.value) || 0}
                         onChange={(n) => field.onChange(n)}
+                        onBlur={onPersist}
                         inputClassName={textHeadCls}
                       />
                     )}
@@ -285,6 +288,7 @@ export function FixedExpensesSection({
                   key={f.id}
                   namePrefix={`fixed.otherFixedExpenses.${idx}`}
                   onRemove={() => fa.remove(idx)}
+                  onPersist={onPersist}
                 />
               ),
             )}

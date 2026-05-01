@@ -11,7 +11,7 @@ type Props = {
 const DailyAccounts = async ({ searchParams }: Props) => {
   const searchParamsValues = await searchParams;
   return (
-    <div className="flex flex-col justify-center items-center w-full gap-2 ">
+    <div className="flex flex-col justify-center items-center w-full gap-2 mx-auto">
       <DailyAccountListHeader />
       <MobileFilters />
       <DailyAccountsList searchParamsValues={searchParamsValues} />

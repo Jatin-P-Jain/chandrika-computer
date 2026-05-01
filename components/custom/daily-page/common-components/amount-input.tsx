@@ -9,6 +9,7 @@ import { formatINR, parseINR } from "@/lib/utils";
 type AmountInputProps = {
   value: number;
   onChange: (next: number) => void;
+  onBlur?: () => void | Promise<void>;
   placeholder?: string;
   className?: string;
   inputClassName?: string;
@@ -20,6 +21,7 @@ type AmountInputProps = {
 export function AmountInput({
   value,
   onChange,
+  onBlur,
   placeholder = "0",
   className,
   inputClassName,
@@ -66,24 +68,49 @@ export function AmountInput({
         onFocus={() => setHasInteracted(true)}
         onChange={(e) => {
           setHasInteracted(true);
-          const nextRaw = e.target.value;
-          setRaw(nextRaw);
-          // If user deletes everything, show placeholder again and keep numeric value as 0.
+          const input = e.target;
+          const nextRaw = input.value;
+          const cursorPos = input.selectionStart ?? nextRaw.length;
+
+          // Count digits before cursor to restore cursor position after formatting.
+          const digitsBeforeCursor = nextRaw
+            .slice(0, cursorPos)
+            .replace(/[^0-9]/g, "").length;
+
           if (nextRaw.trim() === "") {
+            setRaw("");
             onChange(0);
             return;
           }
+
           const nextNumber = parseINR(nextRaw);
+          if (nextNumber === 0) {
+            // Preserve what user typed (e.g. leading zeros) but report 0.
+            setRaw(nextRaw.replace(/[^0-9]/g, ""));
+            onChange(0);
+            return;
+          }
+
+          const formatted = formatINR(nextNumber, false, false);
+          setRaw(formatted);
           onChange(nextNumber);
+
+          // Restore cursor: advance past `digitsBeforeCursor` digits in the formatted string.
+          requestAnimationFrame(() => {
+            let seen = 0;
+            let newCursor = formatted.length;
+            for (let i = 0; i < formatted.length; i++) {
+              if (/[0-9]/.test(formatted[i])) seen++;
+              if (seen === digitsBeforeCursor) {
+                newCursor = i + 1;
+                break;
+              }
+            }
+            input.setSelectionRange(newCursor, newCursor);
+          });
         }}
         onBlur={() => {
-          // On blur, reformat the value
-          const nextNumber = parseINR(raw);
-          if (Number(nextNumber) === 0) {
-            setRaw("");
-          } else {
-            setRaw(formatINR(nextNumber, false, false));
-          }
+          void onBlur?.();
         }}
       />
 

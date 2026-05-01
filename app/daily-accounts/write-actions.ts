@@ -20,6 +20,112 @@ import { DailyAccount, AuditEvent } from "@/types/daily-account";
 import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
 import { FieldValue } from "@/firebase/server";
 
+function getEmptyDailyAccountInput(): DailyAccountInput {
+  return {
+    fixed: { sd: 0, sc: 0, fs: 0, flexnCard: 0, otherFixedExpenses: [] },
+    earnings: { netIncome: 0, otherIncomes: [] },
+    businessExpenses: [],
+    dailySpends: [],
+    creditItems: [],
+    debitItems: [],
+    totalCashCollected: 0,
+  };
+}
+
+function toDailyAccountInput(account?: DailyAccount | null): DailyAccountInput {
+  if (!account) return getEmptyDailyAccountInput();
+
+  return {
+    fixed: account.fixed,
+    earnings: account.earnings,
+    businessExpenses: account.businessExpenses,
+    dailySpends: account.dailySpends,
+    creditItems: account.creditItems,
+    debitItems: account.debitItems,
+    totalCashCollected: account.totalCashCollected,
+  };
+}
+
+export const saveDailyAccountDraft = async (
+  docId: string,
+  patch: Partial<DailyAccountInput>,
+  user: UserData | null,
+  authtoken: string
+) => {
+  try {
+    const access = await ensureAdminAccess(user, authtoken);
+    if (!access.ok) {
+      return { error: true, message: access.message };
+    }
+
+    const docRef = fireStore.collection("daily-accounts").doc(docId);
+    const done = startFirestoreMetric({
+      source: "server",
+      operation: "saveDailyAccountDraft",
+      collection: "daily-accounts",
+    });
+
+    await fireStore.runTransaction(async (txn) => {
+      const existingSnap = await txn.get(docRef);
+      const existingNormalized = existingSnap.exists
+        ? normalizeDailyAccount(existingSnap.data())
+        : undefined;
+      const merged = deepMerge<DailyAccountInput>(
+        toDailyAccountInput(existingNormalized),
+        patch
+      );
+      const allTags = extractAllTags(merged);
+      const totals = calculateTotals(merged);
+      const currentStatus = existingNormalized?.status;
+      const nextStatus =
+        currentStatus === "saved" || currentStatus === "edited"
+          ? "edited"
+          : "draft";
+
+      const auditEvent: AuditEvent = {
+        type: "account_updated",
+        action: existingSnap.exists ? "Updated" : "Saved",
+        entity: "account",
+        user,
+        timestamp: new Date().toISOString(),
+      };
+
+      txn.set(
+        docRef,
+        {
+          ...merged,
+          id: docId,
+          status: nextStatus,
+          created: existingSnap.get("created") ?? Timestamp.now(),
+          createdBy: existingSnap.get("createdBy") ?? null,
+          updated: Timestamp.now(),
+          updatedBy: user,
+          allTags,
+          totalEarnings: totals.earnings,
+          totalSpends: totals.spends,
+          auditTrail: FieldValue.arrayUnion(auditEvent),
+        },
+        { merge: true }
+      );
+    });
+
+    done({ success: true, docsRead: 1, docsWritten: 1, details: { docId } });
+
+    revalidatePath(`/daily-accounts/${docId}`);
+    revalidateTag("daily-account-list", "max");
+    revalidateTag("daily-account-latest", "max");
+    revalidateTag(`daily-account:${docId}`, "max");
+    revalidateTag("daily-account-filters", "max");
+
+    return { docId };
+  } catch (e: unknown) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : "An unknown error occurred",
+    };
+  }
+};
+
 export const createDailyAccountItem = async (
   data: DailyAccountInput,
   user: UserData | null,
@@ -53,6 +159,7 @@ export const createDailyAccountItem = async (
         | {
             created?: unknown;
             createdBy?: { uid?: string | null } | null;
+            auditTrail?: unknown[];
           }
         | undefined;
       const hasRealAccountOwner = Boolean(existingData?.createdBy?.uid);
@@ -74,10 +181,15 @@ export const createDailyAccountItem = async (
         timestamp: new Date().toISOString(),
       };
 
+      const existingAuditTrail = Array.isArray(existingData?.auditTrail)
+        ? existingData.auditTrail
+        : [];
+
       // Initialize auditTrail array
       const baseData = {
         ...accountData,
         id: documentId,
+        status: "saved" as const,
         createdBy: user,
         created: existingData?.created ?? Timestamp.now(),
         updatedBy: user,
@@ -86,7 +198,7 @@ export const createDailyAccountItem = async (
         totalEarnings: totals.earnings,
         totalSpends: totals.spends,
         lastCalculated: Timestamp.now(),
-        auditTrail: [auditEvent],
+        auditTrail: [...existingAuditTrail, auditEvent],
         // notes array is NOT stored here - they go to subcollection
       };
 
@@ -172,6 +284,7 @@ export const updateDailyAccountItem = async (
       txn.update(docRef, {
         ...accountData,
         id: docId,
+        status: "edited",
         updated: Timestamp.now(),
         updatedBy: user,
         allTags,

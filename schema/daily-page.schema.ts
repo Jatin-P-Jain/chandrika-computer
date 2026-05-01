@@ -13,6 +13,7 @@ export const makeDailySchema = (t?: TFunction) => {
 
   const accountLineItemSchema = lineItemSchema.extend({
     accountId: z.string().min(1, t ? t("Required") : "Errors.required"),
+    accountName: z.string().optional(),
   });
 
   return z.object({

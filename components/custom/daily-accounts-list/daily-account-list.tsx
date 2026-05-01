@@ -186,7 +186,7 @@ export default function DailyAccountsList({
 
   // Main content
   return (
-    <div className="relative mx-auto flex flex-col w-full max-w-7xl overflow-auto no-scrollbar rounded-md">
+    <div className="relative mx-auto flex flex-col w-full max-w-4xl overflow-auto no-scrollbar rounded-md">
       <p
         className={`text-muted-foreground text-center text-xs py-1 ${textSmCls}`}
       >
@@ -194,7 +194,7 @@ export default function DailyAccountsList({
       </p>
 
       <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-140 max-h-135 overflow-auto no-scrollbar pb-2 md:pb-0">
-        <div className="flex w-full flex-col p-2 gap-3 lg:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {data.map((dailyAccount: DailyAccount, index: number) => (
             <DailyAccountCard
               key={dailyAccount.id || index}

@@ -26,11 +26,19 @@ type Props = {
   namePrefix: RowPrefix;
   onRemove: () => void;
   disabled?: boolean;
+  onPersist?: () => void | Promise<void>;
+  initialEditing?: boolean;
 };
 
-export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
+export function AccountLineItemRow({
+  namePrefix,
+  onRemove,
+  disabled,
+  onPersist,
+  initialEditing = false,
+}: Props) {
   const tCommon = useTranslations("Common");
-  const { control } = useFormContext<DailyFormValues>();
+  const { control, setValue } = useFormContext<DailyFormValues>();
 
   // Watch this row live (so view mode always shows latest values)
   const row = useWatch({ control, name: namePrefix });
@@ -38,6 +46,10 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
   const accountId =
     row && typeof row === "object" && "accountId" in row
       ? String(row.accountId ?? "")
+      : "";
+  const accountName =
+    row && typeof row === "object" && "accountName" in row
+      ? String(row.accountName ?? "")
       : "";
 
   const label =
@@ -48,9 +60,7 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
   const amount =
     row && typeof row === "object" && "amount" in row ? row.amount : 0;
 
-  const [accountName, setAccountName] = React.useState("");
-
-  const [isEditing, setIsEditing] = React.useState(true);
+  const [isEditing, setIsEditing] = React.useState(initialEditing);
 
   const isRowValid =
     accountId.trim().length > 0 &&
@@ -61,21 +71,21 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
 
   return (
     <div
-      className="rounded-md border p-3 shadow-sm cursor-pointer"
+      className="rounded-md border p-2 shadow-sm cursor-pointer"
       onClick={() => {
         if (!isEditing && !disabled) setIsEditing(true);
       }}
     >
       {/* VIEW MODE (single line) */}
       {!isEditing ? (
-        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 justify-between">
-          <Badge variant={"secondary"} className="text-base">
+        <div className="flex flex-row items-center gap-2 justify-between">
+          <Badge variant={"secondary"} className="text-sm font-medium">
             {accountName || accountId || "—"}
           </Badge>
 
-          <div className=" w-full text-right">{label || "—"}</div>
+          <div className=" w-full text-right text-sm">{label || "—"}</div>
 
-          <div className="text-base font-semibold md:text-right">
+          <div className="text-sm font-semibold text-right">
             {formatINR(amount)}
           </div>
         </div>
@@ -95,7 +105,14 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
                       disabled={disabled}
                       onAccountMeta={(meta) => {
                         if (!meta?.id || !meta?.name) return;
-                        setAccountName(meta.name);
+                        if (accountName === meta.name) return;
+                        setValue(
+                          `${namePrefix}.accountName` as Parameters<
+                            typeof setValue
+                          >[0],
+                          meta.name,
+                          { shouldDirty: false, shouldTouch: false },
+                        );
                       }}
                     />
                   </FormControl>
@@ -108,10 +125,11 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
               type="button"
               variant="secondary"
               size="sm"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
                 if (!isRowValid) return;
                 setIsEditing(false);
+                await onPersist?.();
               }}
               disabled={disabled || !isRowValid}
               className="w-auto border-green-700 border text-green-700 bg-transparent"
@@ -123,9 +141,10 @@ export function AccountLineItemRow({ namePrefix, onRemove, disabled }: Props) {
               type="button"
               variant="secondary"
               size="sm"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
                 onRemove();
+                await onPersist?.();
               }}
               disabled={disabled}
               className="w-auto border-red-700 border text-red-700 bg-transparent"

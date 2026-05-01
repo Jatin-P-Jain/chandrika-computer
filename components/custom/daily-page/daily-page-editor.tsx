@@ -27,6 +27,7 @@ import { useAuth } from "@/context/useAuth";
 import { toast } from "sonner";
 import {
   createDailyAccountItem,
+  saveDailyAccountDraft,
   updateDailyAccountItem,
 } from "@/app/daily-accounts/write-actions";
 import { DailyAccount } from "@/types/daily-account";
@@ -223,7 +224,10 @@ export default function DailyPageEditor({
 
   const { user, getUserToken } = useAuth();
   const { replace, refresh } = useSafeRouter();
-  const [renderForm, setRenderForm] = useState(updateMode || areReadingsDone);
+  const hasExistingDoc = Boolean(dailyItemData?.id);
+  const [renderForm, setRenderForm] = useState(
+    updateMode || areReadingsDone || hasExistingDoc,
+  );
 
   useEffect(() => {
     form.setValue("earnings.netIncome", netForDay, {
@@ -231,6 +235,26 @@ export default function DailyPageEditor({
       shouldDirty: true,
     });
   }, [netForDay, form]);
+
+  const persistDraft = async () => {
+    const token = await getUserToken();
+    if (!token) return;
+
+    const result = await saveDailyAccountDraft(
+      docId,
+      form.getValues(),
+      user,
+      token,
+    );
+    if (result.error || result.success === false) {
+      toast.error("Error!", {
+        description:
+          ("message" in result && result.message) ||
+          result.error ||
+          "Failed to save changes",
+      });
+    }
+  };
 
   const onSubmit = async (data: DailyFormValues) => {
     const token = await getUserToken();
@@ -259,7 +283,9 @@ export default function DailyPageEditor({
         return;
       }
 
-      toast.success("Success!", { description: tToast("DailyAccountUpdated") });
+      toast.success("Success!", {
+        description: tToast("DailyAccountFinalized"),
+      });
       replace(`/daily-accounts/${docId}?mode=view`, { scroll: false });
       return;
     }
@@ -280,13 +306,22 @@ export default function DailyPageEditor({
     replace(`/daily-accounts/${saveResponse.docId}?mode=view`, {
       scroll: false,
     });
-    toast.success("Success!", { description: tToast("DailyAccountCreated") });
+    toast.success("Success!", {
+      description: tToast("DailyAccountCompleted"),
+    });
   };
 
   const isFormReady = form.formState.isSubmitted || form.formState.isDirty;
   const hasPositiveNetIncome = netForDay > 0;
   const canSubmit = isFormReady && (!updateMode || hasPositiveNetIncome);
   const isSubmitting = form.formState.isSubmitting;
+  const primaryActionLabel = updateMode
+    ? isSubmitting
+      ? tCommon("Completing")
+      : tDailyAccount("FinalizeDailyAccount")
+    : isSubmitting
+      ? tCommon("Completing")
+      : tDailyAccount("CompleteDailyAccount");
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     void form.handleSubmit(
@@ -483,6 +518,7 @@ export default function DailyPageEditor({
                   }
                   readings={readings}
                   readOnly={false}
+                  onPersist={persistDraft}
                 />
 
                 <FieldArraySection
@@ -495,6 +531,7 @@ export default function DailyPageEditor({
                   showNet={true}
                   netForDay={netForDay}
                   readOnly={false}
+                  onPersist={persistDraft}
                 />
 
                 <FieldArraySection
@@ -505,6 +542,7 @@ export default function DailyPageEditor({
                   totalValue={formatINR(totalBusiness)}
                   totalBarClassName="p-2"
                   readOnly={false}
+                  onPersist={persistDraft}
                 />
 
                 <FieldArraySection
@@ -515,12 +553,14 @@ export default function DailyPageEditor({
                   totalValue={formatINR(totalSpends)}
                   totalBarClassName="p-2"
                   readOnly={false}
+                  onPersist={persistDraft}
                 />
               </Accordion>
-              <div ref={creditDebitAnchorRef}>
+              <div ref={creditDebitAnchorRef} className="border rounded-md md:mt-4">
                 <CreditDebitCardsSection
                   ref={creditDebitRef}
                   disabled={false}
+                  onPersist={persistDraft}
                 />
               </div>
 
@@ -540,6 +580,7 @@ export default function DailyPageEditor({
                           <AmountInput
                             value={Number(field.value) || 0}
                             onChange={(n) => field.onChange(n)}
+                            onBlur={persistDraft}
                             inputClassName="h-full text-xl! font-semibold w-full border-0 shadow-none"
                           />
                         </FormControl>
@@ -555,15 +596,7 @@ export default function DailyPageEditor({
                     type="submit"
                     className="flex gap-2 font-semibold text-sm flex-1 justify-center items-center"
                   >
-                    <span>
-                      {updateMode
-                        ? isSubmitting
-                          ? tCommon("Updating")
-                          : tCommon("Update")
-                        : isSubmitting
-                          ? tCommon("Saving")
-                          : tCommon("Save")}
-                    </span>
+                    <span>{primaryActionLabel}</span>
                     {updateMode ? (
                       isSubmitting ? (
                         <Loader2 className="animate-spin size-4" />
@@ -613,7 +646,7 @@ export default function DailyPageEditor({
         }
         items={reviewItems}
         cancelText={tCommon("Cancel")}
-        confirmText={tCommon("ContinueAndSave")}
+        confirmText={tCommon("ContinueAndComplete")}
         hideConfirm={reviewMode === "BLOCK_READINGS"}
         onConfirm={async () => {
           setReviewOpen(false);

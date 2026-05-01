@@ -31,9 +31,11 @@ type RowPrefix =
 export function LineItemRow({
   namePrefix,
   onRemove,
+  onPersist,
 }: {
   namePrefix: RowPrefix;
   onRemove: () => void;
+  onPersist?: () => void | Promise<void>;
 }) {
   const tCommon = useTranslations("Common");
   const { control, getValues } = useFormContext<DailyFormValues>();
@@ -179,7 +181,11 @@ export function LineItemRow({
               type="button"
               variant="outline"
               size="icon"
-              onClick={onRemove}
+              onClick={async (e) => {
+                e.stopPropagation();
+                onRemove();
+                await onPersist?.();
+              }}
               aria-label="Remove row"
               className="w-[45%] border-red-600 bg-red-100 text-red-700 hover:bg-red-200 hover:border-red-700"
             >
@@ -191,9 +197,10 @@ export function LineItemRow({
               variant="outline"
               size="icon"
               disabled={!isRowValid}
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
                 setIsEditing(false);
+                await onPersist?.();
               }}
               aria-label="Mark done"
               className={clsx(

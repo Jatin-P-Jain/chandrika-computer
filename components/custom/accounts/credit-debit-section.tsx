@@ -10,9 +10,11 @@ import { DailyFormValues } from "@/schema/daily-page.schema";
 import { AccountLineItemRow } from "./account-line-item-row";
 import { useLocale, useTranslations } from "next-intl";
 import clsx from "clsx";
+import { Separator } from "@/components/ui/separator";
 
 type Props = {
   disabled?: boolean;
+  onPersist?: () => void | Promise<void>;
 };
 
 type LineItemLike = {
@@ -38,7 +40,7 @@ export type CreditDebitImperative = {
 export const CreditDebitCardsSection = React.forwardRef<
   CreditDebitImperative,
   Props
->(function CreditDebitCardsSection({ disabled }: Props, ref) {
+>(function CreditDebitCardsSection({ disabled, onPersist }: Props, ref) {
   const tCommon = useTranslations("Common");
   const tCreditsDebits = useTranslations("CreditsDebits");
 
@@ -50,6 +52,9 @@ export const CreditDebitCardsSection = React.forwardRef<
 
   const credit = useFieldArray({ control, name: "creditItems" });
   const debit = useFieldArray({ control, name: "debitItems" });
+
+  const [newCreditIdx, setNewCreditIdx] = React.useState<number | null>(null);
+  const [newDebitIdx, setNewDebitIdx] = React.useState<number | null>(null);
 
   const creditItems = useWatch({ control, name: "creditItems" });
   const debitItems = useWatch({ control, name: "debitItems" });
@@ -67,6 +72,7 @@ export const CreditDebitCardsSection = React.forwardRef<
   const disableAddDebit = !!disabled || isLastRowIncomplete(lastDebit);
 
   const addCredit = React.useCallback(() => {
+    setNewCreditIdx(credit.fields.length);
     credit.append(
       { accountId: "", label: "", amount: 0 },
       { shouldFocus: false },
@@ -74,6 +80,7 @@ export const CreditDebitCardsSection = React.forwardRef<
   }, [credit]);
 
   const addDebit = React.useCallback(() => {
+    setNewDebitIdx(debit.fields.length);
     debit.append(
       { accountId: "", label: "", amount: 0 },
       { shouldFocus: false },
@@ -86,8 +93,8 @@ export const CreditDebitCardsSection = React.forwardRef<
   ]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 md:gap-36 gap-4">
-      <Card className="p-3 gap-2 shadow-none h-fit border-0">
+    <div className="flex flex-col md:flex-row md:gap-12 flex-1">
+      <Card className="p-2 gap-2 shadow-none h-fit border-0 flex-1">
         <div className="flex items-center justify-between gap-2 border-b pb-2 rounded-md px-2">
           <div className={`text-sm font-semibold text-primary ${textHeadCls}`}>
             {tCreditsDebits("Credits")}
@@ -110,11 +117,15 @@ export const CreditDebitCardsSection = React.forwardRef<
             namePrefix={`creditItems.${index}`}
             disabled={disabled}
             onRemove={() => credit.remove(index)}
+            onPersist={onPersist}
+            initialEditing={index === newCreditIdx}
           />
         ))}
       </Card>
 
-      <Card className="p-3 gap-2 shadow-none h-fit border-0">
+      <Separator className="md:hidden" />
+
+      <Card className="p-3 gap-2 shadow-none h-fit border-0 flex-1">
         <div className="flex items-center justify-between gap-2 border-b pb-2 rounded-md px-2">
           <div className={`text-sm font-semibold text-primary ${textHeadCls}`}>
             {tCreditsDebits("Debits")}
@@ -137,6 +148,8 @@ export const CreditDebitCardsSection = React.forwardRef<
             namePrefix={`debitItems.${index}`}
             disabled={disabled}
             onRemove={() => debit.remove(index)}
+            onPersist={onPersist}
+            initialEditing={index === newDebitIdx}
           />
         ))}
       </Card>

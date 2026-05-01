@@ -56,6 +56,7 @@ async function syncDailyAccountFromReadings(opts: {
         created?: unknown;
         createdBy?: unknown;
         updatedBy?: unknown;
+        status?: "draft" | "saved" | "edited";
       }
     | undefined;
 
@@ -66,6 +67,7 @@ async function syncDailyAccountFromReadings(opts: {
 
   const requiredFields = {
     id: opts.docId,
+    status: existing?.status ?? "draft",
     fixed: {
       sd: nextSd,
       fs: nextFs,

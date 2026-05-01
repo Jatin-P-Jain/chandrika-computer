@@ -18,6 +18,7 @@ type DailyAccountLineItem = {
 
 type AccountAttachedLineItem = DailyAccountLineItem & {
   accountId: string;
+  accountName?: string;
 };
 
 type UserShape = {
@@ -57,6 +58,13 @@ type AuditEventShape = {
   user: UserShape | null;
   timestamp: string;
 };
+
+type DailyAccountStatus = "draft" | "saved" | "edited";
+
+function toDailyAccountStatus(v: unknown): DailyAccountStatus {
+  if (v === "draft" || v === "saved" || v === "edited") return v;
+  return "draft";
+}
 
 function isNoteStatus(v: unknown): v is NoteItemStatus {
   return v === "open" || v === "done" || v === "dismissed";
@@ -177,6 +185,7 @@ function toAccountAttachedLineItem(v: unknown): AccountAttachedLineItem {
   const r = getObj(v);
   return {
     accountId: toStringSafe(getNested(r, "accountId")),
+    accountName: toStringSafe(getNested(r, "accountName")),
     label: toStringSafe(getNested(r, "label")),
     amount: toNumber(getNested(r, "amount"), 0),
     tags: toStringArray(getNested(r, "tags")),
@@ -260,6 +269,14 @@ export const normalizeDailyAccount = (raw: unknown): DailyAccount => {
 
   const fixed = getObj(getNested(r, "fixed"));
   const earnings = getObj(getNested(r, "earnings"));
+  const createdBy = toUser(getNested(r, "createdBy"));
+  const statusRaw = getNested(r, "status");
+  const inferredStatus =
+    statusRaw == null
+      ? createdBy.uid
+        ? "saved"
+        : "draft"
+      : toDailyAccountStatus(statusRaw);
 
   const createdMillis = toMillis(getNested(r, "created"));
   const updatedMillis = toMillis(getNested(r, "updated"));
@@ -268,6 +285,7 @@ export const normalizeDailyAccount = (raw: unknown): DailyAccount => {
 
   return {
     id: toStringSafe(getNested(r, "id")),
+    status: inferredStatus,
 
     fixed: {
       sd: toNumber(getNested(fixed, "sd"), 0),
@@ -307,7 +325,7 @@ export const normalizeDailyAccount = (raw: unknown): DailyAccount => {
       ? new Date(lastReadingAtMillis).toISOString()
       : "",
 
-    createdBy: toUser(getNested(r, "createdBy")),
+    createdBy,
     updatedBy: toUser(getNested(r, "updatedBy")),
     auditTrail: toAuditTrail(getNested(r, "auditTrail")),
   };

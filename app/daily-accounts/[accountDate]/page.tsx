@@ -7,6 +7,7 @@ import { DailyAccountDayNavigator } from "@/components/custom/daily-account-day-
 import { DailyAccount } from "@/types/daily-account";
 import { getReadings } from "../readings-actions";
 import dynamic from "next/dynamic";
+import { deriveMode } from "@/lib/daily-accounts/mode";
 
 const DailyPage = dynamic(
   () => import("@/components/custom/daily-page/daily-page"),
@@ -37,12 +38,7 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
   if (docId) {
     const { data } = await getDailyAccountItem(docId);
     if (data) {
-      const hasRealAccountOwner = Boolean(data.createdBy?.uid);
-      mode = hasRealAccountOwner
-        ? modeParam === "edit"
-          ? "edit"
-          : "view"
-        : "create";
+      mode = deriveMode(data.status, modeParam);
       initialData = data as unknown as DailyFormValues;
       dailyItemData = data;
     }

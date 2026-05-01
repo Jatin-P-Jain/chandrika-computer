@@ -54,6 +54,8 @@ export const addNoteItem = async (
 
     const requiredFields = {
       id: docId,
+      status:
+        (accountSnap.data()?.status as "draft" | "saved" | "edited") ?? "draft",
       fixed: { sd: 0, sc: 0, fs: 0, flexnCard: 0, otherFixedExpenses: [] },
       earnings: { netIncome: 0, otherIncomes: [] },
       businessExpenses: [],

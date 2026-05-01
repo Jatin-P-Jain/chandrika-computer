@@ -5,6 +5,7 @@ import { DailyAccount } from "@/types/daily-account";
 import { formatINR } from "@/lib/utils";
 import {
   BookOpenCheck,
+  CalendarFold,
   ChevronsRight,
   CircleCheck,
   CircleX,
@@ -24,6 +25,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   const { textHeadingCls, textBodyCls, textSmCls } = useLocaleTypography();
   const {
     id,
+    status,
     fixed,
     notes,
     lastNotedAt,
@@ -59,21 +61,17 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
         !hasFinancialSummary && "bg-amber-50/60",
       )}
     >
-      <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-0 justify-center p-1 lg:pl-4">
-        <div className="flex flex-col md:col-span-5 gap-2 p-2 relative">
-          <div className="flex items-center gap-2 justify-start">
+      <CardContent className="flex items-start w-full p-2 flex-col">
+        <div className="flex flex-col gap-2 p-2 relative w-full">
+          <div className="flex items-center gap-2 justify-start w-full">
             <span
-              className={`hidden lg:flex text-xs text-muted-foreground ${textSmCls}`}
+              className={`flex w-full justify-start gap-2  items-center font-semibold text-primary text-sm ${textBodyCls}`}
             >
-              {tDailyAccount("DailyAccount")}:
-            </span>{" "}
-            <span
-              className={`flex w-full justify-between  items-center font-semibold text-primary text-sm ${textBodyCls}`}
-            >
+              <CalendarFold className="w-4 h-4 text" />
               {<DateDisplay value={id} type="docId" />}
             </span>
           </div>
-          <div className="flex flex-col lg:flex-row w-full justify-between items-start gap-2 lg:gap-16">
+          <div className="flex flex-col w-full justify-between items-start gap-2">
             {hasFinancialSummary ? (
               <div className="flex flex-col gap-0 w-full pl-2">
                 <div className="flex items-center justify-between gap-4">
@@ -115,51 +113,58 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                 </div>
               </div>
             ) : (
-              <div className="text-xs italic flex flex-col gap-2 font-medium">
+              <div className="text-xs italic flex flex-col gap-2 font-medium w-full">
                 {hasNotesTaken && (
-                  <div className="flex items-center gap-1 text-green-800 font-normal">
+                  <div className="flex items-start gap-1 text-green-800 font-normal">
                     <BookOpenCheck className="w-4 h-4" />
                     {tDailyAccount("NotesTaken")}
                   </div>
                 )}
                 {hasReadingsTaken && (
-                  <div className="flex items-center gap-1 text-green-800 font-normal">
+                  <div className="flex items-start gap-1 text-green-800 font-normal">
                     <CircleCheck className="w-4 h-4" />
                     {tDailyAccount("ReadingsTaken")}
                   </div>
                 )}
-                <div className="flex items-center gap-1 text-red-600">
+                <div className="flex items-start gap-1 text-red-500 w-full">
                   <CircleX className="w-4 h-4" />
                   {tDailyAccount("DailyAccountNotSaved")}
                 </div>
               </div>
             )}
-            <div className="flex flex-col lg:flex-row w-full justify-between items-start lg:items-end gap-1 lg:gap-0">
-              <div className="flex flex-col lg:flex-row w-full justify-end gap-1">
-                <div className="flex flex-wrap gap-1 lg:justify-end w-full items-center lg:items-end">
-                  {allTags.slice(0, 3).map((tag, index) => (
-                    <span
-                      key={index}
-                      className={`bg-primary/20 text-primary font-semibold text-xs px-2 py-1 rounded-full`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {allTags.length > 3 && (
-                    <span
-                      className={`text-muted-foreground font-semibold text-xs ${textSmCls}`}
-                    >
-                      +{allTags.length - 3} more
-                    </span>
-                  )}
+            {allTags.length > 0 && (
+              <div className="flex flex-col lg:flex-row w-full justify-between items-start lg:items-end gap-1 lg:gap-0">
+                <div className="flex flex-col lg:flex-row w-full justify-end gap-1">
+                  <div className="flex flex-wrap gap-1 lg:justify-end w-full items-center lg:items-end">
+                    {allTags.slice(0, 3).map((tag, index) => (
+                      <span
+                        key={index}
+                        className={`bg-primary/20 text-primary font-semibold text-xs px-2 py-1 rounded-full`}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {allTags.length > 3 && (
+                      <span
+                        className={`text-muted-foreground font-semibold text-xs ${textSmCls}`}
+                      >
+                        +{allTags.length - 3} more
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        <Button className="w-full md:h-full lg:rounded-l-none! text-sm sm:flex-row md:flex-col lg:flex-row">
-          {tDailyAccount("ViewAccount")} <ChevronsRight className="size-4" />
+        <Button className=" flex flex-1  w-full">
+          {status === "saved" || status === "edited"
+            ? tDailyAccount("ViewAccount")
+            : hasNotesTaken || hasReadingsTaken
+              ? tDailyAccount("CompleteDailyAccount")
+              : tDailyAccount("CreateDailyAccount")}{" "}
+          <ChevronsRight className="size-4" />
         </Button>
       </CardContent>
     </Card>

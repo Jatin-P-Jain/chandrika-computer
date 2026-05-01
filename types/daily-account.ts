@@ -1,6 +1,8 @@
 import { UserData } from "./user";
 import { NoteItem } from "./daily-notes";
 
+export type DailyAccountStatus = "draft" | "saved" | "edited";
+
 export type AuditEventType =
   | "reading_saved"
   | "reading_updated"
@@ -25,10 +27,12 @@ export type DailyAccountLineItem = {
 
 export type AccountAttachedLineItem = DailyAccountLineItem & {
   accountId: string;
+  accountName?: string;
 };
 
 export type DailyAccount = {
   id: string;
+  status: DailyAccountStatus;
   fixed: {
     sd: number;
     sc: number;

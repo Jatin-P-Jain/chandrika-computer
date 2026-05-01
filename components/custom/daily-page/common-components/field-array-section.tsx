@@ -28,6 +28,7 @@ export function FieldArraySection({
   totalBarClassName,
   showNet,
   netForDay,
+  onPersist,
 }: {
   readOnly: boolean;
   value: "earnings.otherIncomes" | "businessExpenses" | "dailySpends";
@@ -38,6 +39,7 @@ export function FieldArraySection({
   totalBarClassName?: string;
   showNet?: boolean;
   netForDay?: number;
+  onPersist?: () => void | Promise<void>;
 }) {
   const tDailyAccount = useTranslations("DailyAccount");
   const { control } = useFormContext<DailyFormValues>();
@@ -107,6 +109,7 @@ export function FieldArraySection({
                 key={f.id}
                 namePrefix={`${value}.${idx}`}
                 onRemove={() => fa.remove(idx)}
+                onPersist={onPersist}
               />
             ),
           )}
