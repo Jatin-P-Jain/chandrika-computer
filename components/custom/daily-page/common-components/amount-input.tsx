@@ -10,6 +10,7 @@ type AmountInputProps = {
   value: number;
   onChange: (next: number) => void;
   onBlur?: () => void | Promise<void>;
+  inputId?: string;
   placeholder?: string;
   className?: string;
   inputClassName?: string;
@@ -22,6 +23,7 @@ export function AmountInput({
   value,
   onChange,
   onBlur,
+  inputId,
   placeholder = "0",
   className,
   inputClassName,
@@ -53,6 +55,7 @@ export function AmountInput({
       <InputGroupAddon>{leftAddon}</InputGroupAddon>
 
       <Input
+        id={inputId}
         readOnly={readOnly}
         type="text"
         inputMode="numeric"

@@ -463,18 +463,74 @@ export default function DailyPageEditor({
       },
       (errors) => {
         const invalidPaths = collectInvalidPaths(errors);
-        const firstFew = invalidPaths.slice(0, 4).join(", ");
-        const more =
-          invalidPaths.length > 4 ? ` +${invalidPaths.length - 4} more` : "";
 
-        toast.error("Please fix validation errors", {
-          description:
-            invalidPaths.length > 0
-              ? `Invalid fields: ${firstFew}${more}`
-              : "Some fields are invalid. Review highlighted inputs.",
-        });
+        const hasMissingCash =
+          invalidPaths.includes("totalCashCollected") ||
+          Number(form.getValues("totalCashCollected") ?? 0) <= 0;
 
-        console.error("Daily form validation errors", errors);
+        if (hasMissingCash) {
+          toast.error(tDailyAccount("TotalCashCollected"), {
+            description: "Please enter total cash collected before saving.",
+          });
+          requestAnimationFrame(() => {
+            const input = document.getElementById("total-cash-collected-input");
+            if (input instanceof HTMLInputElement) {
+              input.focus();
+            }
+          });
+          return;
+        }
+
+        const toReadableFieldName = (path: string): string => {
+          if (path === "totalCashCollected") {
+            return tDailyAccount("TotalCashCollected");
+          }
+          if (path === "earnings.netIncome") {
+            return tDailyAccount("TotalIncome");
+          }
+          if (path.startsWith("fixed.")) {
+            return tDailyAccount("FixedExpenses");
+          }
+          if (path.startsWith("earnings.otherIncomes")) {
+            return tDailyAccount("OtherEarnings");
+          }
+          if (path.startsWith("businessExpenses")) {
+            return tDailyAccount("BusinessExpense");
+          }
+          if (path.startsWith("dailySpends")) {
+            return tDailyAccount("DailySpends");
+          }
+          if (path.startsWith("creditItems")) {
+            return tCreditsDebits("Credits");
+          }
+          if (path.startsWith("debitItems")) {
+            return tCreditsDebits("Debits");
+          }
+          return path
+            .replace(/\.\d+\./g, " - ")
+            .replace(/\./g, " - ")
+            .replace(/([a-z])([A-Z])/g, "$1 $2");
+        };
+
+        const readableFields = Array.from(
+          new Set(
+            invalidPaths
+              .filter((path) => path !== "totalCashCollected")
+              .map(toReadableFieldName),
+          ),
+        );
+
+        if (readableFields.length > 0) {
+          const firstFew = readableFields.slice(0, 4).join(", ");
+          const more =
+            readableFields.length > 4
+              ? ` +${readableFields.length - 4} more`
+              : "";
+
+          toast.error("Please fix these fields", {
+            description: `${firstFew}${more}`,
+          });
+        }
       },
     )(event);
   };
@@ -606,6 +662,7 @@ export default function DailyPageEditor({
                         </FormLabel>
                         <FormControl>
                           <AmountInput
+                            inputId="total-cash-collected-input"
                             value={Number(field.value) || 0}
                             onChange={(n) => field.onChange(n)}
                             onBlur={persistDraft}
