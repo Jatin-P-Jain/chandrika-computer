@@ -49,11 +49,14 @@ export function PhotocopyReadingsResponsive({
               const numberOfCopies = r?.difference ?? 0;
 
               const amount = r?.amount ?? 0;
+              const stockAdded = r?.stockAdded ?? 0;
+              const hasStockAdded = stockAdded > 0;
 
               const prevReading = r?.prevReading ?? 0;
               const todayTotalReading = r?.todayReading ?? 0;
 
-              const dateRowSpan = showReadings ? 4 : 2;
+              const dateRowSpan =
+                (showReadings ? 4 : 2) + (hasStockAdded ? 1 : 0);
 
               return (
                 <React.Fragment key={r.date}>
@@ -97,6 +100,19 @@ export function PhotocopyReadingsResponsive({
                         className={`text-right tabular-nums text-muted-foreground ${textBodyCls}`}
                       >
                         {todayTotalReading}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {hasStockAdded && (
+                    <TableRow>
+                      <TableCell className={`text-green-700 ${textSmCls}`}>
+                        {tReadings("StockAddition")}
+                      </TableCell>
+
+                      <TableCell
+                        className={`text-right tabular-nums text-green-700 font-semibold ${textBodyCls}`}
+                      >
+                        +{stockAdded}
                       </TableCell>
                     </TableRow>
                   )}
@@ -189,6 +205,13 @@ export function PhotocopyReadingsResponsive({
                     {r.todayReading ?? 0}
                   </div>
                 </>
+              )}
+              {(r.stockAdded ?? 0) > 0 && (
+                <div
+                  className={`flex justify-between w-full tabular-nums text-green-700 font-semibold ${textSmCls}`}
+                >
+                  <span>{tReadings("StockAddition")}:</span> +{r.stockAdded}
+                </div>
               )}
               <div
                 className={`flex justify-between w-full tabular-nums font-semibold  ${textSmCls}`}

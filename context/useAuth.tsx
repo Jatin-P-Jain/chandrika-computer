@@ -144,12 +144,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           currentUser,
         });
 
-        // Refresh FCM token
-        const { refreshAndSaveFcmToken } =
-          await import("@/lib/firebase/refreshAndSaveFcmToken");
-        await refreshAndSaveFcmToken(currentUser.uid);
-
-        window.location.href = "/"; // Redirect to home
+        // Refresh FCM token in background to avoid blocking login transition.
+        void (async () => {
+          const { refreshAndSaveFcmToken } =
+            await import("@/lib/firebase/refreshAndSaveFcmToken");
+          await refreshAndSaveFcmToken(currentUser.uid);
+        })();
       } else {
         throw new Error("User document not found after update");
       }

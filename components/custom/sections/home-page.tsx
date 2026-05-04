@@ -20,11 +20,11 @@ import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/context/useAuth";
 import clsx from "clsx";
 import { PhoneVerification } from "../phone-verification";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
-  const { push } = useSafeRouter();
+  const { push, replace } = useSafeRouter();
   const locale = useLocale();
   const tHomePage = useTranslations("HomePage");
   const tDailyAccount = useTranslations("DailyAccount");
@@ -43,6 +43,17 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const [sessionExpiredPopupShown, setSessionExpiredPopupShown] = useState(
     sessionExpired === "1",
   );
+
+  useEffect(() => {
+    if (sessionExpired !== "1") return;
+    if (authState.status !== "ready") return;
+
+    replace("/", {
+      scroll: false,
+      skipLock: true,
+      allowDuringNav: true,
+    });
+  }, [authState.status, replace, sessionExpired]);
 
   return (
     <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-3 md:p-6 relative">
@@ -63,6 +74,13 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
             className="inline size-6 absolute -right-1 -top-1 cursor-pointer p-1 bg-white text-yellow-900 rounded-full border-yellow-300 border"
             onClick={() => {
               setSessionExpiredPopupShown(false);
+              if (sessionExpired === "1") {
+                replace("/", {
+                  scroll: false,
+                  skipLock: true,
+                  allowDuringNav: true,
+                });
+              }
             }}
           />
         </div>
@@ -129,20 +147,20 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
           }}
         >
           <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md">
-            <CardHeader className="flex flex-row items-center gap-3">
+            <CardHeader className="flex flex-row items-center gap-3 w-full">
               <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-indigo-100 text-indigo-900/90 ">
                 {/* replace with your own icon */}
                 <span className="">
                   <ClipboardListIcon className="size-8" />
                 </span>
               </div>
-              <div className="flex flex-col gap-1 md:gap-2 items-start">
+              <div className="flex flex-col gap-1 md:gap-2 items-start w-full">
                 <CardTitle className="leading-6 flex items-start justify-between w-full">
                   {tDailyAccount("Title")}
                   {authState.status !== "ready" ? (
                     isUserLoading ? (
                       <div className="text-primary bg-primary/10 p-1 rounded-md">
-                        <Loader2 className="animate-spin size-8" />
+                        <Loader2 className="animate-spin size-5" />
                       </div>
                     ) : (
                       <div className="flex items-center justify-center p-1 bg-primary/10 rounded-md">
@@ -179,13 +197,17 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                   <Layers className="size-8" />
                 </span>
               </div>
-              <div className="flex flex-col gap-1 md:gap-2">
-                <CardTitle className={clsx("leading-6 flex items-start gap-2")}>
+              <div className="flex flex-col gap-1 md:gap-2 w-full">
+                <CardTitle
+                  className={clsx(
+                    "leading-6 flex items-start w-full justify-between",
+                  )}
+                >
                   {tStampRegister("Title")}
                   {authState.status !== "ready" ? (
                     isUserLoading ? (
                       <div className="text-primary bg-primary/10 p-1 rounded-md">
-                        <Loader2 className="animate-spin size-8" />
+                        <Loader2 className="animate-spin size-5" />
                       </div>
                     ) : (
                       <div className="flex items-center justify-center p-1 bg-primary/10 rounded-md">
@@ -221,7 +243,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                   <Newspaper className="size-8" />
                 </span>
               </div>
-              <div className="flex flex-col gap-1 md:gap-2">
+              <div className="flex flex-col gap-1 md:gap-2 w-full">
                 <CardTitle
                   className={clsx(
                     "leading-6 flex items-start justify-between w-full",
@@ -231,7 +253,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                   {authState.status !== "ready" ? (
                     isUserLoading ? (
                       <div className="text-primary bg-primary/10 p-1 rounded-md">
-                        <Loader2 className="animate-spin size-8" />
+                        <Loader2 className="animate-spin size-5" />
                       </div>
                     ) : (
                       <div className="flex items-center justify-center p-1 bg-primary/10 rounded-md">

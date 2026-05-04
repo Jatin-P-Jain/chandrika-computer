@@ -197,6 +197,7 @@
     "AddStock": "स्टॉक जोड़ें",
     "RemoveStockAddition": "स्टॉक न जोड़ें",
     "StockAddition": "स्टॉक जोड़ना",
+    "StockAdded": "स्टॉक जोड़ा गया",
     "StampsAddedToStock": "स्टॉक में जोड़े गए स्टैम्प",
     "Quantity": "मात्रा",
     "Cost": "लागत",

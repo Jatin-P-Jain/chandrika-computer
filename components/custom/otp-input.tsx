@@ -6,9 +6,15 @@ interface OTPInputProps {
   length?: number;
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
-const OTPInput: FC<OTPInputProps> = ({ length = 6, value, onChange }) => {
+const OTPInput: FC<OTPInputProps> = ({
+  length = 6,
+  value,
+  onChange,
+  disabled = false,
+}) => {
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
   // 1) Sync each box's value whenever `value` changes
@@ -90,6 +96,7 @@ const OTPInput: FC<OTPInputProps> = ({ length = 6, value, onChange }) => {
           key={i}
           type="tel"
           inputMode="numeric"
+          disabled={disabled}
           maxLength={1}
           className="min-w-0 flex-1 text-center text-base md:text-xl shadow-md"
           data-disable-hindi-keyboard="true"

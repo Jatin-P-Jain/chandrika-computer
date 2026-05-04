@@ -38,7 +38,12 @@ import {
   stampReadingSchema,
   stampStockAdditionSchema,
 } from "@/schema/readings.schema";
-import { CheckCircle, ChevronsRight, TriangleAlert } from "lucide-react";
+import {
+  CheckCircle,
+  ChevronsRight,
+  Loader2,
+  TriangleAlert,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useBreakpoints } from "@/hooks/useBreakPoints";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
@@ -73,6 +78,7 @@ type Props = {
     photocopy?: PhotocopyReadingDoc;
     stamp?: StampReadingDoc;
   }) => void;
+  syncing?: boolean;
   readings?: {
     success: boolean;
     photocopy?: PhotocopyReadingDoc | null;
@@ -87,6 +93,7 @@ type Step = "photocopy" | "stamp" | "review";
 export default function DailyReadingsDialog({
   todayDateYmd,
   onSaved,
+  syncing = false,
   readings,
   startOpen = false,
   readOnly = false,
@@ -484,12 +491,15 @@ export default function DailyReadingsDialog({
           : "text-primary",
       ].join(" ")}
       variant={"outline"}
+      disabled={syncing}
     >
       <span className="hidden md:flex">
         {tReadings("PhotocopyStampReadings")}{" "}
       </span>
       <span className="md:hidden">{tReadings("SD&FSReadings")} </span>
-      {readingsFound ? (
+      {syncing ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : readingsFound ? (
         <CheckCircle className="size-4 text-green-700" />
       ) : (
         <ChevronsRight className="size-4" />

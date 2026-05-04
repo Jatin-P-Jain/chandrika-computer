@@ -182,13 +182,13 @@ export default function ReviewStep({
                 {hasAnyStockAdded ? (
                   <div
                     className={clsx(
-                      "text-xs text-muted-foreground flex items-center justify-between",
+                      "text-xs text-green-700 flex items-center justify-between",
                       textSmCls,
                     )}
                   >
-                    {tReadings("AddStock")}:{" "}
-                    <b className="text-foreground tabular-nums">
-                      {stampStockAdded[d]}
+                    {tReadings("StockAdded")}:{" "}
+                    <b className="text-green-700 tabular-nums">
+                      +{stampStockAdded[d]}
                     </b>
                   </div>
                 ) : null}

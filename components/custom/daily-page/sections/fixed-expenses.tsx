@@ -25,7 +25,7 @@ import { formatINR } from "@/lib/utils";
 import { useEffect } from "react";
 import { AddLineItemButton } from "../common-components/add-line-item-button";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Loader2 } from "lucide-react";
 import { ReadOnlyLineItem } from "../common-components/read-line-item-row";
 import { LineItemRow } from "../common-components/line-item-row";
 
@@ -34,6 +34,7 @@ export function FixedExpensesSection({
   totalFixed,
   totalBarClassName,
   readings,
+  isReadingsSyncing = false,
   onPersist,
 }: {
   readOnly: boolean;
@@ -43,6 +44,7 @@ export function FixedExpensesSection({
     photocopy: PhotocopyReadingDoc | null;
     stamp: StampReadingDoc | null;
   };
+  isReadingsSyncing?: boolean;
   onPersist?: () => void | Promise<void>;
 }) {
   const tDailyAccount = useTranslations("DailyAccount");
@@ -135,7 +137,11 @@ export function FixedExpensesSection({
                   </FormLabel>
 
                   <FormControl>
-                    {readOnly ? (
+                    {isReadingsSyncing ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin" />
+                      </div>
+                    ) : readOnly ? (
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",
@@ -177,7 +183,11 @@ export function FixedExpensesSection({
                   </FormLabel>
 
                   <FormControl>
-                    {readOnly ? (
+                    {isReadingsSyncing ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin" />
+                      </div>
+                    ) : readOnly ? (
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",
@@ -214,7 +224,11 @@ export function FixedExpensesSection({
                   </FormLabel>
 
                   <FormControl>
-                    {readOnly ? (
+                    {isReadingsSyncing ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin" />
+                      </div>
+                    ) : readOnly ? (
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",

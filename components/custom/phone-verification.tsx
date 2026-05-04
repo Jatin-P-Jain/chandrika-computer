@@ -21,7 +21,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useMobileOtp } from "@/hooks/useMobileOtp";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import OTPInput from "./otp-input";
 import { User } from "firebase/auth";
 import { formatTime } from "@/lib/utils";
@@ -85,6 +85,7 @@ export function PhoneVerification({
       currentUser,
     },
   );
+  const autoVerifyOtpRef = useRef<string>("");
 
   const showPhoneInput = authStateStatus === "first-time-setup" && !otpSent;
   const phoneVerification =
@@ -157,9 +158,18 @@ export function PhoneVerification({
     setOtpEpoch((x) => x + 1);
   };
 
-  const handleVerifyOTP = async () => {
+  const handleVerifyOTP = useCallback(async () => {
     await verifyOtp(phoneAuthState.otp);
-  };
+  }, [phoneAuthState.otp, verifyOtp]);
+
+  useEffect(() => {
+    if (!otpSent || isVerifying || expiryTimer === 0) return;
+    const otp = phoneAuthState.otp.trim();
+    if (otp.length !== 6) return;
+    if (autoVerifyOtpRef.current === otp) return;
+    autoVerifyOtpRef.current = otp;
+    void handleVerifyOTP();
+  }, [otpSent, isVerifying, expiryTimer, phoneAuthState.otp, handleVerifyOTP]);
 
   const handleResend = async () => {
     if (hasResentOnce || sendingOtp) return;
@@ -287,6 +297,7 @@ export function PhoneVerification({
                       <OTPInput
                         length={6}
                         value={phoneAuthState.otp}
+                        disabled={isVerifying}
                         onChange={(value) =>
                           setPhoneAuthState({ ...phoneAuthState, otp: value })
                         }
@@ -318,6 +329,7 @@ export function PhoneVerification({
                           className="text-primary w-full"
                           onClick={handleResend}
                           disabled={
+                            isVerifying ||
                             resendStatus === "done" ||
                             resendStatus === "sending"
                           }

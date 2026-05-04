@@ -19,7 +19,7 @@ export function useMobileOtp({
   appVerifier,
   currentUser,
 }: {
-  onSuccess?: (() => void) | undefined;
+  onSuccess?: (() => void | Promise<void>) | undefined;
   appVerifier: RecaptchaVerifier | null;
   currentUser: User | null;
 }) {
@@ -130,7 +130,7 @@ export function useMobileOtp({
         }
       }
 
-      onSuccess?.();
+      await onSuccess?.();
       toast.success(tToast("MobileVerified"), {
         description: tToast("MobileVerifiedDesc"),
       });

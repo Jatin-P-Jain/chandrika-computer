@@ -251,6 +251,7 @@ export const getPhotocopyReadings = async (
       date: rawReading.date,
       todayReading: rawReading.todayReading,
       prevReading: rawReading.prevReading,
+      stockAdded: nn(rawReading.stockAdded ?? 0),
       difference: rawReading.difference,
       rate: rawReading.rate,
       amount: rawReading.amount,

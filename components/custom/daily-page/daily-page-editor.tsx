@@ -221,6 +221,10 @@ export default function DailyPageEditor({
     "BLOCK_READINGS" | "SOFT_CONFIRM"
   >("SOFT_CONFIRM");
   const [pendingData, setPendingData] = useState<DailyFormValues | null>(null);
+  const [pendingReadings, setPendingReadings] = useState<{
+    photocopy: number;
+    stamp: number;
+  } | null>(null);
 
   const { user, getUserToken } = useAuth();
   const { replace, refresh } = useSafeRouter();
@@ -235,6 +239,20 @@ export default function DailyPageEditor({
       shouldDirty: true,
     });
   }, [netForDay, form]);
+
+  const isReadingsSyncing = useMemo(() => {
+    if (!pendingReadings) return false;
+    const currentPhotocopy = readings?.photocopy?.amount ?? 0;
+    const currentStamp = readings?.stamp?.totalAmount ?? 0;
+    return (
+      currentPhotocopy !== pendingReadings.photocopy ||
+      currentStamp !== pendingReadings.stamp
+    );
+  }, [
+    pendingReadings,
+    readings?.photocopy?.amount,
+    readings?.stamp?.totalAmount,
+  ]);
 
   const persistDraft = async () => {
     const token = await getUserToken();
@@ -467,8 +485,14 @@ export default function DailyPageEditor({
         <div className="flex w-full justify-between items-center mb-2">
           <DailyReadingsDialog
             readings={readings}
+            syncing={isReadingsSyncing}
             todayDateYmd={docId}
             onSaved={(saved) => {
+              setPendingReadings({
+                photocopy: saved.photocopy?.amount ?? 0,
+                stamp: saved.stamp?.totalAmount ?? 0,
+              });
+
               if (saved.photocopy) {
                 form.setValue("fixed.fs", saved.photocopy.amount, {
                   shouldDirty: true,
@@ -509,7 +533,7 @@ export default function DailyPageEditor({
                 ]}
                 orientation="horizontal"
                 type="multiple"
-                className="grow min-h-0 lg:grid lg:grid-cols-4 gap-3 md:gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-3 md:pb-0"
+                className="grow min-h-0 lg:grid lg:grid-cols-4 gap-1 md:gap-0 flex flex-col w-full overflow-auto no-scrollbar pb-3 md:pb-0"
               >
                 <FixedExpensesSection
                   totalBarClassName="p-2"
@@ -517,6 +541,7 @@ export default function DailyPageEditor({
                     Number(formatINR(totalFixed)) ? totalFixed : totalFixed
                   }
                   readings={readings}
+                  isReadingsSyncing={isReadingsSyncing}
                   readOnly={false}
                   onPersist={persistDraft}
                 />
@@ -556,7 +581,10 @@ export default function DailyPageEditor({
                   onPersist={persistDraft}
                 />
               </Accordion>
-              <div ref={creditDebitAnchorRef} className="border rounded-md md:mt-4">
+              <div
+                ref={creditDebitAnchorRef}
+                className="border rounded-md md:mt-4"
+              >
                 <CreditDebitCardsSection
                   ref={creditDebitRef}
                   disabled={false}

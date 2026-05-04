@@ -4,6 +4,7 @@ export type PhotocopyReadingDoc = {
   date: string; // YYYY-MM-DD (also docId)
   todayReading: number;
   prevReading: number; // yesterday's todayReading
+  stockAdded?: number;
   difference: number;
   rate: number; // 1.5
   amount: number;
@@ -36,6 +37,7 @@ export type PhotocopyReadingRow = {
   date: string; // YYYY-MM-DD (also docId)
   todayReading: number;
   prevReading: number; // yesterday's todayReading
+  stockAdded?: number;
   difference: number;
   amount: number;
 };

@@ -59,6 +59,15 @@ export function StampReadingsResponsive({
               const diffs = DENOMS.map((d) => r.parts[d]?.difference ?? 0);
               const totalStampCount = diffs.reduce((a, b) => a + b, 0);
 
+              const stockAddedByDenom = DENOMS.map(
+                (d) => r.parts[d]?.stockAdded ?? 0,
+              );
+              const totalStockAdded = stockAddedByDenom.reduce(
+                (a, b) => a + b,
+                0,
+              );
+              const hasStockAdded = totalStockAdded > 0;
+
               const amounts = DENOMS.map((d) => r.parts[d]?.amount ?? 0);
               const total = r.totalAmount ?? amounts.reduce((a, b) => a + b, 0);
 
@@ -71,7 +80,8 @@ export function StampReadingsResponsive({
                 0,
               );
 
-              const dateRowSpan = showReadings ? 4 : 2;
+              const dateRowSpan =
+                (showReadings ? 4 : 2) + (hasStockAdded ? 1 : 0);
               const dividerColSpan = DENOMS.length + 3; // Date + Particulars + denoms + Total
 
               return (
@@ -133,9 +143,44 @@ export function StampReadingsResponsive({
                       </TableCell>
                     </TableRow>
                   )}
+                  {hasStockAdded && (
+                    <TableRow>
+                      {!showReadings && (
+                        <TableCell
+                          className={`border-r align-middle w-[15%] ${textBodyCls}`}
+                          rowSpan={dateRowSpan}
+                        >
+                          <DateDisplay
+                            value={r.date}
+                            type="docId"
+                            className={`text-primary font-semibold flex flex-col justify-center items-center ${textBodyCls}`}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell className={`text-green-700 ${textBodyCls}`}>
+                        {tReadings("StockAdded")}
+                      </TableCell>
+                      {DENOMS.map((d) => {
+                        const val = r.parts[d]?.stockAdded ?? 0;
+                        return (
+                          <TableCell
+                            key={d}
+                            className={`text-right tabular-nums text-green-700 font-semibold ${textBodyCls}`}
+                          >
+                            {val > 0 ? `+${val}` : "-"}
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell
+                        className={`text-right tabular-nums text-green-700 font-semibold ${textBodyCls}`}
+                      >
+                        +{totalStockAdded}
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {/* Row 3: Stamp Count */}
                   <TableRow>
-                    {!showReadings && (
+                    {!showReadings && !hasStockAdded && (
                       <TableCell
                         className={`border-r align-middle w-[15%] ${textBodyCls}`}
                         rowSpan={dateRowSpan}
@@ -250,6 +295,16 @@ export function StampReadingsResponsive({
                     <span className="text-xs">{tReadings("StampCount")}:</span>{" "}
                     {r.parts[d]?.difference ?? 0}
                   </div>
+                  {(r.parts[d]?.stockAdded ?? 0) > 0 && (
+                    <div
+                      className={`text-green-700 justify-between flex items-center font-semibold ${textBodyCls}`}
+                    >
+                      <span className="text-xs">
+                        {tReadings("StockAdded")}:
+                      </span>{" "}
+                      +{r.parts[d]?.stockAdded ?? 0}
+                    </div>
+                  )}
                   <div
                     className={`font-semibold justify-between flex items-center ${textBodyCls}`}
                   >
