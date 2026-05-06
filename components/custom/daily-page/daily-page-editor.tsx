@@ -109,11 +109,14 @@ function isNonEmptyArray<T>(v: T[] | undefined | null) {
 }
 
 function formatLineItemSummary(
-  items: { label?: string; amount?: number }[],
+  items: { label?: string; amount?: number; accountName?: string }[],
   max = 6,
 ) {
   const parts = items.slice(0, max).map((x, i) => {
-    const label = String(x.label ?? "").trim() || `#${i + 1}`;
+    const label =
+      String(x.accountName ?? "").trim() ||
+      String(x.label ?? "").trim() ||
+      `#${i + 1}`;
     const amount = typeof x.amount === "number" ? x.amount : 0;
     return `${label}: ${formatINR(amount)}`;
   });
@@ -201,6 +204,8 @@ export default function DailyPageEditor({
     name: "businessExpenses",
   });
   const dailySpends = useWatch({ control: form.control, name: "dailySpends" });
+  const creditItems = useWatch({ control: form.control, name: "creditItems" });
+  const debitItems = useWatch({ control: form.control, name: "debitItems" });
   const totalCashCollected = useWatch({
     control: form.control,
     name: "totalCashCollected",
@@ -210,9 +215,18 @@ export default function DailyPageEditor({
     (fixed?.sd ?? 0) + fixed?.sd * 0.3 + (fixed?.fs ?? 0) + fixed?.flexnCard;
   const totalBusiness = sumAmounts(businessExpenses);
   const totalSpends = sumAmounts(dailySpends);
+  const totalCredits = sumAmounts(creditItems);
+  const totalDebits = sumAmounts(debitItems);
+  const totalOtherIncomes = sumAmounts(earnings.otherIncomes);
   const netForDay =
-    totalCashCollected - (totalFixed + totalBusiness + totalSpends);
-  const totalEarnings = earnings.netIncome + sumAmounts(earnings.otherIncomes);
+    totalCashCollected +
+    totalDebits +
+    totalBusiness +
+    totalSpends -
+    totalCredits -
+    totalFixed -
+    totalOtherIncomes;
+  const totalEarnings = earnings.netIncome + totalOtherIncomes;
 
   const creditDebitRef = useRef<CreditDebitImperative | null>(null);
   const creditDebitAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -234,6 +248,7 @@ export default function DailyPageEditor({
   const hasExistingDoc = Boolean(dailyItemData?.id);
   const isPersistedAccount =
     dailyItemData?.status === "saved" || dailyItemData?.status === "edited";
+  const isExistingDraft = hasExistingDoc && !isPersistedAccount;
   const [renderForm, setRenderForm] = useState(
     updateMode || areReadingsDone || hasExistingDoc,
   );
@@ -338,7 +353,8 @@ export default function DailyPageEditor({
     });
   };
 
-  const isFormReady = form.formState.isSubmitted || form.formState.isDirty;
+  const isFormReady =
+    isExistingDraft || form.formState.isSubmitted || form.formState.isDirty;
   const hasPositiveNetIncome = netForDay > 0;
   const canSubmit = isFormReady && (!updateMode || hasPositiveNetIncome);
   const isSubmitting = form.formState.isSubmitting;
@@ -598,27 +614,7 @@ export default function DailyPageEditor({
           <DailyNotesDialog initialNotes={initialNotes} docId={docId} />
         </div>
         {/* Status badge — always visible so user knows account state */}
-        {dailyItemData?.status && (
-          <div className="mb-2">
-            {dailyItemData.status === "draft" && (
-              <Badge
-                variant="outline"
-                className="text-[11px] border-amber-400 text-amber-700 bg-amber-50"
-              >
-                {tDailyAccount("Draft")} —{" "}
-                {tDailyAccount("DailyAccountNotSaved")}
-              </Badge>
-            )}
-            {dailyItemData.status === "edited" && (
-              <Badge
-                variant="outline"
-                className="text-[11px] border-blue-400 text-blue-700 bg-blue-50"
-              >
-                {tDailyAccount("Edited")}
-              </Badge>
-            )}
-          </div>
-        )}
+
         <div className="bg-card p-1 w-full md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto">
           <div
             className={clsx(
@@ -629,6 +625,18 @@ export default function DailyPageEditor({
             <span className="text-base text-yellow-700">ॐ</span>
             <span className="text-orange-600"> श्री गणेशाय नमः</span>
           </div>
+          {dailyItemData?.status && (
+            <div className="absolute top-2 right-2">
+              {dailyItemData.status === "draft" && (
+                <Badge
+                  variant="outline"
+                  className="text-[11px] border-amber-400 text-amber-700 bg-amber-50"
+                >
+                  {tDailyAccount("Draft")}
+                </Badge>
+              )}
+            </div>
+          )}
 
           <Form {...form}>
             <form onSubmit={handleFormSubmit} className="flex flex-col flex-1">

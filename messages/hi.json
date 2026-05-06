@@ -54,7 +54,8 @@
     "Update": "अपडेट",
     "Completing": "पूर्ण किया जा रहा है",
     "Updating": "अपडेट किया जा रहा है",
-    "ViewAll": "सभी देखें"
+    "ViewAll": "सभी देखें",
+    "Or": "या"
   },
   "CreditsDebits": {
     "Accounts": "खातें",
@@ -199,6 +200,19 @@
     "Yesterday": "पिछला कल",
     "YesterdayReading": "कल की रीडिंग",
     "LoadingYesterdaysReadings": "कल की रीडिंग लोड हो रही है...",
+    "FailedToLoadPreviousReadings": "पिछली रीडिंग लोड नहीं हो सकी",
+    "NoPreviousReadingsFound": "पिछले दिन की रीडिंग नहीं मिली।",
+    "AskRecentHolidays": "क्या हाल में छुट्टियां थीं? जितने दिन पीछे देखना है, वह संख्या दर्ज करें ताकि नवीनतम उपलब्ध रीडिंग मिल सके।",
+    "RecentHolidayCount": "हाल की छुट्टियां (दिन)",
+    "FindLatestReadings": "नवीनतम रीडिंग खोजें",
+    "NoReadingsForHolidayOffset": "इस दिन-अंतराल के लिए रीडिंग नहीं मिली। आप पिछली रीडिंग मैन्युअली दर्ज कर सकते हैं।",
+    "LatestReadingsFoundVerify": "नवीनतम उपलब्ध रीडिंग मिल गई है। कृपया आगे बढ़ने से पहले जांच लें।",
+    "UsingLatestReadingsFromDaysAgo": "इतने दिन पहले की नवीनतम उपलब्ध रीडिंग उपयोग हो रही है:",
+    "PleaseVerifyBeforeContinue": "कृपया जांचकर आगे बढ़ें।",
+    "EnterPreviousReadingsManually": "पिछली रीडिंग मैन्युअली दर्ज करें",
+    "PhotocopyPreviousReading": "फोटोकॉपी पिछली रीडिंग",
+    "UseManualReadings": "मैन्युअल रीडिंग उपयोग करें",
+    "ManualPreviousReadingsSet": "मैन्युअल पिछली रीडिंग लागू कर दी गई है।",
     "AddStock": "स्टॉक जोड़ें",
     "RemoveStockAddition": "स्टॉक न जोड़ें",
     "StockAddition": "स्टॉक जोड़ना",
@@ -223,7 +237,7 @@
     "Readings": "रीडिंग",
     "ReadingsMissingDesc": "फोटोकॉपी/स्टाम्प की रीडिंग उपलब्ध नहीं हैं।",
     "ReadingsNotAdded": "पठन सामग्री नहीं जोड़ी गई",
-    "ReadingsPresentDesc": "रीडिंग जोड़ दी गई हैं।",
+    "ReadingsPresentDesc": "रीडिंग जोड़ दी गई हैं ✅",
     "ReviewBelowSections": "सेव करने से पहले नीचे दिए गए अनुभागों की समीक्षा करें।",
     "StampReadingMissing": "स्टाम्प रीडिंग नहीं जोड़ी गई"
   },

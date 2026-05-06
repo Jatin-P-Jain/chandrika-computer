@@ -11,6 +11,7 @@ type AmountInputProps = {
   onChange: (next: number) => void;
   onBlur?: () => void | Promise<void>;
   inputId?: string;
+  autoComplete?: string;
   placeholder?: string;
   className?: string;
   inputClassName?: string;
@@ -24,6 +25,7 @@ export function AmountInput({
   onChange,
   onBlur,
   inputId,
+  autoComplete = "off",
   placeholder = "0",
   className,
   inputClassName,
@@ -57,6 +59,7 @@ export function AmountInput({
       <Input
         id={inputId}
         readOnly={readOnly}
+        autoComplete={autoComplete}
         type="text"
         inputMode="numeric"
         placeholder={placeholder}

@@ -54,7 +54,8 @@
     "Update": "Update",
     "Completing": "Completing",
     "Updating": "Updating",
-    "ViewAll": "View All"
+    "ViewAll": "View All",
+    "Or": "Or"
   },
   "CreditsDebits": {
     "Accounts": "Accounts",
@@ -199,6 +200,19 @@
     "Yesterday": "Yesterday",
     "YesterdayReading": "Yesterday's Reading",
     "LoadingYesterdaysReadings": "Loading yesterday's readings...",
+    "FailedToLoadPreviousReadings": "Failed to load previous readings",
+    "NoPreviousReadingsFound": "Previous day's readings were not found.",
+    "AskRecentHolidays": "Were there any holidays recently? Enter how many days to look back for the latest available readings.",
+    "RecentHolidayCount": "Recent holidays (days)",
+    "FindLatestReadings": "Find latest readings",
+    "NoReadingsForHolidayOffset": "No readings found for that lookback. You can enter previous readings manually.",
+    "LatestReadingsFoundVerify": "Latest available readings were found. Please verify before continuing.",
+    "UsingLatestReadingsFromDaysAgo": "Using latest available readings from days ago:",
+    "PleaseVerifyBeforeContinue": "Please verify and continue.",
+    "EnterPreviousReadingsManually": "Enter previous readings manually",
+    "PhotocopyPreviousReading": "Photocopy previous reading",
+    "UseManualReadings": "Use manual readings",
+    "ManualPreviousReadingsSet": "Manual previous readings applied.",
     "AddStock": "Add Stock",
     "CancelStockAddition": "Cancel Stock Addition",
     "StockAdded": "Stock Added",
@@ -212,7 +226,7 @@
   },
   "SaveReview": {
     "AddReadingsThenSave": "Please add readings and then save.",
-    "BusinessExpenseEmptyConfirm": "Business expense section is empty. Confirm if you want to continue without adding any expense.",
+    "BusinessExpenseEmptyConfirm": "Business expense section is empty.",
     "ConfirmBeforeSave": "Confirm before saving",
     "DailySpendsEmptyConfirm": "Daily spends section is empty. Confirm if you want to continue without adding any spends.",
     "NoCreditsAdded": "No credits added.",
@@ -223,7 +237,7 @@
     "Readings": "Readings",
     "ReadingsMissingDesc": "Photocopy/Stamp readings are missing. Please add readings and come back to save.",
     "ReadingsNotAdded": "Readings not added",
-    "ReadingsPresentDesc": "Readings look added. Please verify once before saving.",
+    "ReadingsPresentDesc": "Readings added ✅",
     "ReviewBelowSections": "Review below sections before saving.",
     "StampReadingMissing": "Stamp readings not added"
   },

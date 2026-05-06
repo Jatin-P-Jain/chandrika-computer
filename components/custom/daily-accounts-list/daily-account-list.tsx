@@ -193,8 +193,8 @@ export default function DailyAccountsList({
         {tCommon("ShowingResults", { currentPage, start, end, totalItems })}
       </p>
 
-      <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-140 overflow-auto no-scrollbar md:pb-0">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-[calc(100vh-220px)] overflow-auto no-scrollbar rounded-md">
+      <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-140 overflow-auto no-scrollbar pb-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-[calc(100vh-220px)] overflow-auto no-scrollbar rounded-md pb-1">
           {data.map((dailyAccount: DailyAccount, index: number) => (
             <DailyAccountCard
               key={dailyAccount.id || index}

@@ -256,7 +256,7 @@ export default function DailyPageReadOnly({
           onNotesUpdated={setLocalNotes}
         />
       </div>
-      <Card className="w-full p-2 md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto">
+      <Card className="w-full p-2 md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto no-scrollbar">
         <div
           className={clsx(
             "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col",
@@ -355,6 +355,19 @@ export default function DailyPageReadOnly({
                 <AuditTrail auditTrail={dailyItemData?.auditTrail} />
               </div>
             </div>
+
+            {dailyItemData?.status && (
+              <div className="mb-2">
+                {dailyItemData.status === "draft" && (
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] border-amber-400 text-amber-700 bg-amber-50"
+                  >
+                    {tDailyAccount("Draft")} —{" "}
+                  </Badge>
+                )}
+              </div>
+            )}
 
             <Button
               variant={"outline"}

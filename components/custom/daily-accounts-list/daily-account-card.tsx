@@ -39,13 +39,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
     totalEarnings,
     totalSpends,
     totalCashCollected,
-    allTags,
   } = dailyAccount as DailyAccount;
-
-  const hasFinancialSummary =
-    Number(totalCashCollected || 0) > 0 ||
-    Number(totalSpends || 0) > 0 ||
-    Number(totalEarnings || 0) > 0;
 
   const hasNotesTaken =
     (notes?.length ?? 0) > 0 || Boolean(lastNotedAt && lastNotedAt.length > 0);
@@ -77,8 +71,8 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
         push(cardTarget);
       }}
       className={clsx(
-        "cursor-pointer w-full flex p-1 lg:p-0 shadow-md border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
-        !hasFinancialSummary && "bg-amber-50/60",
+        "cursor-pointer w-full flex p-1 lg:p-0 shadow-sm border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
+        isDraft && "bg-amber-50/60",
       )}
     >
       <CardContent className="flex items-start w-full p-2 flex-col">
@@ -90,6 +84,28 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
               <CalendarFold className="w-4 h-4 text" />
               {<DateDisplay value={id} type="docId" />}
             </span>
+            {isDraft ? (
+              <Badge
+                variant="outline"
+                className="text-[10px] border-amber-400 text-amber-700 bg-amber-50 px-1.5 py-0 h-fit w-fit"
+              >
+                {tDailyAccount("Draft")}
+              </Badge>
+            ) : status === "edited" ? (
+              <Badge
+                variant="outline"
+                className="text-[10px] border-blue-400 text-blue-700 bg-blue-50 px-1.5 py-0 h-fit w-fit"
+              >
+                {tDailyAccount("Edited")}
+              </Badge>
+            ) : status === "saved" ? (
+              <Badge
+                variant="outline"
+                className="text-[10px] border-green-500 text-green-700 bg-green-50 px-1.5 py-0 h-fit w-fit"
+              >
+                {tDailyAccount("Saved")}
+              </Badge>
+            ) : null}
           </div>
           {createdDateTimeLabel ? (
             <div
@@ -100,28 +116,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
             </div>
           ) : null}
           {/* Status badge — source of truth for account state */}
-          {isDraft ? (
-            <Badge
-              variant="outline"
-              className="text-[10px] border-amber-400 text-amber-700 bg-amber-50 px-1.5 py-0 h-fit w-fit"
-            >
-              {tDailyAccount("Draft")}
-            </Badge>
-          ) : status === "edited" ? (
-            <Badge
-              variant="outline"
-              className="text-[10px] border-blue-400 text-blue-700 bg-blue-50 px-1.5 py-0 h-fit w-fit"
-            >
-              {tDailyAccount("Edited")}
-            </Badge>
-          ) : status === "saved" ? (
-            <Badge
-              variant="outline"
-              className="text-[10px] border-green-500 text-green-700 bg-green-50 px-1.5 py-0 h-fit w-fit"
-            >
-              {tDailyAccount("Saved")}
-            </Badge>
-          ) : null}
+
           <div className="flex flex-col w-full justify-between items-start gap-2">
             {/* Main content: financial summary for saved/edited, draft info otherwise */}
             {isPersistedAccount ? (
@@ -178,40 +173,6 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                     {tDailyAccount("ReadingsTaken")}
                   </div>
                 )}
-                {isDraft ? (
-                  <div className="flex items-start gap-1 text-amber-600 w-full">
-                    <CircleX className="w-4 h-4" />
-                    {tDailyAccount("DailyAccountNotSaved")}
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-1 text-red-500 w-full">
-                    <CircleX className="w-4 h-4" />
-                    {tDailyAccount("DailyAccountNotSaved")}
-                  </div>
-                )}
-              </div>
-            )}
-            {allTags.length > 0 && (
-              <div className="flex flex-col lg:flex-row w-full justify-between items-start lg:items-end gap-1 lg:gap-0">
-                <div className="flex flex-col lg:flex-row w-full justify-end gap-1">
-                  <div className="flex flex-wrap gap-1 lg:justify-end w-full items-center lg:items-end">
-                    {allTags.slice(0, 3).map((tag, index) => (
-                      <span
-                        key={index}
-                        className={`bg-primary/20 text-primary font-semibold text-xs px-2 py-1 rounded-full`}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {allTags.length > 3 && (
-                      <span
-                        className={`text-muted-foreground font-semibold text-xs ${textSmCls}`}
-                      >
-                        +{allTags.length - 3} more
-                      </span>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
           </div>

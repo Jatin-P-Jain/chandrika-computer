@@ -109,9 +109,9 @@ export function SaveReviewDialog({
                     </div>
                     {it.description ? (
                       <div
-                        className={`text-xs mt-0.5 ${
+                        className={`text-xs ${
                           it.filled
-                            ? "text-primary dark:text-primary"
+                            ? "text-primary dark:text-primary font-medium"
                             : "text-muted-foreground"
                         }`}
                       >

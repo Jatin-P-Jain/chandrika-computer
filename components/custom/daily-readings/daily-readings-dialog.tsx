@@ -22,6 +22,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 import type {
   Denomination,
@@ -48,6 +49,8 @@ import { useTranslations } from "next-intl";
 import { useBreakpoints } from "@/hooks/useBreakPoints";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useAuth } from "@/context/useAuth";
+import { ReadingInput } from "@/components/custom/daily-page/common-components/reading-input";
+import { Separator } from "@/components/ui/separator";
 
 const PhotocopyStep = dynamic(() => import("./steps/photocopy-step"), {
   loading: () => (
@@ -71,6 +74,13 @@ const DENOMS: Denomination[] = [50, 100, 500, 1000];
 
 function clamp0(n: number) {
   return Math.max(0, Number.isFinite(n) ? n : 0);
+}
+
+function hasPreviousBaseline(res: {
+  photocopy: PhotocopyReadingDoc | null;
+  stamp: StampReadingDoc | null;
+}) {
+  return Boolean(res.photocopy && res.stamp);
 }
 
 type Props = {
@@ -103,14 +113,32 @@ export default function DailyReadingsDialog({
   const tReadings = useTranslations("Readings");
   const { textBodyCls, textSmCls, textXsCls } = useLocaleTypography();
   const { authState } = useAuth();
+  const hasSavedReadings = Boolean(readings?.photocopy && readings?.stamp);
+  const isReadOnlyView = readOnly || hasSavedReadings;
 
   const { isTabletUp } = useBreakpoints();
 
   const [open, setOpen] = React.useState(startOpen);
   const [step, setStep] = React.useState<Step>(
-    readOnly ? "review" : "photocopy",
+    isReadOnlyView ? "review" : "photocopy",
   );
   const [loadingPrev, setLoadingPrev] = React.useState(false);
+  const [initializingPrev, setInitializingPrev] = React.useState(false);
+  const [missingPreviousReadings, setMissingPreviousReadings] =
+    React.useState(false);
+  const [lookbackDays, setLookbackDays] = React.useState(1);
+  const [resolvedLookbackDays, setResolvedLookbackDays] = React.useState<
+    number | null
+  >(null);
+  const [manualPhotoPrev, setManualPhotoPrev] = React.useState(0);
+  const [manualStampPrev, setManualStampPrev] = React.useState<
+    Record<Denomination, number>
+  >({
+    50: 0,
+    100: 0,
+    500: 0,
+    1000: 0,
+  });
   const [saving, setSaving] = React.useState(false);
   const [includeStockAddition, setIncludeStockAddition] = React.useState(false);
 
@@ -165,20 +193,20 @@ export default function DailyReadingsDialog({
 
   // In read-only mode, always reset back to review on open/close.
   React.useEffect(() => {
-    if (readOnly) {
+    if (isReadOnlyView) {
       setStep("review");
     }
-  }, [readOnly, open]);
+  }, [isReadOnlyView, open]);
 
   // reset step when dialog opens/closes (optional but keeps UX clean)
   React.useEffect(() => {
-    if (readOnly) return; // Skip this for read-only mode
+    if (isReadOnlyView) return; // Skip this for read-only mode
     if (open && !readingsFound) {
       setStep("photocopy");
     } else {
       setStep("review");
     }
-  }, [open, readingsFound, readOnly]);
+  }, [open, readingsFound, isReadOnlyView]);
 
   // NEW: reset edit state when dialog opens/closes
   React.useEffect(() => {
@@ -254,33 +282,71 @@ export default function DailyReadingsDialog({
     stockForm.formState.isDirty,
   ]);
 
-  // Fetch yesterday on open
-  React.useEffect(() => {
-    if (!open) return;
+  const applyPreviousReadings = React.useCallback(
+    (res: {
+      photocopy: PhotocopyReadingDoc | null;
+      stamp: StampReadingDoc | null;
+    }) => {
+      setPhotoPrev(res.photocopy?.todayReading ?? 0);
 
-    (async () => {
+      const prevParts = res.stamp?.parts;
+      setStampPrev({
+        50: prevParts?.[50]?.todayReading ?? 0,
+        100: prevParts?.[100]?.todayReading ?? 0,
+        500: prevParts?.[500]?.todayReading ?? 0,
+        1000: prevParts?.[1000]?.todayReading ?? 0,
+      });
+    },
+    [],
+  );
+
+  const fetchPreviousByLookback = React.useCallback(
+    async (days: number) => {
+      const normalizedDays = Math.max(1, Math.floor(days || 1));
+      setLoadingPrev(true);
       try {
-        setLoadingPrev(true);
-        const res = await getReadings(todayDateYmd, -1);
+        const res = await getReadings(todayDateYmd, -normalizedDays);
+        if (!hasPreviousBaseline(res)) {
+          setMissingPreviousReadings(true);
+          setResolvedLookbackDays(null);
+          return false;
+        }
 
-        setPhotoPrev(res.photocopy?.todayReading ?? 0);
-
-        const prevParts = res.stamp?.parts;
-        setStampPrev({
-          50: prevParts?.[50]?.todayReading ?? 0,
-          100: prevParts?.[100]?.todayReading ?? 0,
-          500: prevParts?.[500]?.todayReading ?? 0,
-          1000: prevParts?.[1000]?.todayReading ?? 0,
-        });
+        applyPreviousReadings(res);
+        setMissingPreviousReadings(false);
+        setResolvedLookbackDays(normalizedDays);
+        return true;
       } catch (e) {
-        toast.error("Failed to load yesterday", {
+        toast.error(tReadings("FailedToLoadPreviousReadings"), {
           description: e instanceof Error ? e.message : "Unknown error",
         });
+        return false;
       } finally {
         setLoadingPrev(false);
       }
+    },
+    [applyPreviousReadings, tReadings, todayDateYmd],
+  );
+
+  // Resolve previous readings when dialog opens.
+  React.useEffect(() => {
+    if (!open) return;
+    if (isReadOnlyView) return;
+
+    (async () => {
+      setInitializingPrev(true);
+      setMissingPreviousReadings(false);
+      setResolvedLookbackDays(null);
+      setLookbackDays(1);
+
+      const found = await fetchPreviousByLookback(1);
+      if (!found) {
+        setMissingPreviousReadings(true);
+      }
+
+      setInitializingPrev(false);
     })();
-  }, [open, todayDateYmd]);
+  }, [open, fetchPreviousByLookback, isReadOnlyView]);
 
   // Live calculations from watch()
   const photoToday = photoForm.watch("todayReading");
@@ -528,10 +594,17 @@ export default function DailyReadingsDialog({
     </Button>
   );
 
-  const Content = readOnly ? (
+  const Content = isReadOnlyView ? (
     // Read-only mode: Show review step with option to view other steps
     <div className="w-full flex flex-col gap-2 overflow-auto">
       {step !== "review" && <StepHeader />}
+
+      {resolvedLookbackDays && resolvedLookbackDays > 1 ? (
+        <div className="rounded-md bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
+          {tReadings("UsingLatestReadingsFromDaysAgo")} {resolvedLookbackDays}.{" "}
+          {tReadings("PleaseVerifyBeforeContinue")}
+        </div>
+      ) : null}
 
       {step === "photocopy" ? (
         <PhotocopyStep
@@ -613,6 +686,13 @@ export default function DailyReadingsDialog({
     <>
       <div className="w-full flex flex-col gap-2 overflow-auto">
         <StepHeader />
+
+        {resolvedLookbackDays && resolvedLookbackDays > 1 ? (
+          <div className="rounded-md bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
+            {tReadings("UsingLatestReadingsFromDaysAgo")} {resolvedLookbackDays}
+            . {tReadings("PleaseVerifyBeforeContinue")}
+          </div>
+        ) : null}
 
         <div className="flex items-center justify-between w-full flex-col gap-2 md:flex-row">
           {readings?.success && (
@@ -711,6 +791,130 @@ export default function DailyReadingsDialog({
     </>
   );
 
+  const PreviousReadingsResolver = (
+    <div className="w-full rounded-md border p-3 md:p-4 space-y-3">
+      <div className="text-sm font-medium">
+        {tReadings("NoPreviousReadingsFound")}
+      </div>
+      <p className={"text-xs text-muted-foreground " + textSmCls}>
+        {tReadings("AskRecentHolidays")}
+      </p>
+
+      <div className="flex flex-row items-end gap-2">
+        <div className="space-y-1">
+          <Label className={textSmCls}>{tReadings("RecentHolidayCount")}</Label>
+          <ReadingInput
+            value={lookbackDays}
+            onChange={(n) => setLookbackDays(Math.max(1, n || 1))}
+            placeholder="1"
+            inputClassName="flex mx-auto items-center text-center"
+          />
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          disabled={loadingPrev}
+          onClick={async () => {
+            const days = Math.max(1, Math.floor(lookbackDays || 1));
+            const found = await fetchPreviousByLookback(days);
+            if (!found) {
+              toast.error(tReadings("NoReadingsForHolidayOffset"));
+              return;
+            }
+            toast.success(tReadings("LatestReadingsFoundVerify"));
+          }}
+        >
+          {loadingPrev ? (
+            <span className="inline-flex items-center gap-1">
+              <Loader2 className="size-4 animate-spin" />
+              {tReadings("LoadingYesterdaysReadings")}
+            </span>
+          ) : (
+            tReadings("FindLatestReadings")
+          )}
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Separator className="flex-1" />
+        <span className="text-xs">{tCommon("Or")}</span>
+        <Separator className="flex-1" />
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className={"text-sm font-medium " + textBodyCls}>
+          {tReadings("EnterPreviousReadingsManually")}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className={textSmCls}>
+              {tReadings("PhotocopyPreviousReading")}
+            </Label>
+            <ReadingInput
+              value={manualPhotoPrev}
+              onChange={(n) => setManualPhotoPrev(Math.max(0, n || 0))}
+              placeholder="0"
+              inputClassName="text-right"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {DENOMS.map((denom) => (
+            <div key={denom} className="space-y-1">
+              <Label className={textSmCls}>₹ {denom}</Label>
+              <ReadingInput
+                value={manualStampPrev[denom]}
+                onChange={(n) =>
+                  setManualStampPrev((prev) => ({
+                    ...prev,
+                    [denom]: Math.max(0, n || 0),
+                  }))
+                }
+                placeholder="0"
+                inputClassName="text-right"
+              />
+            </div>
+          ))}
+        </div>
+
+        <Button
+          type="button"
+          onClick={() => {
+            setPhotoPrev(Math.max(0, manualPhotoPrev || 0));
+            setStampPrev({
+              50: Math.max(0, manualStampPrev[50] || 0),
+              100: Math.max(0, manualStampPrev[100] || 0),
+              500: Math.max(0, manualStampPrev[500] || 0),
+              1000: Math.max(0, manualStampPrev[1000] || 0),
+            });
+            setMissingPreviousReadings(false);
+            setResolvedLookbackDays(null);
+            toast.success(tReadings("ManualPreviousReadingsSet"));
+          }}
+        >
+          {tReadings("UseManualReadings")}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const InitialLoading = (
+    <div className="w-full rounded-md border p-4 text-sm text-muted-foreground inline-flex items-center gap-2">
+      <Loader2 className="size-4 animate-spin" />
+      {tReadings("LoadingYesterdaysReadings")}
+    </div>
+  );
+
+  const ActiveContent = isReadOnlyView
+    ? Content
+    : initializingPrev
+      ? InitialLoading
+      : missingPreviousReadings
+        ? PreviousReadingsResolver
+        : Content;
+
   if (isTabletUp) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
@@ -723,13 +927,13 @@ export default function DailyReadingsDialog({
         >
           <DialogHeader>
             <DialogTitle>
-              {readOnly
+              {isReadOnlyView
                 ? tReadings("SD&PhotocopyStampReadings")
                 : tReadings("EnterReadings")}
             </DialogTitle>
           </DialogHeader>
 
-          {Content}
+          {ActiveContent}
         </DialogContent>
       </Dialog>
     );
@@ -746,12 +950,12 @@ export default function DailyReadingsDialog({
       >
         <DrawerHeader>
           <DrawerTitle>
-            {readOnly
+            {isReadOnlyView
               ? tReadings("PhotocopyStampReadings")
               : tReadings("EnterReadings")}
           </DrawerTitle>
         </DrawerHeader>
-        {Content}
+        {ActiveContent}
       </DrawerContent>
     </Drawer>
   );
