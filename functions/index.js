@@ -31,7 +31,7 @@ export const updateAccountCreatorIndex = onDocumentWritten(
             count: FieldValue.increment(1),
             lastUpdated: FieldValue.serverTimestamp(),
           },
-          { merge: true }
+          { merge: true },
         );
     }
 
@@ -53,7 +53,7 @@ export const updateAccountCreatorIndex = onDocumentWritten(
     }
 
     // 🔥 UPDATES: newData && oldData → DO NOTHING ✅
-  }
+  },
 );
 
 export const updateAccountUpdaterIndex = onDocumentWritten(
@@ -68,30 +68,45 @@ export const updateAccountUpdaterIndex = onDocumentWritten(
     const newId = newUpdater?.uid || newUpdater?.email;
     const oldId = oldUpdater?.uid || oldUpdater?.email;
 
-    // 🔥 ONLY increment on ACTUAL UPDATES (not creates)
-    // Check if it's an update (both exist) AND data actually changed
-    if (before.exists && after.exists && newId) {
-      // Additional check to ensure it's not just a creation (updatedBy wasn't set before)
-      if (!oldId || oldId !== newId) {
-        await db
-          .collection("daily_account_updaters")
-          .doc(newId)
-          .set(
-            {
-              uid: newUpdater.uid || newId,
-              displayName: newUpdater.displayName || newId,
-              email: newUpdater.email || null,
-              photoUrl: newUpdater.photoUrl || null,
-              count: FieldValue.increment(1),
-              lastUpdated: FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-          );
+    // 🔥 For updates, keep counts accurate when updatedBy changes.
+    // Same updater => no-op. old->new => decrement old, increment new.
+    if (before.exists && after.exists) {
+      if (oldId === newId) return;
+
+      const batch = db.batch();
+
+      if (oldId) {
+        batch.set(
+          db.collection("daily_account_updaters").doc(oldId),
+          {
+            count: FieldValue.increment(-1),
+            lastUpdated: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
       }
+
+      if (newId) {
+        batch.set(
+          db.collection("daily_account_updaters").doc(newId),
+          {
+            uid: newUpdater.uid || newId,
+            displayName: newUpdater.displayName || newId,
+            email: newUpdater.email || null,
+            photoUrl: newUpdater.photoUrl || null,
+            count: FieldValue.increment(1),
+            lastUpdated: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+      }
+
+      await batch.commit().catch(() => {});
+      return;
     }
 
-    // 🔥 Decrement if updater removed
-    if (oldId && !newId) {
+    // 🔥 On delete, decrement the last known updater.
+    if (!after.exists && before.exists && oldId) {
       await db
         .collection("daily_account_updaters")
         .doc(oldId)
@@ -100,7 +115,7 @@ export const updateAccountUpdaterIndex = onDocumentWritten(
         })
         .catch(() => {});
     }
-  }
+  },
 );
 
 function extractAccountIds(data) {
@@ -142,7 +157,7 @@ export const updateAccountMentionsIndex = onDocumentWritten(
           mentions: FieldValue.arrayUnion(docId),
           mentionsCount: FieldValue.increment(1),
         },
-        { merge: true }
+        { merge: true },
       );
     });
 
@@ -153,12 +168,12 @@ export const updateAccountMentionsIndex = onDocumentWritten(
           mentions: FieldValue.arrayRemove(docId),
           mentionsCount: FieldValue.increment(-1),
         },
-        { merge: true }
+        { merge: true },
       );
     });
 
     await batch.commit().catch(() => {});
-  }
+  },
 );
 
 function extractAllTags(data) {
@@ -217,7 +232,7 @@ export const updateAccountTagsIndex = onDocumentWritten(
             count: FieldValue.increment(1),
             lastUpdated: FieldValue.serverTimestamp(),
           },
-          { merge: true }
+          { merge: true },
         );
       }
     });
@@ -232,5 +247,5 @@ export const updateAccountTagsIndex = onDocumentWritten(
     });
 
     await batch.commit().catch(() => {});
-  }
+  },
 );

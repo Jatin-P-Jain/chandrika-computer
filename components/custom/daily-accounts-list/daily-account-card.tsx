@@ -1,6 +1,7 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { DailyAccount } from "@/types/daily-account";
 import { formatINR } from "@/lib/utils";
 import {
@@ -9,9 +10,11 @@ import {
   ChevronsRight,
   CircleCheck,
   CircleX,
+  ClockPlus,
 } from "lucide-react";
 import { DateDisplay } from "../date-display";
 import { useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
 import clsx from "clsx";
@@ -22,10 +25,13 @@ type DailyAccountCardProps = {
 
 export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   const tDailyAccount = useTranslations("DailyAccount");
+  const tCommon = useTranslations("Common");
   const { textHeadingCls, textBodyCls, textSmCls } = useLocaleTypography();
+  const locale = useLocale();
   const {
     id,
     status,
+    created,
     fixed,
     notes,
     lastNotedAt,
@@ -48,13 +54,27 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
     Boolean(lastReadingAt && lastReadingAt.length > 0) ||
     Number(fixed?.sd || 0) > 0 ||
     Number(fixed?.fs || 0) > 0;
+  const isPersistedAccount = status === "saved" || status === "edited";
+  const isDraft = status === "draft";
+  // Persisted docs should open in canonical view mode; drafts open in create/complete flow.
+  const cardTarget = `/daily-accounts/${id}`;
 
   const { push } = useSafeRouter();
+
+  const createdDateTimeLabel = created
+    ? new Intl.DateTimeFormat(locale, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(created))
+    : "";
 
   return (
     <Card
       onClick={() => {
-        push(`/daily-accounts/${id}?mode=view`);
+        push(cardTarget);
       }}
       className={clsx(
         "cursor-pointer w-full flex p-1 lg:p-0 shadow-md border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
@@ -71,8 +91,40 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
               {<DateDisplay value={id} type="docId" />}
             </span>
           </div>
+          {createdDateTimeLabel ? (
+            <div
+              className={`flex items-center gap-1 text-[10px] text-muted-foreground ${textSmCls}`}
+            >
+              <ClockPlus className="size-3" />
+              <span>{createdDateTimeLabel}</span>
+            </div>
+          ) : null}
+          {/* Status badge — source of truth for account state */}
+          {isDraft ? (
+            <Badge
+              variant="outline"
+              className="text-[10px] border-amber-400 text-amber-700 bg-amber-50 px-1.5 py-0 h-fit w-fit"
+            >
+              {tDailyAccount("Draft")}
+            </Badge>
+          ) : status === "edited" ? (
+            <Badge
+              variant="outline"
+              className="text-[10px] border-blue-400 text-blue-700 bg-blue-50 px-1.5 py-0 h-fit w-fit"
+            >
+              {tDailyAccount("Edited")}
+            </Badge>
+          ) : status === "saved" ? (
+            <Badge
+              variant="outline"
+              className="text-[10px] border-green-500 text-green-700 bg-green-50 px-1.5 py-0 h-fit w-fit"
+            >
+              {tDailyAccount("Saved")}
+            </Badge>
+          ) : null}
           <div className="flex flex-col w-full justify-between items-start gap-2">
-            {hasFinancialSummary ? (
+            {/* Main content: financial summary for saved/edited, draft info otherwise */}
+            {isPersistedAccount ? (
               <div className="flex flex-col gap-0 w-full pl-2">
                 <div className="flex items-center justify-between gap-4">
                   <span
@@ -126,10 +178,17 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                     {tDailyAccount("ReadingsTaken")}
                   </div>
                 )}
-                <div className="flex items-start gap-1 text-red-500 w-full">
-                  <CircleX className="w-4 h-4" />
-                  {tDailyAccount("DailyAccountNotSaved")}
-                </div>
+                {isDraft ? (
+                  <div className="flex items-start gap-1 text-amber-600 w-full">
+                    <CircleX className="w-4 h-4" />
+                    {tDailyAccount("DailyAccountNotSaved")}
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-1 text-red-500 w-full">
+                    <CircleX className="w-4 h-4" />
+                    {tDailyAccount("DailyAccountNotSaved")}
+                  </div>
+                )}
               </div>
             )}
             {allTags.length > 0 && (
@@ -159,9 +218,9 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
         </div>
 
         <Button className=" flex flex-1  w-full">
-          {status === "saved" || status === "edited"
-            ? tDailyAccount("ViewAccount")
-            : hasNotesTaken || hasReadingsTaken
+          {isPersistedAccount
+            ? tCommon("View")
+            : isDraft
               ? tDailyAccount("CompleteDailyAccount")
               : tDailyAccount("CreateDailyAccount")}{" "}
           <ChevronsRight className="size-4" />

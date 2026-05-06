@@ -39,6 +39,7 @@ const MoreFiltersPopover = dynamic(
 const PRESET_FILTERS = [{ id: "week", label: "PastWeek", value: "week" }];
 
 const SORT_FIELDS = [
+  { value: "id", label: "AccountDate" },
   { value: "created", label: "CreatedDate" },
   { value: "updated", label: "UpdatedDate" },
   { value: "totalEarnings", label: "TotalEarnings" },
@@ -62,7 +63,7 @@ export function FiltersSection() {
 
   // Current filter states from URL
   const dateRange = searchParams.get("dateRange");
-  const sortField = searchParams.get("sortField") || "created";
+  const sortField = searchParams.get("sortField") || "id";
   const sortDir = searchParams.get("sortDir") || "desc";
 
   // 🔥 COMPUTE from URL - tracks ALL filters perfectly
@@ -139,10 +140,7 @@ export function FiltersSection() {
     const currentFilters = Array.from(params.entries());
     const hasFilters = currentFilters.some(([key, value]) => {
       return (
-        !["page"].includes(key) &&
-        value &&
-        value !== "created" &&
-        value !== "desc"
+        !["page"].includes(key) && value && value !== "id" && value !== "desc"
       );
     });
 

@@ -12,7 +12,7 @@ import {
 import { UserData } from "@/types/user";
 import { toDocId } from "@/lib/utils";
 import { Timestamp } from "firebase-admin/firestore";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { DailyAccountInput } from "@/lib/daily-accounts/types";
 import { ensureAdminAccess } from "@/lib/daily-accounts/policy";
 import { validateDailyAccountInput } from "@/lib/daily-accounts/validation";
@@ -82,9 +82,9 @@ export const saveDailyAccountDraft = async (
           ? "edited"
           : "draft";
 
-      const auditEvent: AuditEvent = {
-        type: "account_updated",
-        action: existingSnap.exists ? "Updated" : "Saved",
+      const draftAuditEvent: AuditEvent = {
+        type: "account_created",
+        action: "Draft Saved",
         entity: "account",
         user,
         timestamp: new Date().toISOString(),
@@ -103,7 +103,9 @@ export const saveDailyAccountDraft = async (
           allTags,
           totalEarnings: totals.earnings,
           totalSpends: totals.spends,
-          auditTrail: FieldValue.arrayUnion(auditEvent),
+          ...(existingSnap.exists
+            ? {}
+            : { auditTrail: FieldValue.arrayUnion(draftAuditEvent) }),
         },
         { merge: true }
       );
@@ -112,10 +114,11 @@ export const saveDailyAccountDraft = async (
     done({ success: true, docsRead: 1, docsWritten: 1, details: { docId } });
 
     revalidatePath(`/daily-accounts/${docId}`);
-    revalidateTag("daily-account-list", "max");
-    revalidateTag("daily-account-latest", "max");
-    revalidateTag(`daily-account:${docId}`, "max");
-    revalidateTag("daily-account-filters", "max");
+    revalidatePath(`/daily-accounts`);
+    updateTag("daily-account-list");
+    updateTag("daily-account-latest");
+    updateTag(`daily-account:${docId}`);
+    updateTag("daily-account-filters");
 
     return { docId };
   } catch (e: unknown) {
@@ -158,13 +161,19 @@ export const createDailyAccountItem = async (
       const existingData = existing.data() as
         | {
             created?: unknown;
+            status?: "draft" | "saved" | "edited";
             createdBy?: { uid?: string | null } | null;
             auditTrail?: unknown[];
           }
         | undefined;
-      const hasRealAccountOwner = Boolean(existingData?.createdBy?.uid);
 
-      if (existing.exists && hasRealAccountOwner) {
+      // Only block if a fully-saved/edited account already exists.
+      // A draft (created by readings/notes saves) can be completed/finalized.
+      const existingStatus = existingData?.status;
+      const isAlreadyFinalized =
+        existingStatus === "saved" || existingStatus === "edited";
+
+      if (existing.exists && isAlreadyFinalized) {
         throw new Error(`${accountExistsErrorMessage}`);
       }
 
@@ -175,7 +184,7 @@ export const createDailyAccountItem = async (
 
       const auditEvent: AuditEvent = {
         type: "account_created",
-        action: "Created",
+        action: "Daily Account Saved",
         entity: "account",
         user,
         timestamp: new Date().toISOString(),
@@ -190,7 +199,9 @@ export const createDailyAccountItem = async (
         ...accountData,
         id: documentId,
         status: "saved" as const,
-        createdBy: user,
+        // Preserve createdBy from an existing draft (set by readings/notes saves).
+        // Fall back to the current user if no prior doc exists.
+        createdBy: existingData?.createdBy ?? user,
         created: existingData?.created ?? Timestamp.now(),
         updatedBy: user,
         updated: Timestamp.now(),
@@ -212,10 +223,12 @@ export const createDailyAccountItem = async (
       details: { documentId },
     });
 
-    revalidateTag("daily-account-list", "max");
-    revalidateTag("daily-account-latest", "max");
-    revalidateTag(`daily-account:${documentId}`, "max");
-    revalidateTag("daily-account-filters", "max");
+    revalidatePath(`/daily-accounts/${documentId}`);
+    revalidatePath(`/daily-accounts`);
+    updateTag("daily-account-list");
+    updateTag("daily-account-latest");
+    updateTag(`daily-account:${documentId}`);
+    updateTag("daily-account-filters");
 
     return { docId: documentId };
   } catch (e: unknown) {
@@ -275,7 +288,7 @@ export const updateDailyAccountItem = async (
 
       const auditEvent: AuditEvent = {
         type: "account_updated",
-        action: "Updated",
+        action: "Daily Account Updated",
         entity: "account",
         user,
         timestamp: new Date().toISOString(),
@@ -298,10 +311,10 @@ export const updateDailyAccountItem = async (
     done({ success: true, docsRead: 1, docsWritten: 1, details: { docId } });
 
     revalidatePath(`/daily-accounts/${docId}`);
-    revalidateTag("daily-account-list", "max");
-    revalidateTag("daily-account-latest", "max");
-    revalidateTag(`daily-account:${docId}`, "max");
-    revalidateTag("daily-account-filters", "max");
+    updateTag("daily-account-list");
+    updateTag("daily-account-latest");
+    updateTag(`daily-account:${docId}`);
+    updateTag("daily-account-filters");
 
     return { docId };
   } catch (e: unknown) {

@@ -12,10 +12,11 @@ import type {
 } from "@/types/readings";
 import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
 import { Timestamp } from "firebase-admin/firestore";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { AuditEvent } from "@/types/daily-account";
 import { UserData } from "@/types/user";
 import { FieldValue } from "@/firebase/server";
+import { ensureAdminAccess } from "@/lib/daily-accounts/policy";
 
 type GetReadingsOptions = {
   pagination?: {
@@ -30,7 +31,9 @@ async function syncDailyAccountFromReadings(opts: {
   docId: string;
   fsAmount?: number;
   sdAmount?: number;
-  user?: UserData | null;
+  user: UserData;
+  auditTimestamp: string;
+  auditKind: "saved" | "updated";
 }) {
   const accountRef = fireStore.collection("daily-accounts").doc(opts.docId);
   const accountSnap = await accountRef.get();
@@ -88,35 +91,46 @@ async function syncDailyAccountFromReadings(opts: {
     totalEarnings: nn(existing?.totalEarnings ?? 0),
     totalSpends: nn(existing?.totalSpends ?? 0),
     totalCashCollected: nn(existing?.totalCashCollected ?? 0),
-    createdBy: existing?.createdBy ?? null,
-    updatedBy: existing?.updatedBy ?? existing?.createdBy ?? null,
+    createdBy: existing?.createdBy ?? opts.user,
+    updatedBy: opts.user,
     created: existing?.created ?? now,
     updated: now,
     lastReadingAt: now,
   };
 
-  // Create audit event for reading save/update
-  const auditEvent: AuditEvent = {
-    type: accountSnap.exists ? "reading_updated" : "reading_saved",
-    action: accountSnap.exists ? "Updated" : "Saved",
+  const readingAuditEvent: AuditEvent = {
+    type: opts.auditKind === "saved" ? "reading_saved" : "reading_updated",
+    action: opts.auditKind === "saved" ? "Readings Saved" : "Readings Updated",
     entity: "reading",
-    user: opts.user || null,
-    timestamp: new Date().toISOString(),
+    user: opts.user,
+    timestamp: opts.auditTimestamp,
   };
+
+  const accountDraftEvent: AuditEvent = {
+    type: "account_created",
+    action: "Draft Saved",
+    entity: "account",
+    user: opts.user,
+    timestamp: opts.auditTimestamp,
+  };
+
+  const auditEvents = accountSnap.exists
+    ? [readingAuditEvent]
+    : [accountDraftEvent, readingAuditEvent];
 
   await accountRef.set(
     {
       ...requiredFields,
-      auditTrail: FieldValue.arrayUnion(auditEvent),
+      auditTrail: FieldValue.arrayUnion(...auditEvents),
     },
     { merge: true },
   );
 
   revalidatePath(`/daily-accounts/${opts.docId}`);
   revalidatePath(`/daily-accounts`);
-  revalidateTag("daily-account-list", "max");
-  revalidateTag("daily-account-latest", "max");
-  revalidateTag(`daily-account:${opts.docId}`, "max");
+  updateTag("daily-account-list");
+  updateTag("daily-account-latest");
+  updateTag(`daily-account:${opts.docId}`);
 }
 
 type TimestampLike = { toMillis: () => number };
@@ -273,7 +287,16 @@ export async function savePhotocopyReading(opts: {
   todayDateYmd: string;
   todayReading: number;
   prevReading: number; // from yesterday
+  user: UserData;
+  authtoken: string;
+  auditTimestamp: string;
+  auditKind: "saved" | "updated";
 }) {
+  const access = await ensureAdminAccess(opts.user, opts.authtoken);
+  if (!access.ok) {
+    throw new Error(access.message);
+  }
+
   const done = startFirestoreMetric({
     source: "server",
     operation: "savePhotocopyReading",
@@ -304,7 +327,9 @@ export async function savePhotocopyReading(opts: {
   await syncDailyAccountFromReadings({
     docId: opts.todayDateYmd,
     fsAmount: amount,
-    user: undefined,
+    user: opts.user,
+    auditTimestamp: opts.auditTimestamp,
+    auditKind: opts.auditKind,
   });
 
   done({
@@ -370,7 +395,16 @@ export async function saveStampReading(opts: {
   partsTodayReadings: Record<Denomination, number>;
   prevPartsReadings: Record<Denomination, number>; // from yesterday
   partsStockAdded?: Record<Denomination, number>; // stock added today
+  user: UserData;
+  authtoken: string;
+  auditTimestamp: string;
+  auditKind: "saved" | "updated";
 }) {
+  const access = await ensureAdminAccess(opts.user, opts.authtoken);
+  if (!access.ok) {
+    throw new Error(access.message);
+  }
+
   const done = startFirestoreMetric({
     source: "server",
     operation: "saveStampReading",
@@ -435,7 +469,9 @@ export async function saveStampReading(opts: {
   await syncDailyAccountFromReadings({
     docId: opts.todayDateYmd,
     sdAmount: totalAmount,
-    user: undefined,
+    user: opts.user,
+    auditTimestamp: opts.auditTimestamp,
+    auditKind: opts.auditKind,
   });
 
   done({

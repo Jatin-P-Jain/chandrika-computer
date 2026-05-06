@@ -11,14 +11,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { PlusCircle } from "lucide-react";
+import { Plus } from "lucide-react";
 
 export type ReviewItem = {
   id: string;
   title: string;
   description?: string;
+  /** Renders a small badge next to the title instead of "(n)" in the string */
+  count?: number;
+  /** When true the description is styled green (section is complete / filled) */
+  filled?: boolean;
   actionLabel?: string;
   onAction?: () => void;
 };
@@ -61,7 +66,7 @@ export function SaveReviewDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="w-[95vw] md:max-w-4xl max-h-[90vh] flex flex-col">
+      <AlertDialogContent className=" max-h-[90vh] flex flex-col p-3">
         <AlertDialogHeader className="shrink-0">
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description ? (
@@ -69,33 +74,47 @@ export function SaveReviewDialog({
           ) : null}
         </AlertDialogHeader>
 
-        <div className="space-y-2 overflow-y-auto min-h-0 flex-1 pr-1">
+        <div className="space-y-2 overflow-y-auto min-h-0 flex-1 no-scrollbar">
           {items.map((it) => {
             const checked = checkedIds[it.id] === true;
 
             return (
               <div
                 key={it.id}
-                className="rounded-md border p-3 flex items-center justify-between gap-3"
+                className="rounded-md border p-2 flex items-start justify-between gap-3"
               >
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="min-w-0">
-                    <div className="flex items-start ">
-                      <div className="font-medium">{it.title}</div>
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-medium text-sm">{it.title}</span>
+                      {it.count !== undefined ? (
+                        <Badge
+                          variant={it.filled ? "default" : "secondary"}
+                          className="h-4 px-1.5 text-[10px] font-semibold rounded-full"
+                        >
+                          {it.count}
+                        </Badge>
+                      ) : null}
                       {it.onAction && it.actionLabel ? (
                         <Button
-                          variant="link"
-                          className="text-sm font-semibold"
-                          onClick={it.onAction}
+                          variant="outline"
                           size="sm"
+                          className="h-6 p-1.5 text-xs! gap-0.5 font-medium border text-primary hover:bg-primary/5 ml-auto"
+                          onClick={it.onAction}
                         >
-                          {it.actionLabel}{" "}
-                          <PlusCircle className="ml-1 h-4 w-4" />
+                          <Plus className="size-4" />
+                          {it.actionLabel}
                         </Button>
                       ) : null}
                     </div>
                     {it.description ? (
-                      <div className="text-sm text-muted-foreground">
+                      <div
+                        className={`text-xs mt-0.5 ${
+                          it.filled
+                            ? "text-primary dark:text-primary"
+                            : "text-muted-foreground"
+                        }`}
+                      >
                         {it.description}
                       </div>
                     ) : null}

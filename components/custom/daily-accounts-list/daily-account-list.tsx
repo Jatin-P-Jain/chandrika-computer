@@ -53,7 +53,7 @@ export default function DailyAccountsList({
 
   const fromDate = searchParamsValues.fromDate;
   const toDate = searchParamsValues.toDate;
-  const sortField = searchParamsValues.sortField || "created"; // Default sort
+  const sortField = searchParamsValues.sortField || "id"; // Default sort by account date
   const sortDir = searchParamsValues.sortDir || "desc"; // Default direction
 
   // 🔥 BUILD FIRESTORE FILTERS ARRAY
@@ -62,18 +62,18 @@ export default function DailyAccountsList({
     ...(fromDate
       ? [
           {
-            field: "created",
+            field: "id",
             operator: ">=" as FilterOperator,
-            value: new Date(fromDate + "T00:00:00Z"),
+            value: fromDate,
           },
         ]
       : []),
     ...(toDate
       ? [
           {
-            field: "created",
+            field: "id",
             operator: "<=" as FilterOperator,
-            value: new Date(toDate + "T23:59:59.999Z"), // End of day
+            value: toDate,
           },
         ]
       : []),
@@ -193,8 +193,8 @@ export default function DailyAccountsList({
         {tCommon("ShowingResults", { currentPage, start, end, totalItems })}
       </p>
 
-      <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-140 max-h-135 overflow-auto no-scrollbar pb-2 md:pb-0">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-140 overflow-auto no-scrollbar md:pb-0">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-[calc(100vh-220px)] overflow-auto no-scrollbar rounded-md">
           {data.map((dailyAccount: DailyAccount, index: number) => (
             <DailyAccountCard
               key={dailyAccount.id || index}

@@ -4,7 +4,7 @@ import { fireStore } from "@/firebase/server";
 import { UserData } from "@/types/user";
 import { NoteItem } from "@/types/daily-notes";
 import { Timestamp } from "firebase-admin/firestore";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { ensureAdminAccess } from "@/lib/daily-accounts/policy";
 import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
 import { AuditEvent } from "@/types/daily-account";
@@ -52,6 +52,8 @@ export const addNoteItem = async (
     const accountRef = fireStore.collection("daily-accounts").doc(docId);
     const accountSnap = await accountRef.get();
 
+    const now = Timestamp.now();
+
     const requiredFields = {
       id: docId,
       status:
@@ -67,59 +69,49 @@ export const addNoteItem = async (
       totalEarnings: 0,
       totalSpends: 0,
       totalCashCollected: 0,
-      createdBy: accountSnap.data()?.createdBy ?? null,
+      createdBy: accountSnap.data()?.createdBy ?? user,
       updatedBy: user,
-      created: Timestamp.now(),
-      updated: Timestamp.now(),
-      lastNotedAt: Timestamp.now(),
+      created: accountSnap.data()?.created ?? now,
+      updated: now,
+      lastNotedAt: now,
     };
 
-    if (accountSnap.exists) {
-      // Update with merge: preserve existing data and add/update required fields
-      const existingData = accountSnap.data();
+    const auditTimestamp = new Date().toISOString();
+    const notesSavedEvent: AuditEvent = {
+      type: "notes_saved",
+      action: "Notes Saved",
+      entity: "notes",
+      user,
+      timestamp: auditTimestamp,
+    };
 
-      // Create audit event for note save/update
-      const auditEvent: AuditEvent = {
-        type: "notes_saved",
-        action: "Saved",
-        entity: "notes",
-        user,
-        timestamp: new Date().toISOString(),
-      };
+    const accountDraftEvent: AuditEvent = {
+      type: "account_created",
+      action: "Draft Saved",
+      entity: "account",
+      user,
+      timestamp: auditTimestamp,
+    };
 
-      await accountRef.set(
-        {
-          ...existingData,
-          ...requiredFields,
-          created: existingData?.created || requiredFields.created,
-          auditTrail: FieldValue.arrayUnion(auditEvent),
-        },
-        { merge: true }
-      );
-    } else {
-      // Create new document with all required fields
-      const auditEvent: AuditEvent = {
-        type: "notes_saved",
-        action: "Saved",
-        entity: "notes",
-        user,
-        timestamp: new Date().toISOString(),
-      };
-
-      await accountRef.set(
-        {
-          ...requiredFields,
-          auditTrail: FieldValue.arrayUnion(auditEvent),
-        },
-        { merge: true }
-      );
-    }
+    await accountRef.set(
+      {
+        ...requiredFields,
+        auditTrail: FieldValue.arrayUnion(
+          ...(accountSnap.exists
+            ? [notesSavedEvent]
+            : [accountDraftEvent, notesSavedEvent])
+        ),
+      },
+      { merge: true }
+    );
 
     done({ success: true, docsRead: 0, docsWritten: 1, details: { docId } });
 
     revalidatePath(`/daily-accounts/${docId}`);
-    revalidatePath(`/daily-accounts`); // 🔥 Revalidate listing page when notes are added
-    revalidateTag(`daily-account:${docId}`, "max");
+    revalidatePath(`/daily-accounts`);
+    updateTag("daily-account-list");
+    updateTag("daily-account-latest");
+    updateTag(`daily-account:${docId}`);
 
     return { success: true, noteId: noteItem.id };
   } catch (e: unknown) {
@@ -164,11 +156,32 @@ export const updateNoteStatus = async (
       updatedAt: Timestamp.now(),
     });
 
+    const accountRef = fireStore.collection("daily-accounts").doc(docId);
+    const notesUpdatedEvent: AuditEvent = {
+      type: "notes_updated",
+      action: "Notes Updated",
+      entity: "notes",
+      user,
+      timestamp: new Date().toISOString(),
+    };
+
+    await accountRef.set(
+      {
+        updated: Timestamp.now(),
+        updatedBy: user,
+        lastNotedAt: Timestamp.now(),
+        auditTrail: FieldValue.arrayUnion(notesUpdatedEvent),
+      },
+      { merge: true }
+    );
+
     done({ success: true, docsRead: 0, docsWritten: 1, details: { docId } });
 
     revalidatePath(`/daily-accounts/${docId}`);
-    revalidatePath(`/daily-accounts`); // 🔥 Revalidate listing page when note status changes
-    revalidateTag(`daily-account:${docId}`, "max");
+    revalidatePath(`/daily-accounts`);
+    updateTag("daily-account-list");
+    updateTag("daily-account-latest");
+    updateTag(`daily-account:${docId}`);
 
     return { success: true };
   } catch (e: unknown) {
@@ -236,8 +249,10 @@ export const deleteNote = async (
     done({ success: true, docsRead: 0, docsWritten: 1, details: { docId } });
 
     revalidatePath(`/daily-accounts/${docId}`);
-    revalidatePath(`/daily-accounts`); // 🔥 Revalidate listing page when note is deleted
-    revalidateTag(`daily-account:${docId}`, "max");
+    revalidatePath(`/daily-accounts`);
+    updateTag("daily-account-list");
+    updateTag("daily-account-latest");
+    updateTag(`daily-account:${docId}`);
 
     return { success: true };
   } catch (e: unknown) {

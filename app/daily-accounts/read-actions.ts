@@ -107,7 +107,7 @@ const getLatestDailyAccountCached = unstable_cache(
 
     const snap = await fireStore
       .collection("daily-accounts")
-      .orderBy("created", "desc")
+      .orderBy("id", "desc")
       .limit(1)
       .get();
 

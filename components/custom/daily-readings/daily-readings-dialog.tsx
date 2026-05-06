@@ -47,6 +47,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useBreakpoints } from "@/hooks/useBreakPoints";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
+import { useAuth } from "@/context/useAuth";
 
 const PhotocopyStep = dynamic(() => import("./steps/photocopy-step"), {
   loading: () => (
@@ -101,6 +102,7 @@ export default function DailyReadingsDialog({
   const tCommon = useTranslations("Common");
   const tReadings = useTranslations("Readings");
   const { textBodyCls, textSmCls, textXsCls } = useLocaleTypography();
+  const { authState } = useAuth();
 
   const { isTabletUp } = useBreakpoints();
 
@@ -390,12 +392,27 @@ export default function DailyReadingsDialog({
       const stampValues = stampForm.getValues();
       const stockValues = includeStockAddition ? stockForm.getValues() : null;
 
+      if (authState.status !== "ready") {
+        toast.error("Authentication required");
+        return;
+      }
+
+      const token = await authState.currentUser.getIdToken();
+      const auditTimestamp = new Date().toISOString();
+      const auditKind: "saved" | "updated" = readingsFound
+        ? "updated"
+        : "saved";
+
       // Save both; if you want strict atomicity, you can create one server action that writes both in a transaction.
       const [photoRes, stampRes] = await Promise.all([
         savePhotocopyReading({
           todayDateYmd,
           todayReading: photoValues.todayReading,
           prevReading: photoPrev,
+          user: authState.clientUser,
+          authtoken: token,
+          auditTimestamp,
+          auditKind,
         }),
         saveStampReading({
           todayDateYmd,
@@ -414,6 +431,10 @@ export default function DailyReadingsDialog({
                 1000: stockValues?.s1000 ?? 0,
               }
             : undefined,
+          user: authState.clientUser,
+          authtoken: token,
+          auditTimestamp,
+          auditKind,
         }),
       ]);
 

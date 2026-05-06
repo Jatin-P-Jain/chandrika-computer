@@ -271,12 +271,9 @@ export const normalizeDailyAccount = (raw: unknown): DailyAccount => {
   const earnings = getObj(getNested(r, "earnings"));
   const createdBy = toUser(getNested(r, "createdBy"));
   const statusRaw = getNested(r, "status");
-  const inferredStatus =
-    statusRaw == null
-      ? createdBy.uid
-        ? "saved"
-        : "draft"
-      : toDailyAccountStatus(statusRaw);
+  // Status is always explicitly written; don't infer from createdBy.
+  // Default to "draft" only for backwards compatibility with very old documents.
+  const inferredStatus = toDailyAccountStatus(statusRaw ?? "draft");
 
   const createdMillis = toMillis(getNested(r, "created"));
   const updatedMillis = toMillis(getNested(r, "updated"));

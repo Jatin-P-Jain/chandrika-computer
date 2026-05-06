@@ -16,6 +16,7 @@
     "DarkMode": "Dark Mode",
     "Date": "Date",
     "Edit": "Edit",
+    "View": "View",
     "EN": "EN",
     "English": "English",
     "EnterHere": "Enter Here...",
@@ -86,6 +87,9 @@
     "NotesTaken": "Notes Taken",
     "ReadingsTaken": "Readings Taken",
     "DailyAccountNotSaved": "Daily Account not saved",
+    "Draft": "Draft",
+    "Saved": "Saved",
+    "Edited": "Updated",
     "OnlyNotesAdded": "Only notes added!",
     "OtherEarnings": "Other Earnings",
     "Photocopy": "Photocopy (FS)",
@@ -100,6 +104,7 @@
     "TotalIncome": "Total Income"
   },
   "Filters": {
+    "AccountDate": "Account Date",
     "Apply": "Apply",
     "Ascending": "Ascending",
     "CashCollected": "Cash Collected",
@@ -129,8 +134,7 @@
     "SecureServices": "Secured Services",
     "SecureServicesDesc": "To protect your data, access to the services below requires you to be signed in. Please log in to continue.",
     "SessionExpiredMessage": "You’ve been logged out",
-    "SessionExpiredMessageDesc": "Looks like you were away for a bit. Please sign in again.",
-    "WelcomeMessage": "Welcome to Chandrika Computer!"
+    "SessionExpiredMessageDesc": "Looks like you were away for a bit. Please sign in again."
   },
   "MobileNumber": {
     "ChangeNumber": "Change Mobile Number",
@@ -149,6 +153,7 @@
     "SendOTP": "Send OTP",
     "Verification": "Mobile Number Verification",
     "VerificationDesc": "Please verify your mobile number to access secure services",
+    "AccountDate": "Account Date",
     "Verifying": "Verifying",
     "VerifyOTP": "Verify OTP"
   },

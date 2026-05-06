@@ -106,9 +106,11 @@ export default async function RootLayout({
                         toastOptions={{
                           classNames: {
                             toast:
-                              "md:w-fit! flex items-center p-2! px-4! md:p-4!",
-                            title: "font-semibold w-full",
-                            description: "",
+                              "w-[min(94vw,420px)]! min-h-14! flex items-start gap-2 px-4! py-3!",
+                            title:
+                              "font-semibold text-sm md:text-sm leading-snug",
+                            description:
+                              "text-xs md:text-sm leading-snug text-muted-foreground",
                           },
                         }}
                       />
@@ -121,9 +123,12 @@ export default async function RootLayout({
                         className="flex justify-center"
                         toastOptions={{
                           classNames: {
-                            toast: "w-fit! flex items-center gap-3",
-                            title: "text-lg font-semibold w-full",
-                            description: "md:text-base",
+                            toast:
+                              "w-[min(94vw,420px)]! min-h-14! flex items-start gap-2 px-4! py-3!",
+                            title:
+                              "font-semibold text-sm md:text-sm leading-snug",
+                            description:
+                              "text-xs md:text-sm leading-snug text-muted-foreground",
                           },
                         }}
                       />
