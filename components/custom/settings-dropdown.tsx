@@ -1,8 +1,11 @@
 "use client";
 
-import { Settings } from "lucide-react";
+import { Download, Settings } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
+import { usePwaPrompt } from "@/hooks/usePwaPrompt";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +20,25 @@ import { KeyboardSwitch } from "./action-items/keyboard-switch";
 export function SettingsDropdown() {
   const tCommon = useTranslations("Common");
   const { textLabelCls } = useLocaleTypography();
+  const { canInstall, isPwa, promptToInstall, diagnostics } = usePwaPrompt();
+
+  const onInstall = async () => {
+    if (!canInstall) {
+      if (diagnostics.isAndroidChrome) {
+        toast.message(tCommon("InstallFromBrowserMenu"));
+      } else {
+        toast.message(tCommon("InstallNotAvailable"));
+      }
+      return;
+    }
+
+    const outcome = await promptToInstall();
+    if (outcome === "accepted") {
+      toast.success(tCommon("InstallAccepted"));
+    } else if (outcome === "dismissed") {
+      toast.message(tCommon("InstallDismissed"));
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -25,7 +47,6 @@ export function SettingsDropdown() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="p-3 gap-3 flex flex-col">
-        {/* Preferences Section */}
         <div className="flex flex-col gap-1">
           <DropdownMenuLabel className="font-semibold text-muted-foreground p-0 mb-2">
             {tCommon("Settings")}
@@ -51,6 +72,24 @@ export function SettingsDropdown() {
           >
             <LocaleToggle labelClassName={textLabelCls} />
           </DropdownMenuItem>
+
+          {!isPwa ? (
+            <DropdownMenuItem
+              className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0 mt-2"
+              onSelect={(e) => e.preventDefault()}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full justify-center gap-1"
+                onClick={onInstall}
+              >
+                <Download className="size-4" />
+                {tCommon("InstallApp")}
+              </Button>
+            </DropdownMenuItem>
+          ) : null}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

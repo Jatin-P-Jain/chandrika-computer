@@ -12,7 +12,7 @@ export function Navbar() {
     <header className="fixed inset-x-0 top-0 z-20 bg-card">
       <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 text-primary md:h-18">
         {/* Left: logo + name */}
-        <SafeLink href="/" className="flex items-center gap-1 md:gap-3">
+        <SafeLink href="/" className="flex items-center gap-1 md:gap-3 mr-2">
           <div className="relative items-center h-12 shrink-0 w-20 flex mt-auto">
             <Image
               src="/images/logo.png"

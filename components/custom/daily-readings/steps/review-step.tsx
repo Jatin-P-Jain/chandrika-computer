@@ -17,7 +17,9 @@ type Props = {
   photoPrev: number;
   photoToday: number;
   photoDiff: number;
+  photoActualAmount: number;
   photoAmount: number;
+  photoIsRounded: boolean;
   stampPrev: Record<Denomination, number>;
   stampStockAdded: Record<Denomination, number>;
   stampSold: Record<Denomination, number>;
@@ -46,7 +48,9 @@ export default function ReviewStep({
   photoPrev,
   photoToday,
   photoDiff,
+  photoActualAmount,
   photoAmount,
+  photoIsRounded,
   stampPrev,
   stampStockAdded,
   stampSold,
@@ -115,13 +119,30 @@ export default function ReviewStep({
             <b className="text-foreground tabular-nums">{photoDiff}</b>
           </div>
 
+          {photoIsRounded ? (
+            <div
+              className={clsx(
+                "text-xs text-muted-foreground flex justify-between items-center",
+                textSmCls,
+              )}
+            >
+              {tReadings("ActualCalculatedAmount")}:{" "}
+              <b className="text-foreground tabular-nums">
+                {formatINR(photoActualAmount)}
+              </b>
+            </div>
+          ) : null}
+
           <div
             className={clsx(
               "text-sm flex items-center justify-between font-semibold",
               textBodyCls,
             )}
           >
-            {tReadings("TotalAmount")} (FS):{" "}
+            {photoIsRounded
+              ? tReadings("RoundedAmount")
+              : tReadings("TotalAmount")}{" "}
+            (FS):{" "}
             <b className="text-foreground tabular-nums">
               {formatINR(photoAmount)}
             </b>

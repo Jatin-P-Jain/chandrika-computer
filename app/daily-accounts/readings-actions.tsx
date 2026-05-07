@@ -4,6 +4,7 @@
 import { fireStore } from "@/firebase/server";
 import type {
   Denomination,
+  ManualPreviousReadingsDoc,
   PhotocopyReadingDoc,
   StampReadingDoc,
   StampPartDoc,
@@ -171,6 +172,136 @@ function clamp0(n: number) {
   return Math.max(0, nn(n));
 }
 
+export async function getManualPreviousReadings(opts: {
+  todayDateYmd: string;
+  user: UserData;
+  authtoken: string;
+}) {
+  const access = await ensureAdminAccess(opts.user, opts.authtoken);
+  if (!access.ok) {
+    throw new Error(access.message);
+  }
+
+  const done = startFirestoreMetric({
+    source: "server",
+    operation: "getManualPreviousReadings",
+    collection: "manualPreviousReadings",
+  });
+
+  const docRef = fireStore
+    .collection("manualPreviousReadings")
+    .doc(opts.todayDateYmd);
+  const snap = await docRef.get();
+
+  done({
+    success: true,
+    docsRead: snap.exists ? 1 : 0,
+    details: { todayDateYmd: opts.todayDateYmd },
+  });
+
+  if (!snap.exists) {
+    return { success: true as const, data: null };
+  }
+
+  const raw = snap.data();
+  if (!raw) {
+    return { success: true as const, data: null };
+  }
+
+  const parsed: ManualPreviousReadingsDoc = {
+    date: String(raw.date ?? opts.todayDateYmd),
+    photoPrev: nn(raw.photoPrev ?? 0),
+    stampPrev: {
+      50: nn(raw.stampPrev?.[50] ?? 0),
+      100: nn(raw.stampPrev?.[100] ?? 0),
+      500: nn(raw.stampPrev?.[500] ?? 0),
+      1000: nn(raw.stampPrev?.[1000] ?? 0),
+    },
+    isManual: Boolean(raw.isManual),
+    createdAt: toDate(raw.createdAt),
+    updatedAt: toDate(raw.updatedAt),
+  };
+
+  return { success: true as const, data: parsed };
+}
+
+export async function saveManualPreviousReadings(opts: {
+  todayDateYmd: string;
+  photoPrev: number;
+  stampPrev: Record<Denomination, number>;
+  user: UserData;
+  authtoken: string;
+}) {
+  const access = await ensureAdminAccess(opts.user, opts.authtoken);
+  if (!access.ok) {
+    throw new Error(access.message);
+  }
+
+  const done = startFirestoreMetric({
+    source: "server",
+    operation: "saveManualPreviousReadings",
+    collection: "manualPreviousReadings",
+  });
+
+  const docRef = fireStore
+    .collection("manualPreviousReadings")
+    .doc(opts.todayDateYmd);
+
+  const payload: ManualPreviousReadingsDoc = {
+    date: opts.todayDateYmd,
+    photoPrev: nn(opts.photoPrev),
+    stampPrev: {
+      50: nn(opts.stampPrev[50] ?? 0),
+      100: nn(opts.stampPrev[100] ?? 0),
+      500: nn(opts.stampPrev[500] ?? 0),
+      1000: nn(opts.stampPrev[1000] ?? 0),
+    },
+    isManual: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  await docRef.set(payload, { merge: true });
+
+  done({
+    success: true,
+    docsWritten: 1,
+    details: { todayDateYmd: opts.todayDateYmd },
+  });
+
+  return { success: true as const, data: payload };
+}
+
+export async function clearManualPreviousReadings(opts: {
+  todayDateYmd: string;
+  user: UserData;
+  authtoken: string;
+}) {
+  const access = await ensureAdminAccess(opts.user, opts.authtoken);
+  if (!access.ok) {
+    throw new Error(access.message);
+  }
+
+  const done = startFirestoreMetric({
+    source: "server",
+    operation: "clearManualPreviousReadings",
+    collection: "manualPreviousReadings",
+  });
+
+  await fireStore
+    .collection("manualPreviousReadings")
+    .doc(opts.todayDateYmd)
+    .delete();
+
+  done({
+    success: true,
+    docsWritten: 1,
+    details: { todayDateYmd: opts.todayDateYmd },
+  });
+
+  return { success: true as const };
+}
+
 export async function getReadings(todayDateYmd: string, deltaDays = 0) {
   const yesterday = addDaysYmd(todayDateYmd, deltaDays);
   const done = startFirestoreMetric({
@@ -203,6 +334,14 @@ export async function getReadings(todayDateYmd: string, deltaDays = 0) {
   const photocopy = photocopyRaw
     ? {
         ...photocopyRaw,
+        prevReadingWasManual: Boolean(photocopyRaw.prevReadingWasManual),
+        actualAmount: nn(photocopyRaw.actualAmount ?? photocopyRaw.amount),
+        roundedAmount:
+          photocopyRaw.roundedAmount ??
+          (photocopyRaw.isRounded ? nn(photocopyRaw.amount) : null),
+        isRounded: Boolean(
+          photocopyRaw.isRounded ?? photocopyRaw.roundedAmount != null,
+        ),
         createdAt: toDate(photocopyRaw.createdAt),
         updatedAt: toDate(photocopyRaw.updatedAt),
       }
@@ -265,10 +404,18 @@ export const getPhotocopyReadings = async (
       date: rawReading.date,
       todayReading: rawReading.todayReading,
       prevReading: rawReading.prevReading,
+      prevReadingWasManual: Boolean(rawReading.prevReadingWasManual),
       stockAdded: nn(rawReading.stockAdded ?? 0),
       difference: rawReading.difference,
       rate: rawReading.rate,
       amount: rawReading.amount,
+      actualAmount: nn(rawReading.actualAmount ?? rawReading.amount),
+      roundedAmount:
+        rawReading.roundedAmount ??
+        (rawReading.isRounded ? nn(rawReading.amount) : null),
+      isRounded: Boolean(
+        rawReading.isRounded ?? rawReading.roundedAmount != null,
+      ),
       createdAt: toDate(rawReading.createdAt),
       updatedAt: toDate(rawReading.updatedAt),
     };
@@ -287,6 +434,9 @@ export async function savePhotocopyReading(opts: {
   todayDateYmd: string;
   todayReading: number;
   prevReading: number; // from yesterday
+  prevReadingWasManual?: boolean;
+  useRoundedAmount?: boolean;
+  roundedAmount?: number | null;
   user: UserData;
   authtoken: string;
   auditTimestamp: string;
@@ -303,10 +453,14 @@ export async function savePhotocopyReading(opts: {
     collection: "photocopyReadings",
   });
 
-  const rate = 1.5;
+  const rate = 2;
 
   const difference = clamp0(opts.todayReading - opts.prevReading);
-  const amount = clamp0(difference * rate);
+  const actualAmount = clamp0(difference * rate);
+  const roundedAmount = opts.useRoundedAmount
+    ? clamp0(opts.roundedAmount ?? actualAmount)
+    : null;
+  const amount = roundedAmount ?? actualAmount;
 
   const ref = fireStore.collection("photocopyReadings").doc(opts.todayDateYmd);
 
@@ -314,9 +468,13 @@ export async function savePhotocopyReading(opts: {
     date: opts.todayDateYmd,
     todayReading: nn(opts.todayReading),
     prevReading: nn(opts.prevReading),
+    prevReadingWasManual: Boolean(opts.prevReadingWasManual),
     difference,
     rate,
     amount,
+    actualAmount,
+    roundedAmount,
+    isRounded: roundedAmount !== null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -375,6 +533,7 @@ export const getStampReadings = async (
     const reading: StampReadingDoc = {
       date: rawReading.date,
       parts: rawReading.parts,
+      prevReadingWasManual: Boolean(rawReading.prevReadingWasManual),
       totalAmount: rawReading.totalAmount,
       createdAt: toDate(rawReading.createdAt),
       updatedAt: toDate(rawReading.updatedAt),
@@ -394,6 +553,7 @@ export async function saveStampReading(opts: {
   todayDateYmd: string;
   partsTodayReadings: Record<Denomination, number>;
   prevPartsReadings: Record<Denomination, number>; // from yesterday
+  prevReadingWasManual?: boolean;
   partsStockAdded?: Record<Denomination, number>; // stock added today
   user: UserData;
   authtoken: string;
@@ -446,7 +606,7 @@ export async function saveStampReading(opts: {
     const prevReading = nn(opts.prevPartsReadings[d] ?? 0);
     const todayReading = nn(opts.partsTodayReadings[d] ?? 0);
     const stockAdded = nn(opts.partsStockAdded?.[d] ?? 0);
-    const difference = clamp0(todayReading - prevReading - stockAdded);
+    const difference = clamp0(prevReading - todayReading - stockAdded);
     const amount = clamp0(difference * d);
 
     parts[d] = { todayReading, prevReading, stockAdded, difference, amount };
@@ -459,6 +619,7 @@ export async function saveStampReading(opts: {
   const payload: StampReadingDoc = {
     date: opts.todayDateYmd,
     parts,
+    prevReadingWasManual: Boolean(opts.prevReadingWasManual),
     totalAmount,
     createdAt: new Date(),
     updatedAt: new Date(),

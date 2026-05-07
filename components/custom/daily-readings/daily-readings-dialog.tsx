@@ -30,7 +30,10 @@ import type {
   StampReadingDoc,
 } from "@/types/readings";
 import {
+  clearManualPreviousReadings,
+  getManualPreviousReadings,
   getReadings,
+  saveManualPreviousReadings,
   savePhotocopyReading,
   saveStampReading,
 } from "@/app/daily-accounts/readings-actions";
@@ -44,6 +47,7 @@ import {
   ChevronsRight,
   Loader2,
   TriangleAlert,
+  X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useBreakpoints } from "@/hooks/useBreakPoints";
@@ -83,6 +87,58 @@ function hasPreviousBaseline(res: {
   return Boolean(res.photocopy && res.stamp);
 }
 
+type ReadingsDialogDraft = {
+  photocopy?: {
+    isRounded: boolean;
+    roundedAmount: number;
+  };
+};
+
+const READINGS_DRAFT_STORAGE_KEY = "daily-readings-draft:";
+
+function readReadingsDraft(todayDateYmd: string): ReadingsDialogDraft | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(
+      `${READINGS_DRAFT_STORAGE_KEY}${todayDateYmd}`,
+    );
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as ReadingsDialogDraft;
+    return {
+      photocopy: parsed.photocopy
+        ? {
+            isRounded: Boolean(parsed.photocopy.isRounded),
+            roundedAmount: clamp0(parsed.photocopy.roundedAmount),
+          }
+        : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeReadingsDraft(
+  todayDateYmd: string,
+  updater: (draft: ReadingsDialogDraft) => ReadingsDialogDraft,
+) {
+  if (typeof window === "undefined") return;
+
+  const nextDraft = updater(readReadingsDraft(todayDateYmd) ?? {});
+  window.localStorage.setItem(
+    `${READINGS_DRAFT_STORAGE_KEY}${todayDateYmd}`,
+    JSON.stringify(nextDraft),
+  );
+}
+
+function clearReadingsDraft(todayDateYmd: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(
+    `${READINGS_DRAFT_STORAGE_KEY}${todayDateYmd}`,
+  );
+}
+
 type Props = {
   todayDateYmd: string;
   onSaved?: (saved: {
@@ -119,12 +175,20 @@ export default function DailyReadingsDialog({
   const { isTabletUp } = useBreakpoints();
 
   const [open, setOpen] = React.useState(startOpen);
+  const allowMobileCloseRef = React.useRef(false);
+  const [mobileViewportMaxHeight, setMobileViewportMaxHeight] = React.useState<
+    number | null
+  >(null);
   const [step, setStep] = React.useState<Step>(
     isReadOnlyView ? "review" : "photocopy",
   );
   const [loadingPrev, setLoadingPrev] = React.useState(false);
   const [initializingPrev, setInitializingPrev] = React.useState(false);
   const [missingPreviousReadings, setMissingPreviousReadings] =
+    React.useState(false);
+  const [showPreviousReadingsResolver, setShowPreviousReadingsResolver] =
+    React.useState(false);
+  const [resolverOpenedFromEdit, setResolverOpenedFromEdit] =
     React.useState(false);
   const [lookbackDays, setLookbackDays] = React.useState(1);
   const [resolvedLookbackDays, setResolvedLookbackDays] = React.useState<
@@ -141,6 +205,12 @@ export default function DailyReadingsDialog({
   });
   const [saving, setSaving] = React.useState(false);
   const [includeStockAddition, setIncludeStockAddition] = React.useState(false);
+  const [roundOffPhotocopy, setRoundOffPhotocopy] = React.useState(
+    Boolean(readings?.photocopy?.isRounded),
+  );
+  const [roundedPhotocopyAmount, setRoundedPhotocopyAmount] = React.useState(
+    readings?.photocopy?.roundedAmount ?? readings?.photocopy?.amount ?? 0,
+  );
 
   // yesterday readings
   const [photoPrev, setPhotoPrev] = React.useState(0);
@@ -152,6 +222,12 @@ export default function DailyReadingsDialog({
     500: 0,
     1000: 0,
   });
+  const [prevReadingsManual, setPrevReadingsManual] = React.useState(
+    Boolean(
+      readings?.photocopy?.prevReadingWasManual ||
+      readings?.stamp?.prevReadingWasManual,
+    ),
+  );
 
   // NEW: when readings are already saved, user must confirm+save only if they changed something
   const [hasEdits, setHasEdits] = React.useState(false);
@@ -191,12 +267,87 @@ export default function DailyReadingsDialog({
     readings?.stamp
   );
 
+  const dismissKeyboard = React.useCallback(() => {
+    const activeEl = document.activeElement;
+    if (activeEl instanceof HTMLElement) {
+      activeEl.blur();
+    }
+  }, []);
+
+  const closeDialog = React.useCallback(() => {
+    dismissKeyboard();
+    allowMobileCloseRef.current = true;
+    setOpen(false);
+  }, [dismissKeyboard]);
+
+  const goToStep = React.useCallback(
+    (nextStep: Step) => {
+      dismissKeyboard();
+      setStep(nextStep);
+    },
+    [dismissKeyboard],
+  );
+
+  const openPreviousReadingsResolverFromEdit = React.useCallback(() => {
+    dismissKeyboard();
+    setManualPhotoPrev(photoPrev);
+    setManualStampPrev(stampPrev);
+    setResolverOpenedFromEdit(true);
+    setShowPreviousReadingsResolver(true);
+  }, [dismissKeyboard, photoPrev, stampPrev]);
+
+  const handleMobileDrawerOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (nextOpen) {
+        allowMobileCloseRef.current = false;
+        setOpen(true);
+        return;
+      }
+
+      if (!allowMobileCloseRef.current) {
+        return;
+      }
+
+      allowMobileCloseRef.current = false;
+      setOpen(false);
+    },
+    [],
+  );
+
   // In read-only mode, always reset back to review on open/close.
   React.useEffect(() => {
     if (isReadOnlyView) {
       setStep("review");
     }
   }, [isReadOnlyView, open]);
+
+  React.useEffect(() => {
+    if (isTabletUp || !open) {
+      setMobileViewportMaxHeight(null);
+      return;
+    }
+
+    const syncMobileViewportHeight = () => {
+      const viewportHeight =
+        window.visualViewport?.height ?? window.innerHeight;
+      setMobileViewportMaxHeight(
+        Math.max(320, Math.floor(viewportHeight * 0.92)),
+      );
+    };
+
+    syncMobileViewportHeight();
+
+    const viewport = window.visualViewport;
+    viewport?.addEventListener("resize", syncMobileViewportHeight);
+    viewport?.addEventListener("scroll", syncMobileViewportHeight);
+    window.addEventListener("resize", syncMobileViewportHeight);
+
+    return () => {
+      viewport?.removeEventListener("resize", syncMobileViewportHeight);
+      viewport?.removeEventListener("scroll", syncMobileViewportHeight);
+      window.removeEventListener("resize", syncMobileViewportHeight);
+    };
+  }, [isTabletUp, open]);
 
   // reset step when dialog opens/closes (optional but keeps UX clean)
   React.useEffect(() => {
@@ -212,6 +363,8 @@ export default function DailyReadingsDialog({
   React.useEffect(() => {
     if (!open) {
       setHasEdits(false);
+      setShowPreviousReadingsResolver(false);
+      setResolverOpenedFromEdit(false);
     } else {
       setHasEdits(false);
     }
@@ -251,11 +404,32 @@ export default function DailyReadingsDialog({
         (denom) => (readings?.stamp?.parts?.[denom]?.stockAdded ?? 0) > 0,
       ),
     );
+    setPhotoPrev(readings?.photocopy?.prevReading ?? 0);
+    setStampPrev({
+      50: readings?.stamp?.parts?.[50]?.prevReading ?? 0,
+      100: readings?.stamp?.parts?.[100]?.prevReading ?? 0,
+      500: readings?.stamp?.parts?.[500]?.prevReading ?? 0,
+      1000: readings?.stamp?.parts?.[1000]?.prevReading ?? 0,
+    });
+    setPrevReadingsManual(
+      Boolean(
+        readings?.photocopy?.prevReadingWasManual ||
+        readings?.stamp?.prevReadingWasManual,
+      ),
+    );
+    setRoundOffPhotocopy(Boolean(readings?.photocopy?.isRounded));
+    setRoundedPhotocopyAmount(
+      readings?.photocopy?.roundedAmount ?? readings?.photocopy?.amount ?? 0,
+    );
 
     setHasEdits(false);
   }, [
     open,
     readings?.photocopy?.todayReading,
+    readings?.photocopy?.prevReading,
+    readings?.photocopy?.roundedAmount,
+    readings?.photocopy?.amount,
+    readings?.photocopy?.isRounded,
     readings?.stamp?.parts,
     photoForm,
     stampForm,
@@ -296,9 +470,94 @@ export default function DailyReadingsDialog({
         500: prevParts?.[500]?.todayReading ?? 0,
         1000: prevParts?.[1000]?.todayReading ?? 0,
       });
+      setPrevReadingsManual(false);
     },
     [],
   );
+
+  const getAuthForPrevReadings = React.useCallback(async () => {
+    if (authState.status !== "ready") {
+      throw new Error("Authentication required");
+    }
+
+    const token = await authState.currentUser.getIdToken();
+    return { token, user: authState.clientUser };
+  }, [authState]);
+
+  const clearManualPreviousReadingsInDb = React.useCallback(async () => {
+    try {
+      const { token, user } = await getAuthForPrevReadings();
+      await clearManualPreviousReadings({
+        todayDateYmd,
+        user,
+        authtoken: token,
+      });
+    } catch {
+      // Best-effort cleanup; not critical for the UI flow.
+    }
+  }, [getAuthForPrevReadings, todayDateYmd]);
+
+  const applyManualPreviousReadings = React.useCallback(
+    async (
+      manual: {
+        photoPrev: number;
+        stampPrev: Record<Denomination, number>;
+      },
+      persistInDb = true,
+    ) => {
+      const nextPhotoPrev = clamp0(manual.photoPrev);
+      const nextStampPrev = {
+        50: clamp0(manual.stampPrev[50]),
+        100: clamp0(manual.stampPrev[100]),
+        500: clamp0(manual.stampPrev[500]),
+        1000: clamp0(manual.stampPrev[1000]),
+      };
+
+      setManualPhotoPrev(nextPhotoPrev);
+      setManualStampPrev(nextStampPrev);
+      setPhotoPrev(nextPhotoPrev);
+      setStampPrev(nextStampPrev);
+      setPrevReadingsManual(true);
+      setMissingPreviousReadings(false);
+      setResolvedLookbackDays(null);
+
+      if (!persistInDb) {
+        return true;
+      }
+
+      try {
+        const { token, user } = await getAuthForPrevReadings();
+        await saveManualPreviousReadings({
+          todayDateYmd,
+          photoPrev: nextPhotoPrev,
+          stampPrev: nextStampPrev,
+          user,
+          authtoken: token,
+        });
+        return true;
+      } catch (e) {
+        toast.error(tReadings("FailedToSaveManualPreviousReadings"), {
+          description: e instanceof Error ? e.message : "Unknown error",
+        });
+        return false;
+      }
+    },
+    [getAuthForPrevReadings, tReadings, todayDateYmd],
+  );
+
+  const loadManualPreviousReadingsFromDb = React.useCallback(async () => {
+    try {
+      const { token, user } = await getAuthForPrevReadings();
+      const res = await getManualPreviousReadings({
+        todayDateYmd,
+        user,
+        authtoken: token,
+      });
+      return res.data;
+    } catch {
+      return null;
+    }
+  }, [getAuthForPrevReadings, todayDateYmd]);
 
   const fetchPreviousByLookback = React.useCallback(
     async (days: number) => {
@@ -314,7 +573,10 @@ export default function DailyReadingsDialog({
 
         applyPreviousReadings(res);
         setMissingPreviousReadings(false);
+        setShowPreviousReadingsResolver(false);
+        setResolverOpenedFromEdit(false);
         setResolvedLookbackDays(normalizedDays);
+        await clearManualPreviousReadingsInDb();
         return true;
       } catch (e) {
         toast.error(tReadings("FailedToLoadPreviousReadings"), {
@@ -325,7 +587,12 @@ export default function DailyReadingsDialog({
         setLoadingPrev(false);
       }
     },
-    [applyPreviousReadings, tReadings, todayDateYmd],
+    [
+      applyPreviousReadings,
+      clearManualPreviousReadingsInDb,
+      tReadings,
+      todayDateYmd,
+    ],
   );
 
   // Resolve previous readings when dialog opens.
@@ -334,10 +601,37 @@ export default function DailyReadingsDialog({
     if (isReadOnlyView) return;
 
     (async () => {
+      const draft = readReadingsDraft(todayDateYmd);
+      const manualPreviousFromDb = await loadManualPreviousReadingsFromDb();
+
       setInitializingPrev(true);
       setMissingPreviousReadings(false);
+      setShowPreviousReadingsResolver(false);
+      setResolverOpenedFromEdit(false);
       setResolvedLookbackDays(null);
       setLookbackDays(1);
+      setRoundOffPhotocopy(Boolean(draft?.photocopy?.isRounded));
+      setRoundedPhotocopyAmount(draft?.photocopy?.roundedAmount ?? 0);
+
+      if (manualPreviousFromDb?.isManual) {
+        await applyManualPreviousReadings(
+          {
+            photoPrev: manualPreviousFromDb.photoPrev,
+            stampPrev: manualPreviousFromDb.stampPrev,
+          },
+          false,
+        );
+        setInitializingPrev(false);
+        return;
+      }
+
+      setManualPhotoPrev(0);
+      setManualStampPrev({
+        50: 0,
+        100: 0,
+        500: 0,
+        1000: 0,
+      });
 
       const found = await fetchPreviousByLookback(1);
       if (!found) {
@@ -346,13 +640,42 @@ export default function DailyReadingsDialog({
 
       setInitializingPrev(false);
     })();
-  }, [open, fetchPreviousByLookback, isReadOnlyView]);
+  }, [
+    open,
+    applyManualPreviousReadings,
+    fetchPreviousByLookback,
+    isReadOnlyView,
+    loadManualPreviousReadingsFromDb,
+  ]);
+
+  React.useEffect(() => {
+    if (!open || isReadOnlyView) return;
+
+    writeReadingsDraft(todayDateYmd, (draft) => ({
+      ...draft,
+      photocopy: roundOffPhotocopy
+        ? {
+            isRounded: true,
+            roundedAmount: clamp0(roundedPhotocopyAmount),
+          }
+        : undefined,
+    }));
+  }, [
+    open,
+    isReadOnlyView,
+    todayDateYmd,
+    roundOffPhotocopy,
+    roundedPhotocopyAmount,
+  ]);
 
   // Live calculations from watch()
   const photoToday = photoForm.watch("todayReading");
-  const photoRate = 1.5;
+  const photoRate = 2;
   const photoDiff = clamp0((photoToday ?? 0) - photoPrev);
-  const photoAmount = clamp0(photoDiff * photoRate);
+  const photoActualAmount = clamp0(photoDiff * photoRate);
+  const photoAmount = roundOffPhotocopy
+    ? clamp0(roundedPhotocopyAmount)
+    : photoActualAmount;
 
   const r50 = stampForm.watch("r50") ?? 0;
   const r100 = stampForm.watch("r100") ?? 0;
@@ -384,10 +707,10 @@ export default function DailyReadingsDialog({
   };
 
   const stampSold = {
-    50: clamp0(r50 - stampPrev[50] - s50),
-    100: clamp0(r100 - stampPrev[100] - s100),
-    500: clamp0(r500 - stampPrev[500] - s500),
-    1000: clamp0(r1000 - stampPrev[1000] - s1000),
+    50: clamp0(stampPrev[50] - r50 - s50),
+    100: clamp0(stampPrev[100] - r100 - s100),
+    500: clamp0(stampPrev[500] - r500 - s500),
+    1000: clamp0(stampPrev[1000] - r1000 - s1000),
   } as const;
 
   const stampAmounts = {
@@ -416,16 +739,17 @@ export default function DailyReadingsDialog({
   const goNextFromPhotocopy = async () => {
     const valid = await photoForm.trigger();
     if (!valid) return;
-    setStep("stamp");
+    goToStep("stamp");
   };
 
   const goNextFromStamp = async () => {
     const valid = await stampForm.trigger();
     if (!valid) return;
-    setStep("review");
+    goToStep("review");
   };
 
   const goBack = () => {
+    dismissKeyboard();
     setStep((s) => (s === "review" ? "stamp" : "photocopy"));
   };
 
@@ -475,6 +799,9 @@ export default function DailyReadingsDialog({
           todayDateYmd,
           todayReading: photoValues.todayReading,
           prevReading: photoPrev,
+          prevReadingWasManual: prevReadingsManual,
+          useRoundedAmount: roundOffPhotocopy,
+          roundedAmount: roundOffPhotocopy ? roundedPhotocopyAmount : null,
           user: authState.clientUser,
           authtoken: token,
           auditTimestamp,
@@ -489,6 +816,7 @@ export default function DailyReadingsDialog({
             1000: stampValues.r1000,
           },
           prevPartsReadings: stampPrev,
+          prevReadingWasManual: prevReadingsManual,
           partsStockAdded: includeStockAddition
             ? {
                 50: stockValues?.s50 ?? 0,
@@ -533,8 +861,10 @@ export default function DailyReadingsDialog({
         );
       }
       setHasEdits(false);
+      clearReadingsDraft(todayDateYmd);
+      await clearManualPreviousReadingsInDb();
 
-      setOpen(false);
+      closeDialog();
     } catch (e) {
       toast.error("Save failed", {
         description: e instanceof Error ? e.message : "Unknown error",
@@ -596,7 +926,7 @@ export default function DailyReadingsDialog({
 
   const Content = isReadOnlyView ? (
     // Read-only mode: Show review step with option to view other steps
-    <div className="w-full flex flex-col gap-2 overflow-auto">
+    <div className="w-full flex min-h-0 flex-col gap-2 overflow-auto">
       {step !== "review" && <StepHeader />}
 
       {resolvedLookbackDays && resolvedLookbackDays > 1 ? (
@@ -618,13 +948,27 @@ export default function DailyReadingsDialog({
           saving={saving}
           photoPrev={photoPrev}
           photoDiff={photoDiff}
+          photoActualAmount={photoActualAmount}
           photoAmount={photoAmount}
+          roundOffPhotocopy={roundOffPhotocopy}
+          roundedPhotocopyAmount={roundedPhotocopyAmount}
           textBodyCls={textBodyCls}
           textSmCls={textSmCls}
           tCommon={tCommon}
           tReadings={tReadings}
-          onCancel={() => setOpen(false)}
-          onNext={() => setStep("review")}
+          canEditPreviousReadings={prevReadingsManual}
+          onEditPreviousReadings={openPreviousReadingsResolverFromEdit}
+          onRoundOffChange={(checked) => {
+            setRoundOffPhotocopy(checked);
+            if (checked) {
+              setRoundedPhotocopyAmount((current) =>
+                current > 0 ? current : Math.round(photoActualAmount),
+              );
+            }
+          }}
+          onRoundedAmountChange={setRoundedPhotocopyAmount}
+          onCancel={closeDialog}
+          onNext={() => goToStep("review")}
         />
       ) : step === "stamp" ? (
         <StampStep
@@ -646,8 +990,8 @@ export default function DailyReadingsDialog({
           saving={saving}
           loadingPrev={loadingPrev}
           includeStockAddition={includeStockAddition}
-          onBack={() => setStep("review")}
-          onNext={() => setStep("review")}
+          onBack={() => goToStep("review")}
+          onNext={() => goToStep("review")}
           onToggleStockAddition={setIncludeStockAddition}
         />
       ) : (
@@ -661,7 +1005,9 @@ export default function DailyReadingsDialog({
           photoPrev={photoPrev}
           photoToday={photoToday ?? 0}
           photoDiff={photoDiff}
+          photoActualAmount={photoActualAmount}
           photoAmount={photoAmount}
+          photoIsRounded={roundOffPhotocopy}
           stampPrev={stampPrev}
           stampStockAdded={stampStockAdded}
           stampSold={stampSold}
@@ -673,18 +1019,18 @@ export default function DailyReadingsDialog({
           saving={saving}
           loadingPrev={loadingPrev}
           readOnly={readOnly}
-          onEditPhotocopy={() => setStep("photocopy")}
-          onEditStamp={() => setStep("stamp")}
+          onEditPhotocopy={() => goToStep("photocopy")}
+          onEditStamp={() => goToStep("stamp")}
           onBack={goBack}
           onConfirmSave={onConfirmSave}
-          onClose={() => setOpen(false)}
+          onClose={closeDialog}
         />
       )}
     </div>
   ) : (
     // Edit mode: Show full workflow
     <>
-      <div className="w-full flex flex-col gap-2 overflow-auto">
+      <div className="w-full flex min-h-0 flex-col gap-2 overflow-auto">
         <StepHeader />
 
         {resolvedLookbackDays && resolvedLookbackDays > 1 ? (
@@ -721,12 +1067,26 @@ export default function DailyReadingsDialog({
             saving={saving}
             photoPrev={photoPrev}
             photoDiff={photoDiff}
+            photoActualAmount={photoActualAmount}
             photoAmount={photoAmount}
+            roundOffPhotocopy={roundOffPhotocopy}
+            roundedPhotocopyAmount={roundedPhotocopyAmount}
             textBodyCls={textBodyCls}
             textSmCls={textSmCls}
             tCommon={tCommon}
             tReadings={tReadings}
-            onCancel={() => setOpen(false)}
+            canEditPreviousReadings={prevReadingsManual}
+            onEditPreviousReadings={openPreviousReadingsResolverFromEdit}
+            onRoundOffChange={(checked) => {
+              setRoundOffPhotocopy(checked);
+              if (checked) {
+                setRoundedPhotocopyAmount((current) =>
+                  current > 0 ? current : Math.round(photoActualAmount),
+                );
+              }
+            }}
+            onRoundedAmountChange={setRoundedPhotocopyAmount}
+            onCancel={closeDialog}
             onNext={goNextFromPhotocopy}
           />
         ) : null}
@@ -768,7 +1128,9 @@ export default function DailyReadingsDialog({
             photoPrev={photoPrev}
             photoToday={photoToday ?? 0}
             photoDiff={photoDiff}
+            photoActualAmount={photoActualAmount}
             photoAmount={photoAmount}
+            photoIsRounded={roundOffPhotocopy}
             stampPrev={stampPrev}
             stampStockAdded={stampStockAdded}
             stampSold={stampSold}
@@ -780,11 +1142,11 @@ export default function DailyReadingsDialog({
             saving={saving}
             loadingPrev={loadingPrev}
             readOnly={false}
-            onEditPhotocopy={() => setStep("photocopy")}
-            onEditStamp={() => setStep("stamp")}
+            onEditPhotocopy={() => goToStep("photocopy")}
+            onEditStamp={() => goToStep("stamp")}
             onBack={goBack}
             onConfirmSave={onConfirmSave}
-            onClose={() => setOpen(false)}
+            onClose={closeDialog}
           />
         ) : null}
       </div>
@@ -792,12 +1154,16 @@ export default function DailyReadingsDialog({
   );
 
   const PreviousReadingsResolver = (
-    <div className="w-full rounded-md border p-3 md:p-4 space-y-3">
+    <div className="w-full rounded-md border p-3 md:p-4 space-y-3 h-full overflow-auto">
       <div className="text-sm font-medium">
-        {tReadings("NoPreviousReadingsFound")}
+        {resolverOpenedFromEdit
+          ? tReadings("EditPreviousReadings")
+          : tReadings("NoPreviousReadingsFound")}
       </div>
       <p className={"text-xs text-muted-foreground " + textSmCls}>
-        {tReadings("AskRecentHolidays")}
+        {resolverOpenedFromEdit
+          ? tReadings("EditPreviousReadingsHelp")
+          : tReadings("AskRecentHolidays")}
       </p>
 
       <div className="flex flex-row items-end gap-2">
@@ -881,21 +1247,33 @@ export default function DailyReadingsDialog({
 
         <Button
           type="button"
-          onClick={() => {
-            setPhotoPrev(Math.max(0, manualPhotoPrev || 0));
-            setStampPrev({
-              50: Math.max(0, manualStampPrev[50] || 0),
-              100: Math.max(0, manualStampPrev[100] || 0),
-              500: Math.max(0, manualStampPrev[500] || 0),
-              1000: Math.max(0, manualStampPrev[1000] || 0),
+          onClick={async () => {
+            const saved = await applyManualPreviousReadings({
+              photoPrev: manualPhotoPrev,
+              stampPrev: manualStampPrev,
             });
-            setMissingPreviousReadings(false);
-            setResolvedLookbackDays(null);
+            if (!saved) return;
+
+            setShowPreviousReadingsResolver(false);
+            setResolverOpenedFromEdit(false);
             toast.success(tReadings("ManualPreviousReadingsSet"));
           }}
         >
           {tReadings("UseManualReadings")}
         </Button>
+
+        {resolverOpenedFromEdit ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setShowPreviousReadingsResolver(false);
+              setResolverOpenedFromEdit(false);
+            }}
+          >
+            {tReadings("BackToReadings")}
+          </Button>
+        ) : null}
       </div>
     </div>
   );
@@ -911,7 +1289,7 @@ export default function DailyReadingsDialog({
     ? Content
     : initializingPrev
       ? InitialLoading
-      : missingPreviousReadings
+      : missingPreviousReadings || showPreviousReadingsResolver
         ? PreviousReadingsResolver
         : Content;
 
@@ -940,22 +1318,41 @@ export default function DailyReadingsDialog({
   }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer
+      open={open}
+      onOpenChange={handleMobileDrawerOpenChange}
+      dismissible={false}
+      disablePreventScroll={false}
+      repositionInputs={false}
+    >
       <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
 
       <DrawerContent
-        className="p-0 px-3 py-3 md:px-4 md:py-6 shadow-2xl"
+        className="max-h-[92dvh] p-0 px-3 py-3 shadow-2xl [&>div:first-child]:hidden md:px-4 md:py-6"
+        style={
+          mobileViewportMaxHeight
+            ? { maxHeight: `${mobileViewportMaxHeight}px` }
+            : undefined
+        }
         onOpenAutoFocus={(e: Event) => e.preventDefault()}
         onCloseAutoFocus={(e: Event) => e.preventDefault()}
       >
-        <DrawerHeader>
+        <DrawerHeader className="flex-row items-center justify-between gap-2 text-left">
           <DrawerTitle>
             {isReadOnlyView
               ? tReadings("PhotocopyStampReadings")
               : tReadings("EnterReadings")}
           </DrawerTitle>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={closeDialog}
+          >
+            <X className="size-4" />
+          </Button>
         </DrawerHeader>
-        {ActiveContent}
+        <div className="min-h-0 overflow-y-auto pb-2">{ActiveContent}</div>
       </DrawerContent>
     </Drawer>
   );

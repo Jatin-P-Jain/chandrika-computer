@@ -20,6 +20,7 @@ import { KeyboardProvider } from "@/context/keyboard-context";
 import { NavigationLockProvider } from "@/context/navigation-lock-provider";
 import { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
+import { ServiceWorkerRegister } from "./service-worker-register";
 
 const amita = Amita({
   variable: "--font-amita",
@@ -57,11 +58,11 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Chandrika Computer",
   description: "",
+  applicationName: "Chandrika Computer",
+  themeColor: "#065884",
   icons: {
     icon: "/icons/favicon.ico",
     shortcut: "/icons/favicon.ico",
-    apple: "/icons/apple-touch-icon.png", // Added /icons/
-    other: [{ rel: "apple-touch-icon", url: "/icons/apple-touch-icon.png" }], // Added /icons/
   },
   manifest: "/site.webmanifest",
 };
@@ -84,6 +85,7 @@ export default async function RootLayout({
               <NavigationLockProvider>
                 <KeyboardProvider>
                   <AuthProvider>
+                    <ServiceWorkerRegister />
                     <NextTopLoader
                       color="#065884"
                       height={3}
@@ -97,42 +99,24 @@ export default async function RootLayout({
                       </div>
                     </main>
                     {/* <AccountFooter /> */}
-                    <div className="flex md:hidden">
-                      <Toaster
-                        closeButton
-                        richColors
-                        position="bottom-center"
-                        className="flex justify-center"
-                        toastOptions={{
-                          classNames: {
-                            toast:
-                              "w-[min(94vw,420px)]! min-h-14! flex items-start gap-2 px-4! py-3!",
-                            title:
-                              "font-semibold text-sm md:text-sm leading-snug",
-                            description:
-                              "text-xs md:text-sm leading-snug text-muted-foreground",
-                          },
-                        }}
-                      />
-                    </div>
-                    <div className="hidden md:flex">
-                      <Toaster
-                        closeButton
-                        richColors
-                        position="top-center"
-                        className="flex justify-center"
-                        toastOptions={{
-                          classNames: {
-                            toast:
-                              "w-[min(94vw,420px)]! min-h-14! flex items-start gap-2 px-4! py-3!",
-                            title:
-                              "font-semibold text-sm md:text-sm leading-snug",
-                            description:
-                              "text-xs md:text-sm leading-snug text-muted-foreground",
-                          },
-                        }}
-                      />
-                    </div>
+                    <Toaster
+                      closeButton
+                      richColors
+                      position="top-center"
+                      // offset="calc(env(safe-area-inset-top) + 100px)"
+                      mobileOffset="calc(env(safe-area-inset-top) + 85px)"
+                      className="flex justify-center"
+                      toastOptions={{
+                        classNames: {
+                          toast:
+                            "w-[min(100vw,300px)]! min-h-14! flex items-start gap-2 px-4! py-3!",
+                          title:
+                            "font-semibold leading-snug",
+                          description:
+                            "text-sm leading-snug text-muted-foreground",
+                        },
+                      }}
+                    />
                   </AuthProvider>
                 </KeyboardProvider>
               </NavigationLockProvider>

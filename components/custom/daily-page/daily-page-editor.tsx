@@ -583,7 +583,7 @@ export default function DailyPageEditor({
 
   return renderForm ? (
     <>
-      <div className="flex flex-col justify-start items-start w-full">
+      <div className="flex flex-col justify-start items-start w-full pb-16">
         <div className="flex w-full justify-between items-center mb-2">
           <DailyReadingsDialog
             readings={readings}
@@ -615,10 +615,10 @@ export default function DailyPageEditor({
         </div>
         {/* Status badge — always visible so user knows account state */}
 
-        <div className="bg-card p-1 w-full md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto">
+        <div className="bg-card p-1 w-full md:p-4 md:py-6 rounded-md dark:bg-slate-800 gap-2 overflow-auto h-full relative min-h-[60vh] max-w-7xl mx-auto no-scrollbar">
           <div
             className={clsx(
-              "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col",
+              "w-full text-center text-shadow-xs text-lg font-semibold font-script flex flex-col no-scrollbar",
               textBodyCls,
             )}
           >

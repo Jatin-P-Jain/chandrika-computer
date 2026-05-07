@@ -3,9 +3,11 @@
 import { Controller, Control } from "react-hook-form";
 import { z } from "zod";
 import clsx from "clsx";
-import { ChevronRight, Loader2Icon, X } from "lucide-react";
+import { ChevronRight, Loader2Icon, Pencil, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { ReadingInput } from "@/components/custom/daily-page/common-components/reading-input";
 import { photocopyReadingSchema } from "@/schema/readings.schema";
 import { formatINR } from "@/lib/utils";
@@ -19,11 +21,18 @@ type Props = {
   saving: boolean;
   photoPrev: number;
   photoDiff: number;
+  photoActualAmount: number;
   photoAmount: number;
+  roundOffPhotocopy: boolean;
+  roundedPhotocopyAmount: number;
   textBodyCls: string;
   textSmCls: string;
   tCommon: (key: string) => string;
   tReadings: (key: string) => string;
+  canEditPreviousReadings: boolean;
+  onEditPreviousReadings: () => void;
+  onRoundOffChange: (checked: boolean) => void;
+  onRoundedAmountChange: (amount: number) => void;
   onCancel: () => void;
   onNext: () => void;
 };
@@ -35,11 +44,18 @@ export default function PhotocopyStep({
   saving,
   photoPrev,
   photoDiff,
+  photoActualAmount,
   photoAmount,
+  roundOffPhotocopy,
+  roundedPhotocopyAmount,
   textBodyCls,
   textSmCls,
   tCommon,
   tReadings,
+  canEditPreviousReadings,
+  onEditPreviousReadings,
+  onRoundOffChange,
+  onRoundedAmountChange,
   onCancel,
   onNext,
 }: Props) {
@@ -56,12 +72,27 @@ export default function PhotocopyStep({
             textSmCls,
           )}
         >
-          {tReadings("Yesterday")}:{" "}
-          {loadingPrev ? (
-            <Loader2Icon className="size-3 animate-spin" />
-          ) : (
-            <b>{photoPrev}</b>
-          )}
+          <span>{tReadings("Yesterday")}:</span>
+          <div className="inline-flex items-center gap-1">
+            {loadingPrev ? (
+              <Loader2Icon className="size-3 animate-spin" />
+            ) : (
+              <b>{photoPrev}</b>
+            )}
+            {canEditPreviousReadings ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={onEditPreviousReadings}
+                disabled={saving || loadingPrev}
+                aria-label={tReadings("EditPreviousReadings")}
+                className="size-6"
+              >
+                <Pencil className="size-3" />
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         <div className="space-y-1 flex items-center justify-between gap-2">
@@ -98,13 +129,55 @@ export default function PhotocopyStep({
         <div className="rounded-md border px-3 py-1 text-sm flex flex-col gap-2 my-4">
           <div className="flex justify-between items-center w-full">
             <span className="flex gap-2 justify-start items-center">
-              {tReadings("TotalAmount")} = {tReadings("Copies")} × 1.5 ={" "}
-              <b className="text-base tabular-nums">{formatINR(photoAmount)}</b>
+              {tReadings("Copies")} × ₹2 ={" "}
+              <b className="text-base tabular-nums">
+                {formatINR(photoActualAmount)}
+              </b>
             </span>
             <span className="text-xs text-muted-foreground italic hidden md:inline-flex">
               {tReadings("FSRate")}
             </span>
           </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2">
+            <div className="space-y-0.5">
+              <Label className={clsx("text-sm font-medium", textBodyCls)}>
+                {tReadings("RoundOffFinalAmount")}
+              </Label>
+              <p className={clsx("text-xs text-muted-foreground", textSmCls)}>
+                {tReadings("RoundedAmountWillBeUsed")}
+              </p>
+            </div>
+            <Switch
+              checked={roundOffPhotocopy}
+              onCheckedChange={onRoundOffChange}
+              disabled={saving || loadingPrev}
+            />
+          </div>
+
+          {roundOffPhotocopy ? (
+            <div className="flex items-center justify-between gap-3">
+              <Label className={clsx("text-xs", textSmCls)}>
+                {tReadings("RoundedAmount")}:
+              </Label>
+              <ReadingInput
+                value={roundedPhotocopyAmount}
+                onChange={(value) =>
+                  onRoundedAmountChange(Math.max(0, value || 0))
+                }
+                placeholder="0"
+                inputClassName={clsx("w-fit! text-sm text-right", textSmCls)}
+              />
+            </div>
+          ) : null}
+
+          <div className="flex justify-between items-center w-full">
+            <span className="flex gap-2 justify-start items-center">
+              {tReadings("TotalAmount")} ={" "}
+              <b className="text-base tabular-nums">{formatINR(photoAmount)}</b>
+            </span>
+          </div>
+
           <span className="text-xs text-amber-700 italic">
             {tReadings("NoteValuesUsedDirectly")}
           </span>
