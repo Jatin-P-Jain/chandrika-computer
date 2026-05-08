@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "chandrika-computer-dev"
+    "default": "chandrika-computer-dev",
+    "dev": "chandrika-computer-dev",
+    "prod": "chandrika-computer"
   }
 }
