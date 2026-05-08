@@ -238,7 +238,9 @@
     "Cost": "Cost",
     "StockAdditionNote": "Enter the number of stamps added to your stock today. These will be excluded from the sales calculation.",
     "StockAdditionExplanation1": "Stamps added to stock will not be counted as sales. This helps you accurately track only the stamps you sold.",
-    "StockAdditionExplanation2": "The actual sales = meter reading difference - stock added today."
+    "StockAdditionExplanation2": "Stock added does not affect today's sold count. It is only added to today's reading so tomorrow starts from the updated baseline.",
+    "TomorrowStartingReadingWillBe": "Tomorrow's starting reading will be",
+    "TomorrowReadingStartsFrom": "For tomorrow, reading will start from {value}."
   },
   "SaveReview": {
     "AddReadingsThenSave": "Please add readings and then save.",

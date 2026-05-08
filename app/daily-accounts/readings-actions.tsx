@@ -473,14 +473,21 @@ export async function savePhotocopyReading(opts: {
     rate,
     amount,
     actualAmount,
-    roundedAmount,
+    // Do not persist rounded value separately; amount is the source of truth.
+    roundedAmount: null,
     isRounded: roundedAmount !== null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
-  // set(..., {merge:true}) = upsert (create if missing, otherwise merge) [web:49]
-  await ref.set(payload, { merge: true });
+  // Ensure any legacy roundedAmount value is removed from stored document.
+  await ref.set(
+    {
+      ...payload,
+      roundedAmount: FieldValue.delete(),
+    },
+    { merge: true },
+  );
 
   await syncDailyAccountFromReadings({
     docId: opts.todayDateYmd,
@@ -606,7 +613,11 @@ export async function saveStampReading(opts: {
     const prevReading = nn(opts.prevPartsReadings[d] ?? 0);
     const todayReading = nn(opts.partsTodayReadings[d] ?? 0);
     const stockAdded = nn(opts.partsStockAdded?.[d] ?? 0);
-    const difference = clamp0(prevReading - todayReading - stockAdded);
+    const todaySoldBaseline = clamp0(todayReading - stockAdded);
+    // Keep server-side stamp sold logic consistent with review UI:
+    // if today's effective reading is 0, sold must remain 0.
+    const difference =
+      todaySoldBaseline > 0 ? clamp0(prevReading - todaySoldBaseline) : 0;
     const amount = clamp0(difference * d);
 
     parts[d] = { todayReading, prevReading, stockAdded, difference, amount };

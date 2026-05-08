@@ -39,13 +39,17 @@ export const MobileFilters = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="size-7 w-full justify-between text-sm text-muted-foreground"
+            className="size-7 w-full justify-between text-sm text-muted-foreground active:scale-95 transition-transform"
           >
             <span className="flex justify-center items-center gap-2 ">
               <ListFilterPlus className="size-4" />
               {tFilters("Filters")}
             </span>
-            {open ? <ChevronUp /> : <ChevronDown />}
+            {open ? (
+              <ChevronUp className="transition-transform" />
+            ) : (
+              <ChevronDown className="transition-transform" />
+            )}
           </Button>
         </CollapsibleTrigger>
       </div>

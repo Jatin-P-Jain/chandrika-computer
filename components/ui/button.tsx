@@ -54,7 +54,7 @@ function Button({
 
   const finalClassName = cn(
     buttonVariants({ variant, size, className }),
-    locale === "hi" && "font-semibold text-[16px] items-center" // extra weight for Hindi[web:107][web:110]
+    locale === "hi" && "font-semibold text-lg items-center" // extra weight for Hindi[web:107][web:110]
   );
 
   return (

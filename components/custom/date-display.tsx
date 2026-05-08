@@ -12,6 +12,7 @@ interface DateDisplayProps {
   type?: DateDisplayType;
   className?: string;
   smallDay?: boolean;
+  dayRequired?: boolean;
 }
 
 function parseDate(value: DateInput): Date | null {
@@ -26,6 +27,7 @@ function parseDate(value: DateInput): Date | null {
 export function DateDisplay({
   value,
   type = "timestamp",
+  dayRequired = true,
   className = "",
   smallDay = false,
 }: DateDisplayProps) {
@@ -42,7 +44,7 @@ export function DateDisplay({
     return (
       <span className={className}>
         {formatted}{" "}
-        <span className="">({dayName.toString()})</span>
+        {dayRequired ? <span className="">({dayName.toString()})</span> : null}
       </span>
     );
   }

@@ -9,6 +9,7 @@ import type { Denomination } from "@/types/readings";
 
 type Props = {
   denoms: Denomination[];
+  textPageHeadCls: string;
   textBodyCls: string;
   textSmCls: string;
   textXsCls: string;
@@ -40,6 +41,7 @@ type Props = {
 
 export default function ReviewStep({
   denoms,
+  textPageHeadCls,
   textBodyCls,
   textSmCls,
   textXsCls,
@@ -73,16 +75,16 @@ export default function ReviewStep({
   return (
     <div className="space-y-4 w-full">
       <div className="max-h-[50vh] overflow-auto no-scrollbar flex flex-col gap-4">
-        <div className="rounded-md border p-3 text-sm flex flex-col gap-1">
+        <div className="rounded-md border p-3 text-sm flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className={clsx("italic text-muted-foreground", textBodyCls)}>
+            <span className={clsx("italic", textBodyCls)}>
               {tReadings("PhotocopyMachineReading")}
             </span>
             <Button
               variant="ghost"
               className={clsx(
-                "h-auto p-0 text-primary text-xs gap-1",
-                textXsCls,
+                "h-auto p-0 text-primary text-xs gap-1 active:scale-95 transition-transform",
+                textSmCls,
               )}
               onClick={onEditPhotocopy}
               disabled={saving}
@@ -94,48 +96,64 @@ export default function ReviewStep({
           <div
             className={clsx(
               "text-xs text-muted-foreground flex justify-between items-center",
-              textSmCls,
+              textBodyCls,
             )}
           >
             {tReadings("Yesterday")}:{" "}
-            <b className="text-foreground tabular-nums">{photoPrev}</b>
+            <span className={clsx("text-foreground tabular-nums", textBodyCls)}>
+              {photoPrev}
+            </span>
           </div>
           <div
             className={clsx(
               "text-xs text-muted-foreground flex justify-between items-center",
-              textSmCls,
+              textBodyCls,
             )}
           >
             {tReadings("Today")}:{" "}
-            <b className="text-foreground tabular-nums">{photoToday}</b>
+            <span
+              className={clsx(
+                "text-foreground font-medium tabular-nums",
+                textBodyCls,
+              )}
+            >
+              {photoToday}
+            </span>
           </div>
           <div
             className={clsx(
               "text-xs text-muted-foreground flex justify-between items-center",
-              textSmCls,
+              textBodyCls,
             )}
           >
             {tReadings("TotalCopies")} ={" "}
-            <b className="text-foreground tabular-nums">{photoDiff}</b>
+            <span
+              className={clsx(
+                "text-foreground tabular-nums font-semibold",
+                textBodyCls,
+              )}
+            >
+              {photoDiff}
+            </span>
           </div>
 
           {photoIsRounded ? (
             <div
               className={clsx(
                 "text-xs text-muted-foreground flex justify-between items-center",
-                textSmCls,
+                textBodyCls,
               )}
             >
               {tReadings("ActualCalculatedAmount")}:{" "}
-              <b className="text-foreground tabular-nums">
+              <span className="font-medium tabular-nums text-foreground">
                 {formatINR(photoActualAmount)}
-              </b>
+              </span>
             </div>
           ) : null}
 
           <div
             className={clsx(
-              "text-sm flex items-center justify-between font-semibold",
+              "text-sm flex items-center justify-between font-medium text-primary",
               textBodyCls,
             )}
           >
@@ -143,9 +161,9 @@ export default function ReviewStep({
               ? tReadings("RoundedAmount")
               : tReadings("TotalAmount")}{" "}
             (FS):{" "}
-            <b className="text-foreground tabular-nums">
+            <span className={clsx("text-primary tabular-nums font-semibold", textBodyCls)}>
               {formatINR(photoAmount)}
-            </b>
+            </span>
           </div>
 
           <span className={clsx("text-xs text-amber-700 italic", textXsCls)}>
@@ -155,14 +173,14 @@ export default function ReviewStep({
 
         <div className="rounded-md border p-3 text-sm flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className={clsx("italic text-muted-foreground", textBodyCls)}>
+            <span className={clsx("italic", textBodyCls)}>
               {tReadings("ClosingStampSerialNumbers")}
             </span>
             <Button
               variant="ghost"
               className={clsx(
-                "h-auto p-0 text-primary text-xs gap-1",
-                textXsCls,
+                "h-auto p-0 text-primary text-xs gap-1 active:scale-95 transition-transform",
+                textSmCls,
               )}
               onClick={onEditStamp}
               disabled={saving}
@@ -173,67 +191,67 @@ export default function ReviewStep({
 
           <div className="grid md:grid-cols-4 grid-cols-1 gap-1">
             {denoms.map((d) => (
-              <div key={d} className="rounded-md border p-2">
-                <div className={clsx("font-medium mb-1", textBodyCls)}>
+              <div key={d} className="rounded-md border p-2 gap-1 flex flex-col">
+                <div className={clsx("font-medium text-primary", textBodyCls)}>
                   ₹ {d}
                 </div>
 
                 <div
                   className={clsx(
                     "text-xs text-muted-foreground flex items-center justify-between",
-                    textSmCls,
+                    textBodyCls,
                   )}
                 >
                   {tReadings("Yesterday")}:{" "}
-                  <b className="text-foreground tabular-nums">{stampPrev[d]}</b>
+                  <span className="text-foreground tabular-nums">{stampPrev[d]}</span>
                 </div>
 
                 <div
                   className={clsx(
                     "text-xs text-muted-foreground flex items-center justify-between",
-                    textSmCls,
+                    textBodyCls,
                   )}
                 >
                   {tReadings("Today")}:{" "}
-                  <b className="text-foreground tabular-nums">
+                  <span className="text-foreground tabular-nums font-medium">
                     {todayByDenom[d]}
-                  </b>
+                  </span>
                 </div>
 
                 {hasAnyStockAdded ? (
                   <div
                     className={clsx(
                       "text-xs text-green-700 flex items-center justify-between",
-                      textSmCls,
+                      textBodyCls,
                     )}
                   >
                     {tReadings("StockAdded")}:{" "}
-                    <b className="text-green-700 tabular-nums">
+                    <span className="text-green-700 tabular-nums font-medium">
                       +{stampStockAdded[d]}
-                    </b>
+                    </span>
                   </div>
                 ) : null}
 
                 <div
                   className={clsx(
                     "text-xs text-muted-foreground flex items-center justify-between",
-                    textSmCls,
+                    textBodyCls,
                   )}
                 >
                   {tReadings("StampsSold")}:{" "}
-                  <b className="text-foreground tabular-nums">{stampSold[d]}</b>
+                  <span className="text-foreground tabular-nums font-semibold">{stampSold[d]}</span>
                 </div>
 
                 <div
                   className={clsx(
-                    "text-sm flex items-center justify-between mt-1",
+                    "text-sm flex items-center justify-between text-primary font-medium  ",
                     textBodyCls,
                   )}
                 >
                   {tCommon("Amount")}:{" "}
-                  <b className="text-foreground tabular-nums">
+                  <span className="tabular-nums font-semibold">
                     {formatINR(stampAmounts[d])}
-                  </b>
+                  </span>
                 </div>
               </div>
             ))}
@@ -241,14 +259,14 @@ export default function ReviewStep({
 
           <div
             className={clsx(
-              "text-sm flex items-center justify-between gap-1 font-semibold",
+              "text-sm flex items-center justify-between gap-1 font-semibold text-primary",
               textBodyCls,
             )}
           >
             {tReadings("TotalStampDuty")} (SD):{" "}
-            <b className="text-foreground tabular-nums">
+            <span className={clsx("text-primary tabular-nums font-semibold", textPageHeadCls)}>
               {formatINR(stampTotal)}
-            </b>
+            </span>
           </div>
 
           <span className={clsx("text-xs text-amber-700 italic", textXsCls)}>
@@ -270,7 +288,7 @@ export default function ReviewStep({
             variant="secondary"
             onClick={onBack}
             disabled={saving}
-            className="gap-0"
+            className="gap-0 active:scale-95 transition-transform"
           >
             <ChevronLeft className="size-4" /> {tCommon("Back")}
           </Button>
@@ -278,23 +296,25 @@ export default function ReviewStep({
           <Button
             onClick={onConfirmSave}
             disabled={saving || loadingPrev}
-            className="gap-1"
+            className="gap-1 active:scale-95 transition-transform"
           >
             {saving ? (
-              <span className={clsx("flex items-center gap-2", textSmCls)}>
+              <span className={clsx("flex items-center gap-2", textBodyCls)}>
                 <Loader2Icon className="size-4 animate-spin" />
                 {tCommon("Saving")}
               </span>
             ) : (
-              <span className={textSmCls}>{tCommon("ConfirmAndSave")}</span>
+              <>
+                <span className={textBodyCls}>{tCommon("ConfirmAndSave")}</span>
+                <SaveIcon className="size-4" />
+              </>
             )}
-            <SaveIcon className="size-4" />
           </Button>
         </div>
       ) : (
         <div className="flex justify-end gap-2">
           <Button onClick={onClose} className="gap-1">
-            <span className={textSmCls}>{tCommon("Ok")} 👍🏻</span>
+            <span className={textBodyCls}>{tCommon("Ok")} 👍🏻</span>
           </Button>
         </div>
       )}

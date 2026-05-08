@@ -233,15 +233,13 @@ export default function DailyPageEditor({
   const suppressDraftPersistRef = useRef(false);
 
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [reviewMode, setReviewMode] = useState<
     "BLOCK_READINGS" | "SOFT_CONFIRM"
   >("SOFT_CONFIRM");
   const [pendingData, setPendingData] = useState<DailyFormValues | null>(null);
-  const [pendingReadings, setPendingReadings] = useState<{
-    photocopy: number;
-    stamp: number;
-  } | null>(null);
+  const [localReadings, setLocalReadings] = useState(readings);
 
   const { user, getUserToken } = useAuth();
   const { replace, refresh } = useSafeRouter();
@@ -260,19 +258,11 @@ export default function DailyPageEditor({
     });
   }, [netForDay, form]);
 
-  const isReadingsSyncing = useMemo(() => {
-    if (!pendingReadings) return false;
-    const currentPhotocopy = readings?.photocopy?.amount ?? 0;
-    const currentStamp = readings?.stamp?.totalAmount ?? 0;
-    return (
-      currentPhotocopy !== pendingReadings.photocopy ||
-      currentStamp !== pendingReadings.stamp
-    );
-  }, [
-    pendingReadings,
-    readings?.photocopy?.amount,
-    readings?.stamp?.totalAmount,
-  ]);
+  const isReadingsSyncing = false;
+
+  useEffect(() => {
+    setLocalReadings(readings);
+  }, [readings]);
 
   const persistDraft = async () => {
     // In edit mode, persist only on explicit Update action.
@@ -378,7 +368,7 @@ export default function DailyPageEditor({
         const extraEarnings = form.getValues("earnings.otherIncomes") ?? [];
 
         const blocking: ReviewItem[] = [];
-        const readingsData = readings;
+        const readingsData = localReadings;
         if (readingsData?.photocopy == null) {
           blocking.push({
             id: "missing-photocopy",
@@ -586,13 +576,20 @@ export default function DailyPageEditor({
       <div className="flex flex-col justify-start items-start w-full pb-16">
         <div className="flex w-full justify-between items-center mb-2">
           <DailyReadingsDialog
-            readings={readings}
+            readings={localReadings}
             syncing={isReadingsSyncing}
             todayDateYmd={docId}
             onSaved={(saved) => {
-              setPendingReadings({
-                photocopy: saved.photocopy?.amount ?? 0,
-                stamp: saved.stamp?.totalAmount ?? 0,
+              setLocalReadings((prev) => {
+                const nextPhotocopy =
+                  saved.photocopy ?? prev?.photocopy ?? null;
+                const nextStamp = saved.stamp ?? prev?.stamp ?? null;
+
+                return {
+                  success: Boolean(nextPhotocopy || nextStamp),
+                  photocopy: nextPhotocopy,
+                  stamp: nextStamp,
+                };
               });
 
               if (saved.photocopy) {
@@ -608,7 +605,11 @@ export default function DailyPageEditor({
                 });
               }
 
-              refresh();
+              // Refresh only after stamp save (final/combined save); otherwise
+              // photocopy-only save on "Next" remounts UI and closes the dialog.
+              if (saved.stamp) {
+                refresh();
+              }
             }}
           />
           <DailyNotesDialog initialNotes={initialNotes} docId={docId} />
@@ -656,7 +657,7 @@ export default function DailyPageEditor({
                   totalFixed={
                     Number(formatINR(totalFixed)) ? totalFixed : totalFixed
                   }
-                  readings={readings}
+                  readings={localReadings}
                   isReadingsSyncing={isReadingsSyncing}
                   readOnly={false}
                   onPersist={persistDraft}
@@ -764,16 +765,22 @@ export default function DailyPageEditor({
                     <Button
                       variant="outline"
                       type="button"
-                      disabled={isSubmitting}
-                      onClick={() =>
+                      disabled={isSubmitting || isCancelling}
+                      onClick={() => {
+                        if (isCancelling) return;
+                        setIsCancelling(true);
                         replace(`/daily-accounts/${docId}`, {
                           scroll: false,
-                        })
-                      }
+                        });
+                      }}
                       className="border-red-700 text-red-700 gap-1"
                     >
                       {tCommon("Cancel")}
-                      <X className="size-4" />
+                      {isCancelling ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <X className="size-4" />
+                      )}
                     </Button>
                   )}
                 </div>

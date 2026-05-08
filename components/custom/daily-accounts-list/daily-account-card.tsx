@@ -11,6 +11,7 @@ import {
   CircleCheck,
   CircleX,
   ClockPlus,
+  Loader2,
 } from "lucide-react";
 import { DateDisplay } from "../date-display";
 import { useTranslations } from "next-intl";
@@ -18,6 +19,7 @@ import { useLocale } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
 import clsx from "clsx";
+import { useState } from "react";
 
 type DailyAccountCardProps = {
   dailyAccount: DailyAccount;
@@ -54,6 +56,13 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   const cardTarget = `/daily-accounts/${id}`;
 
   const { push } = useSafeRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigate = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    push(cardTarget);
+  };
 
   const createdDateTimeLabel = created
     ? new Intl.DateTimeFormat(locale, {
@@ -67,11 +76,10 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
 
   return (
     <Card
-      onClick={() => {
-        push(cardTarget);
-      }}
+      onClick={handleNavigate}
       className={clsx(
         "cursor-pointer w-full flex p-1 lg:p-0 shadow-sm border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
+        isNavigating && "pointer-events-none opacity-85",
         isDraft && "bg-amber-50/60",
       )}
     >
@@ -79,7 +87,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
         <div className="flex flex-col gap-2 p-2 relative w-full">
           <div className="flex items-center gap-2 justify-start w-full">
             <span
-              className={`flex w-full justify-start gap-2  items-center font-semibold text-primary text-sm ${textBodyCls}`}
+              className={`flex w-full justify-start gap-2  items-center font-semibold text-primary text-sm ${textHeadingCls}`}
             >
               <CalendarFold className="w-4 h-4 text" />
               {<DateDisplay value={id} type="docId" />}
@@ -101,7 +109,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
             ) : status === "saved" ? (
               <Badge
                 variant="outline"
-                className="text-[10px] border-green-500 text-green-700 bg-green-50 px-1.5 py-0 h-fit w-fit"
+                className="text-[10px] border-green-500 text-green-700 bg-green-50 px-2 items-center justify-center"
               >
                 {tDailyAccount("Saved")}
               </Badge>
@@ -178,13 +186,24 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
           </div>
         </div>
 
-        <Button className=" flex flex-1  w-full">
+        <Button
+          className=" flex flex-1  w-full"
+          disabled={isNavigating}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleNavigate();
+          }}
+        >
           {isPersistedAccount
             ? tCommon("View")
             : isDraft
               ? tDailyAccount("CompleteDailyAccount")
               : tDailyAccount("CreateDailyAccount")}{" "}
-          <ChevronsRight className="size-4" />
+          {isNavigating ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <ChevronsRight className="size-4" />
+          )}
         </Button>
       </CardContent>
     </Card>

@@ -19,12 +19,14 @@ type Props = {
   todayReadingError?: string;
   loadingPrev: boolean;
   saving: boolean;
+  savingPhotocopyStep?: boolean;
   photoPrev: number;
   photoDiff: number;
   photoActualAmount: number;
   photoAmount: number;
   roundOffPhotocopy: boolean;
   roundedPhotocopyAmount: number;
+  textPageHeadCls: string;
   textBodyCls: string;
   textSmCls: string;
   tCommon: (key: string) => string;
@@ -42,12 +44,14 @@ export default function PhotocopyStep({
   todayReadingError,
   loadingPrev,
   saving,
+  savingPhotocopyStep = false,
   photoPrev,
   photoDiff,
   photoActualAmount,
   photoAmount,
   roundOffPhotocopy,
   roundedPhotocopyAmount,
+  textPageHeadCls,
   textBodyCls,
   textSmCls,
   tCommon,
@@ -69,7 +73,7 @@ export default function PhotocopyStep({
         <div
           className={clsx(
             "text-sm text-muted-foreground flex items-center gap-2 justify-between pr-3",
-            textSmCls,
+            textBodyCls,
           )}
         >
           <span>{tReadings("Yesterday")}:</span>
@@ -107,7 +111,7 @@ export default function PhotocopyStep({
                 value={(field.value as number) ?? 0}
                 onChange={field.onChange}
                 placeholder="0"
-                inputClassName={clsx("w-fit! text-sm text-right", textSmCls)}
+                inputClassName={clsx("w-fit! text-sm text-right", textBodyCls)}
               />
             )}
           />
@@ -120,21 +124,31 @@ export default function PhotocopyStep({
         <div
           className={clsx(
             "text-xs text-muted-foreground flex justify-between items-center pr-3",
-            textSmCls,
+            textBodyCls,
           )}
         >
-          {tReadings("TotalCopies")} = <b className="text-sm">{photoDiff}</b>
+          {tReadings("TotalCopies")} ={" "}
+          <span
+            className={clsx("text-sm text-primary font-semibold", textBodyCls)}
+          >
+            {photoDiff}
+          </span>
         </div>
 
         <div className="rounded-md border px-3 py-1 text-sm flex flex-col gap-2 my-4">
           <div className="flex justify-between items-center w-full">
             <span className="flex gap-2 justify-start items-center">
               {tReadings("Copies")} × ₹2 ={" "}
-              <b className="text-base tabular-nums">
+              <b className={clsx("text-base tabular-nums", textBodyCls)}>
                 {formatINR(photoActualAmount)}
               </b>
             </span>
-            <span className="text-xs text-muted-foreground italic hidden md:inline-flex">
+            <span
+              className={clsx(
+                "text-xs text-muted-foreground italic hidden md:inline-flex",
+                textBodyCls,
+              )}
+            >
               {tReadings("FSRate")}
             </span>
           </div>
@@ -166,15 +180,28 @@ export default function PhotocopyStep({
                   onRoundedAmountChange(Math.max(0, value || 0))
                 }
                 placeholder="0"
-                inputClassName={clsx("w-fit! text-sm text-right", textSmCls)}
+                inputClassName={clsx("w-fit! text-sm text-right", textBodyCls)}
               />
             </div>
           ) : null}
 
           <div className="flex justify-between items-center w-full">
-            <span className="flex gap-2 justify-start items-center">
+            <span
+              className={clsx(
+                "flex gap-2 justify-start items-center",
+                textBodyCls,
+              )}
+            >
               {tReadings("TotalAmount")} ={" "}
-              <b className="text-base tabular-nums">{formatINR(photoAmount)}</b>
+              <span
+                className={clsx(
+                  "text-base tabular-nums font-semibold",
+                  "text-primary",
+                  textPageHeadCls,
+                )}
+              >
+                {formatINR(photoAmount)}
+              </span>
             </span>
           </div>
 
@@ -189,16 +216,25 @@ export default function PhotocopyStep({
           variant="secondary"
           onClick={onCancel}
           disabled={saving}
-          className="gap-1"
+          className="gap-1 active:scale-95 transition-transform"
         >
           <X className="size-4" /> {tCommon("Cancel")}
         </Button>
         <Button
           onClick={onNext}
-          disabled={saving || loadingPrev}
-          className="gap-0"
+          disabled={saving || loadingPrev || savingPhotocopyStep}
+          className="gap-0 active:scale-95 transition-transform"
         >
-          {tCommon("Next")} <ChevronRight className="size-4" />
+          {savingPhotocopyStep ? (
+            <>
+              <Loader2Icon className="size-4 animate-spin" />
+              {tCommon("Next")}
+            </>
+          ) : (
+            <>
+              {tCommon("Next")} <ChevronRight className="size-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>

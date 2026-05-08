@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import { useState } from "react";
 import { UserRound, UserRoundCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +12,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, Loader2, LogOut } from "lucide-react";
 import { UserData } from "@/types/user";
 import { Button } from "@/components/ui/button";
 
@@ -29,6 +30,7 @@ export function AccountDropdown({
 
   const userReady = userStatus === "ready";
   const guest = userStatus === "no-user";
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileImage = user?.photoUrl || "";
   const name = user?.displayName || "Guest User";
   const email = user?.email || "No Email";
@@ -38,6 +40,16 @@ export function AccountDropdown({
       ? phoneNumber.slice(0, 3) + " - " + phoneNumber.slice(3)
       : "+91 - " + phoneNumber
     : "No Phone Number";
+
+  const handleLogout = async () => {
+    if (!onLogout || isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await onLogout();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -132,12 +144,17 @@ export function AccountDropdown({
               <DropdownMenuSeparator className="my-1" />
               <Button
                 variant="ghost"
-                onClick={onLogout}
+                onClick={handleLogout}
+                disabled={isLoggingOut}
                 className="w-full justify-center text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 font-semibold bg-red-50/50 dark:bg-red-900/20 border-red-600 hover:shadow-md hover:translate-x-0.5 transition-all duration-300"
                 size="sm"
               >
                 {tCommon("Logout")}
-                <LogOut className="size-4 mr-2" />
+                {isLoggingOut ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                ) : (
+                  <LogOut className="size-4 mr-2" />
+                )}
               </Button>
             </>
           )}

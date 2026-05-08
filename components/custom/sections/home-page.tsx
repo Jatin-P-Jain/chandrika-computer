@@ -43,6 +43,23 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const [sessionExpiredPopupShown, setSessionExpiredPopupShown] = useState(
     sessionExpired === "1",
   );
+  const [pendingRoute, setPendingRoute] = useState<
+    "/daily-accounts" | "/stamp-register" | "/photocopy-register" | null
+  >(null);
+
+  const navigateTo = (
+    path: "/daily-accounts" | "/stamp-register" | "/photocopy-register",
+  ) => {
+    if (pendingRoute) return;
+    if (authState.status !== "ready") {
+      toast.info(tToast("SecuredService"), {
+        description: tToast("PleaseLoginToAccessServiceDesc"),
+      });
+      return;
+    }
+    setPendingRoute(path);
+    push(path);
+  };
 
   useEffect(() => {
     if (sessionExpired !== "1") return;
@@ -136,17 +153,15 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
       <div className="grid gap-4 md:grid-cols-2">
         <div
           className="group block cursor-pointer"
-          onClick={() => {
-            if (authState.status !== "ready") {
-              toast.info(tToast("SecuredService"), {
-                description: tToast("PleaseLoginToAccessServiceDesc"),
-              });
-              return;
-            }
-            push("/daily-accounts");
-          }}
+          onClick={() => navigateTo("/daily-accounts")}
         >
-          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md">
+          <Card
+            className={clsx(
+              "h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md",
+              pendingRoute === "/daily-accounts" &&
+                "opacity-70 pointer-events-none",
+            )}
+          >
             <CardHeader className="flex flex-row items-center gap-3 w-full">
               <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-indigo-100 text-indigo-900/90 ">
                 {/* replace with your own icon */}
@@ -157,7 +172,11 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
               <div className="flex flex-col gap-1 md:gap-2 items-start w-full">
                 <CardTitle className="leading-6 flex items-start justify-between w-full">
                   {tDailyAccount("Title")}
-                  {authState.status !== "ready" ? (
+                  {pendingRoute === "/daily-accounts" ? (
+                    <div className="text-primary bg-primary/10 p-1 rounded-md">
+                      <Loader2 className="animate-spin size-5" />
+                    </div>
+                  ) : authState.status !== "ready" ? (
                     isUserLoading ? (
                       <div className="text-primary bg-primary/10 p-1 rounded-md">
                         <Loader2 className="animate-spin size-5" />
@@ -179,17 +198,15 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
 
         <div
           className="group block cursor-pointer"
-          onClick={() => {
-            if (authState.status !== "ready") {
-              toast.info(tToast("SecuredService"), {
-                description: tToast("PleaseLoginToAccessServiceDesc"),
-              });
-              return;
-            }
-            push("/stamp-register");
-          }}
+          onClick={() => navigateTo("/stamp-register")}
         >
-          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md">
+          <Card
+            className={clsx(
+              "h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md",
+              pendingRoute === "/stamp-register" &&
+                "opacity-70 pointer-events-none",
+            )}
+          >
             <CardHeader className="flex flex-row items-center gap-3">
               <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
                 {/* replace with your own icon */}
@@ -204,7 +221,11 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                   )}
                 >
                   {tStampRegister("Title")}
-                  {authState.status !== "ready" ? (
+                  {pendingRoute === "/stamp-register" ? (
+                    <div className="text-primary bg-primary/10 p-1 rounded-md">
+                      <Loader2 className="animate-spin size-5" />
+                    </div>
+                  ) : authState.status !== "ready" ? (
                     isUserLoading ? (
                       <div className="text-primary bg-primary/10 p-1 rounded-md">
                         <Loader2 className="animate-spin size-5" />
@@ -225,17 +246,15 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
         </div>
         <div
           className="group block cursor-pointer"
-          onClick={() => {
-            if (authState.status !== "ready") {
-              toast.info(tToast("SecuredService"), {
-                description: tToast("PleaseLoginToAccessServiceDesc"),
-              });
-              return;
-            }
-            push("/photocopy-register");
-          }}
+          onClick={() => navigateTo("/photocopy-register")}
         >
-          <Card className="h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md">
+          <Card
+            className={clsx(
+              "h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md",
+              pendingRoute === "/photocopy-register" &&
+                "opacity-70 pointer-events-none",
+            )}
+          >
             <CardHeader className="flex flex-row items-center gap-3">
               <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-300">
                 {/* replace with your own icon */}
@@ -250,7 +269,11 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                   )}
                 >
                   {tPhotocopyRegister("Title")}
-                  {authState.status !== "ready" ? (
+                  {pendingRoute === "/photocopy-register" ? (
+                    <div className="text-primary bg-primary/10 p-1 rounded-md">
+                      <Loader2 className="animate-spin size-5" />
+                    </div>
+                  ) : authState.status !== "ready" ? (
                     isUserLoading ? (
                       <div className="text-primary bg-primary/10 p-1 rounded-md">
                         <Loader2 className="animate-spin size-5" />

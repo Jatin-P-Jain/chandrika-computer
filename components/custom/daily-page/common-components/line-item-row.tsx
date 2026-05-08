@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Check, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useFormContext } from "react-hook-form";
 import { useState } from "react";
@@ -46,6 +46,10 @@ export function LineItemRow({
 
   // UI-only state (doesn't affect RHF values)
   const [isEditing, setIsEditing] = useState(false);
+  const [isPersisting, setIsPersisting] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"remove" | "done" | null>(
+    null,
+  );
   // const inputRef = useRef<HTMLInputElement>(null);
 
   // read current values for view mode (keeps submit logic unchanged)
@@ -183,32 +187,59 @@ export function LineItemRow({
               size="icon"
               onClick={async (e) => {
                 e.stopPropagation();
+                if (isPersisting) return;
+                setIsPersisting(true);
+                setPendingAction("remove");
                 onRemove();
-                await onPersist?.();
+                try {
+                  await onPersist?.();
+                } finally {
+                  setIsPersisting(false);
+                  setPendingAction(null);
+                }
               }}
+              disabled={isPersisting}
               aria-label="Remove row"
               className="w-[45%] border-red-600 bg-red-100 text-red-700 hover:bg-red-200 hover:border-red-700"
             >
-              <X className="size-4" />
+              {pendingAction === "remove" ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <X className="size-4" />
+              )}
             </Button>
 
             <Button
               type="button"
               variant="outline"
               size="icon"
-              disabled={!isRowValid}
+              disabled={!isRowValid || isPersisting}
               onClick={async (e) => {
                 e.stopPropagation();
+                if (isPersisting) return;
+                setIsPersisting(true);
+                setPendingAction("done");
                 setIsEditing(false);
-                await onPersist?.();
+                try {
+                  await onPersist?.();
+                } finally {
+                  setIsPersisting(false);
+                  setPendingAction(null);
+                }
               }}
               aria-label="Mark done"
               className={clsx(
                 "w-[45%] border-green-600 bg-green-100 text-green-700 hover:bg-green-200 hover:border-green-700",
-                !isRowValid ? "opacity-30! cursor-not-allowed" : "",
+                !isRowValid || isPersisting
+                  ? "opacity-30! cursor-not-allowed"
+                  : "",
               )}
             >
-              <Check className="size-4" />
+              {pendingAction === "done" ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Check className="size-4" />
+              )}
             </Button>
           </div>
         </>

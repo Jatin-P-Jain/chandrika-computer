@@ -152,9 +152,7 @@ export function AccountComboBox({
           )}
           <Command shouldFilter={true}>
             <CommandInput
-              placeholder={
-                loading ? tCommon("Loading") : tCreditsDebits("SearchAccount")
-              }
+              placeholder={tCreditsDebits("SearchAccount")}
               value={query}
               onValueChange={setQuery}
             />
@@ -171,8 +169,12 @@ export function AccountComboBox({
                       onClick={onCreate}
                       disabled={creating}
                     >
-                      <Plus className="mr-2 h-4 w-4" />
-                      {tCommon("Create")} “{normalizedQuery}”
+                      {creating ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="mr-2 h-4 w-4" />
+                      )}
+                      {`${tCommon("Create")} “${normalizedQuery}”`}
                     </Button>
                   ) : null}
                 </div>

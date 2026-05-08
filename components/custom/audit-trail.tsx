@@ -11,6 +11,7 @@ import {
   CollapsibleTrigger,
 } from "../ui/collapsible";
 import { ChevronDown } from "lucide-react";
+import clsx from "clsx";
 
 interface AuditTrailProps {
   auditTrail?: AuditEvent[];
@@ -98,9 +99,14 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ auditTrail = [] }) => {
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
       <CollapsibleTrigger asChild>
-        <button className="flex items-center justify-between w-full px-0 py-1 hover:bg-muted/30 rounded text-xs font-semibold text-muted-foreground group">
+        <button className="flex items-center justify-between w-full px-0 py-1 hover:bg-muted/30 rounded text-xs font-semibold text-muted-foreground group active:scale-95 transition-transform">
           <span className={textSmCls}>Audit Trail ({auditTrail.length})</span>
-          <ChevronDown className="size-4 transition-transform group-data-[state=open]:rotate-180" />
+          <ChevronDown
+            className={clsx(
+              "size-4 transition-transform",
+              isOpen ? "rotate-180" : "rotate-0",
+            )}
+          />
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-2 mt-2 pt-2 border-t">

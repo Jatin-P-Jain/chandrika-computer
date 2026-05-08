@@ -20,7 +20,7 @@ export type StampPartDoc = {
   todayReading: number;
   prevReading: number; // yesterday's todayReading for that denom
   stockAdded: number; // stamps added to stock today
-  difference: number; // (prevReading - todayReading) - stockAdded
+  difference: number; // prevReading - (todayReading - stockAdded)
   amount: number; // difference × denomination
 };
 

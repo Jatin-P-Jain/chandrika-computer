@@ -1,8 +1,9 @@
 "use client";
 
-import { Download, Settings } from "lucide-react";
+import { Download, Loader2, Settings } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { useState } from "react";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { usePwaPrompt } from "@/hooks/usePwaPrompt";
 import { Button } from "@/components/ui/button";
@@ -21,22 +22,30 @@ export function SettingsDropdown() {
   const tCommon = useTranslations("Common");
   const { textLabelCls } = useLocaleTypography();
   const { canInstall, isPwa, promptToInstall, diagnostics } = usePwaPrompt();
+  const [isInstalling, setIsInstalling] = useState(false);
 
   const onInstall = async () => {
+    if (isInstalling) return;
+    setIsInstalling(true);
     if (!canInstall) {
       if (diagnostics.isAndroidChrome) {
         toast.message(tCommon("InstallFromBrowserMenu"));
       } else {
         toast.message(tCommon("InstallNotAvailable"));
       }
+      setIsInstalling(false);
       return;
     }
 
-    const outcome = await promptToInstall();
-    if (outcome === "accepted") {
-      toast.success(tCommon("InstallAccepted"));
-    } else if (outcome === "dismissed") {
-      toast.message(tCommon("InstallDismissed"));
+    try {
+      const outcome = await promptToInstall();
+      if (outcome === "accepted") {
+        toast.success(tCommon("InstallAccepted"));
+      } else if (outcome === "dismissed") {
+        toast.message(tCommon("InstallDismissed"));
+      }
+    } finally {
+      setIsInstalling(false);
     }
   };
 
@@ -84,8 +93,13 @@ export function SettingsDropdown() {
                 size="sm"
                 className="w-full justify-center gap-1"
                 onClick={onInstall}
+                disabled={isInstalling}
               >
-                <Download className="size-4" />
+                {isInstalling ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
                 {tCommon("InstallApp")}
               </Button>
             </DropdownMenuItem>

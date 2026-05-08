@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 
 export type ReviewItem = {
   id: string;
@@ -51,6 +51,9 @@ export function SaveReviewDialog({
 }) {
   const [checkedIds, setCheckedIds] = React.useState<Record<string, boolean>>(
     {},
+  );
+  const [pendingActionId, setPendingActionId] = React.useState<string | null>(
+    null,
   );
 
   // Reset checks whenever dialog opens or item list changes
@@ -100,9 +103,23 @@ export function SaveReviewDialog({
                           variant="outline"
                           size="sm"
                           className="h-6 p-1.5 text-xs! gap-0.5 font-medium border text-primary hover:bg-primary/5 ml-auto"
-                          onClick={it.onAction}
+                          onClick={async () => {
+                            if (!it.onAction || pendingActionId === it.id)
+                              return;
+                            setPendingActionId(it.id);
+                            try {
+                              await it.onAction();
+                            } finally {
+                              setPendingActionId(null);
+                            }
+                          }}
+                          disabled={pendingActionId === it.id}
                         >
-                          <Plus className="size-4" />
+                          {pendingActionId === it.id ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Plus className="size-4" />
+                          )}
                           {it.actionLabel}
                         </Button>
                       ) : null}

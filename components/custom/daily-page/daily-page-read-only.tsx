@@ -13,7 +13,7 @@ import { DailyAccount } from "@/types/daily-account";
 import { formatINR, sumAmounts } from "@/lib/utils";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import AuditTrail from "../audit-trail";
-import { PencilIcon } from "lucide-react";
+import { Loader2, PencilIcon } from "lucide-react";
 import type { NoteItem } from "@/types/daily-notes";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
@@ -36,7 +36,7 @@ function ReadOnlyListSection({
   totalLabel,
   totalValue,
   accentClassName,
-  textHeadCls,
+  textPageHeadCls,
   textBodyCls,
 }: {
   title: string;
@@ -44,7 +44,7 @@ function ReadOnlyListSection({
   totalLabel: string;
   totalValue: number;
   accentClassName?: string;
-  textHeadCls: string;
+  textPageHeadCls: string;
   textBodyCls: string;
 }) {
   return (
@@ -52,13 +52,13 @@ function ReadOnlyListSection({
       <div
         className={clsx(
           "text-primary font-semibold border-b pb-2",
-          textHeadCls,
+          textBodyCls,
         )}
       >
         {title}
       </div>
 
-      <div className="flex flex-col gap-2 max-h-72 overflow-auto no-scrollbar">
+      <div className="flex flex-col gap-1 max-h-72 overflow-auto no-scrollbar">
         {items.length === 0 ? (
           <div
             className={clsx(
@@ -74,7 +74,7 @@ function ReadOnlyListSection({
               key={`${item.label}-${index}`}
               className="flex justify-between gap-3"
             >
-              <div className="flex flex-col items-end text-right">
+              <div className="flex flex-col items-start text-left">
                 <span className={clsx("text-sm", textBodyCls)}>
                   {item.label || "-"}
                 </span>
@@ -90,7 +90,9 @@ function ReadOnlyListSection({
                   ))}
                 </div>
               </div>
-              <span className={clsx("font-semibold tabular-nums", textHeadCls)}>
+              <span
+                className={clsx("font-medium tabular-nums", textPageHeadCls)}
+              >
                 {formatINR(Number(item.amount) || 0)}
               </span>
             </div>
@@ -100,12 +102,14 @@ function ReadOnlyListSection({
 
       <div
         className={clsx(
-          "flex justify-between items-center border-t py-1",
+          "flex justify-between items-center border-t py-1 text-primary",
           accentClassName,
         )}
       >
-        <span className={clsx("text-sm", textBodyCls)}>{totalLabel}</span>
-        <span className={clsx("font-semibold tabular-nums", textHeadCls)}>
+        <span className={clsx("text-sm font-medium", textBodyCls)}>
+          {totalLabel}
+        </span>
+        <span className={clsx("font-semibold tabular-nums", textPageHeadCls)}>
           {formatINR(totalValue)}
         </span>
       </div>
@@ -116,12 +120,12 @@ function ReadOnlyListSection({
 function ReadOnlyAccountSection({
   title,
   items,
-  textHeadCls,
+  textPageHeadCls,
   textBodyCls,
 }: {
   title: string;
   items: { label: string; accountId?: string; amount: number }[];
-  textHeadCls: string;
+  textPageHeadCls: string;
   textBodyCls: string;
 }) {
   return (
@@ -129,7 +133,7 @@ function ReadOnlyAccountSection({
       <div
         className={clsx(
           "text-primary font-semibold border-b pb-2",
-          textHeadCls,
+          textBodyCls,
         )}
       >
         {title}
@@ -155,7 +159,9 @@ function ReadOnlyAccountSection({
                   {item.label || "-"}
                 </span>
               </div>
-              <span className={clsx("font-semibold tabular-nums", textHeadCls)}>
+              <span
+                className={clsx("font-medium tabular-nums", textPageHeadCls)}
+              >
                 {formatINR(Number(item.amount) || 0)}
               </span>
             </div>
@@ -187,7 +193,8 @@ export default function DailyPageReadOnly({
   const tDailyAccount = useTranslations("DailyAccount");
   const tCreditsDebits = useTranslations("CreditsDebits");
   const { push, refresh } = useSafeRouter();
-  const { textBodyCls, textDisplayCls } = useLocaleTypography();
+  const { textBodyCls, textPageHeadCls, textDisplayCls } =
+    useLocaleTypography();
   const baseData: DailyFormValues = initialData ?? {
     fixed: { sd: 0, sc: 0, fs: 0, flexnCard: 0, otherFixedExpenses: [] },
     earnings: { netIncome: 0, otherIncomes: [] },
@@ -199,6 +206,7 @@ export default function DailyPageReadOnly({
   };
 
   const [localReadings, setLocalReadings] = useState(readings);
+  const [isNavigatingToEdit, setIsNavigatingToEdit] = useState(false);
 
   const fixedData = useMemo(() => {
     const sd = localReadings?.stamp?.totalAmount ?? baseData.fixed.sd ?? 0;
@@ -229,7 +237,7 @@ export default function DailyPageReadOnly({
     })),
   );
 
-  const readingsSaved = !!(localReadings?.photocopy || localReadings?.stamp);
+  const readingsSaved = !!(localReadings?.photocopy && localReadings?.stamp);
 
   return (
     <div className="flex flex-col justify-start items-start w-full">
@@ -242,12 +250,19 @@ export default function DailyPageReadOnly({
             photocopy?: PhotocopyReadingDoc;
             stamp?: StampReadingDoc;
           }) => {
-            setLocalReadings((prev) => ({
-              success: true,
-              photocopy: saved.photocopy ?? prev?.photocopy ?? null,
-              stamp: saved.stamp ?? prev?.stamp ?? null,
-            }));
-            refresh();
+            setLocalReadings((prev) => {
+              const nextPhotocopy = saved.photocopy ?? prev?.photocopy ?? null;
+              const nextStamp = saved.stamp ?? prev?.stamp ?? null;
+
+              return {
+                success: Boolean(nextPhotocopy && nextStamp),
+                photocopy: nextPhotocopy,
+                stamp: nextStamp,
+              };
+            });
+            if (saved.stamp) {
+              refresh();
+            }
           }}
         />
         <DailyNotesReadOnlyDialog
@@ -283,7 +298,7 @@ export default function DailyPageReadOnly({
               ]}
               totalLabel={tDailyAccount("TotalFixed")}
               totalValue={totalFixed}
-              textHeadCls={textDisplayCls}
+              textPageHeadCls={textPageHeadCls}
               textBodyCls={textBodyCls}
             />
 
@@ -293,7 +308,7 @@ export default function DailyPageReadOnly({
               totalLabel={tDailyAccount("TotalIncome")}
               totalValue={totalEarnings}
               accentClassName="bg-green-100 text-green-900 rounded-md px-1"
-              textHeadCls={textDisplayCls}
+              textPageHeadCls={textPageHeadCls}
               textBodyCls={textBodyCls}
             />
 
@@ -302,7 +317,7 @@ export default function DailyPageReadOnly({
               items={(baseData.businessExpenses ?? []) as LineItem[]}
               totalLabel={tDailyAccount("TotalBusinessExpense")}
               totalValue={totalBusiness}
-              textHeadCls={textDisplayCls}
+              textPageHeadCls={textPageHeadCls}
               textBodyCls={textBodyCls}
             />
 
@@ -311,7 +326,7 @@ export default function DailyPageReadOnly({
               items={(baseData.dailySpends ?? []) as LineItem[]}
               totalLabel={tDailyAccount("TotalDailySpends")}
               totalValue={totalSpends}
-              textHeadCls={textDisplayCls}
+              textPageHeadCls={textPageHeadCls}
               textBodyCls={textBodyCls}
             />
           </div>
@@ -320,13 +335,13 @@ export default function DailyPageReadOnly({
             <ReadOnlyAccountSection
               title={tCreditsDebits("Credits")}
               items={baseData.creditItems ?? []}
-              textHeadCls={textDisplayCls}
+              textPageHeadCls={textPageHeadCls}
               textBodyCls={textBodyCls}
             />
             <ReadOnlyAccountSection
               title={tCreditsDebits("Debits")}
               items={baseData.debitItems ?? []}
-              textHeadCls={textDisplayCls}
+              textPageHeadCls={textPageHeadCls}
               textBodyCls={textBodyCls}
             />
           </div>
@@ -372,11 +387,20 @@ export default function DailyPageReadOnly({
             <Button
               variant={"outline"}
               type="button"
-              onClick={() => push(`/daily-accounts/${docId}?mode=edit`)}
+              onClick={() => {
+                if (isNavigatingToEdit) return;
+                setIsNavigatingToEdit(true);
+                push(`/daily-accounts/${docId}?mode=edit`);
+              }}
+              disabled={isNavigatingToEdit}
               className="p-1! px-2! h-fit! text-primary border-primary flex gap-1 absolute top-4 right-4 font-semibold text-xs w-fit justify-center items-center"
             >
-              <PencilIcon className="size-3" />
-              <span>{tCommon("Edit")}</span>
+              {isNavigatingToEdit ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <PencilIcon className="size-3" />
+              )}
+              <span className={clsx("", textBodyCls)}>{tCommon("Edit")}</span>
             </Button>
           </div>
         </div>

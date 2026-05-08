@@ -6,13 +6,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Filter, X } from "lucide-react";
+import { Filter, Loader2, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFilterOptions } from "@/hooks/useFilterOptions";
 import { FilterTag, FilterUser } from "@/types/filters";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslations } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
@@ -119,6 +119,7 @@ export function MoreFiltersPopover({
 
   const { creators, updaters, tags } = useFilterOptions();
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const totalSelected =
     currentCreatedBy.length + currentUpdatedBy.length + currentTags.length;
@@ -138,15 +139,19 @@ export function MoreFiltersPopover({
   };
 
   const clearSection = (filterType: "createdBy" | "updatedBy" | "tags") => {
-    updateSearchParams({ [filterType]: "" });
+    startTransition(() => {
+      updateSearchParams({ [filterType]: "" });
+    });
   };
 
   // 🔥 Clear ONLY more filters (keeps date/sort)
   const clearMoreFiltersOnly = () => {
-    updateSearchParams({
-      createdBy: "",
-      updatedBy: "",
-      tags: "",
+    startTransition(() => {
+      updateSearchParams({
+        createdBy: "",
+        updatedBy: "",
+        tags: "",
+      });
     });
   };
 
@@ -247,8 +252,12 @@ export function MoreFiltersPopover({
             variant="outline"
             size="sm"
             onClick={clearMoreFiltersOnly} // ✅ Only clears more filters!
+            disabled={isPending}
           >
-            <span className={clsx(textSmCls)}>{tFilters("ClearAll")}</span>
+            <span className={clsx(textSmCls, "inline-flex items-center gap-1")}>
+              {isPending ? <Loader2 className="size-3 animate-spin" /> : null}
+              {tFilters("ClearAll")}
+            </span>
           </Button>
         </div>
       </PopoverContent>
