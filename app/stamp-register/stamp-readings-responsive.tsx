@@ -12,6 +12,8 @@ import type { StampReadingRow, Denomination } from "@/types/readings";
 import { useTranslations } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import React from "react";
+import clsx from "clsx";
+import { CalendarFold } from "lucide-react";
 
 const DENOMS: Denomination[] = [50, 100, 500, 1000];
 
@@ -25,7 +27,8 @@ export function StampReadingsResponsive({
   const tCommon = useTranslations("Common");
   const tReadings = useTranslations("Readings");
 
-  const { textBodyCls } = useLocaleTypography();
+  const { textHeadingCls, textPageHeadCls, textBodyCls } =
+    useLocaleTypography();
 
   return (
     <div className="space-y-4 w-full">
@@ -252,29 +255,35 @@ export function StampReadingsResponsive({
         {data.map((r) => (
           <div
             key={r.date}
-            className="rounded-md border p-3 flex flex-col gap-2"
+            className="rounded-md border p-2 flex flex-col gap-2 border-primary/50 shadow-md"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
+              <CalendarFold className="size-8 text-primary" />
               <DateDisplay
                 value={r.date}
                 type="docId"
-                className={`w-full text-primary font-semibold flex items-center gap-1 ${textBodyCls}`}
+                className={`w-full text-primary font-semibold flex items-center gap-1 ${textPageHeadCls}`}
               />
-              <div className="font-semibold w-full text-right">
-                {tCommon("Total")}: {formatINR(r.totalAmount)}
+              <div className={`font-medium w-full text-right ${textBodyCls}`}>
+                {tCommon("Total")}:{" "}
+                <span
+                  className={clsx("font-semibold text-primary", textHeadingCls)}
+                >
+                  {formatINR(r.totalAmount)}
+                </span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-sm">
               {DENOMS.map((d) => (
-                <div key={d} className="rounded-md bg-muted p-2">
-                  <div className={` ${textBodyCls}`}>₹{d}</div>
+                <div key={d} className="rounded-md bg-muted p-1 shadow-sm">
+                  <div className={`font-semibold ${textBodyCls}`}>₹{d}</div>
                   {showReadings && (
                     <>
                       <div
                         className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
                       >
-                        <span className="text-xs">
+                        <span className="text-sm">
                           {tReadings("YesterdayReading")}:
                         </span>{" "}
                         {r.parts[d]?.prevReading ?? 0}
@@ -282,7 +291,7 @@ export function StampReadingsResponsive({
                       <div
                         className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
                       >
-                        <span className="text-xs">
+                        <span className="text-sm">
                           {tReadings("TodayReading")}:
                         </span>{" "}
                         {r.parts[d]?.todayReading ?? 0}
@@ -292,25 +301,35 @@ export function StampReadingsResponsive({
                   <div
                     className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
                   >
-                    <span className="text-xs">{tReadings("StampCount")}:</span>{" "}
-                    {r.parts[d]?.difference ?? 0}
+                    {tReadings("StampCount")}:
+                    <span className={clsx("font-semibold", textPageHeadCls)}>
+                      {r.parts[d]?.difference ?? 0}
+                    </span>
+                  </div>
+
+                  <div
+                    className={`font-medium justify-between flex items-center ${textBodyCls}`}
+                  >
+                    {tReadings("StampAmount")}:
+                    <span
+                      className={clsx(
+                        "font-semibold text-primary",
+                        textPageHeadCls,
+                      )}
+                    >
+                      {formatINR(r.parts[d]?.amount ?? 0, true, false)}
+                    </span>
                   </div>
                   {(r.parts[d]?.stockAdded ?? 0) > 0 && (
                     <div
                       className={`text-green-700 justify-between flex items-center font-semibold ${textBodyCls}`}
                     >
-                      <span className="text-xs">
+                      <span className="text-sm">
                         {tReadings("StockAdded")}:
                       </span>{" "}
                       +{r.parts[d]?.stockAdded ?? 0}
                     </div>
                   )}
-                  <div
-                    className={`font-semibold justify-between flex items-center ${textBodyCls}`}
-                  >
-                    <span className="text-xs">{tReadings("StampAmount")}:</span>{" "}
-                    {formatINR(r.parts[d]?.amount ?? 0, true, false)}
-                  </div>
                 </div>
               ))}
             </div>

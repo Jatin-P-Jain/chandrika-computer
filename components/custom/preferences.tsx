@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -39,25 +38,16 @@ export function Preferences() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          className="flex items-center justify-between hover:bg-transparent!"
-          onSelect={(e) => e.preventDefault()}
-        >
+        <div className="px-2 py-1.5">
           <KeyboardSwitch labelClassName={textLabelCls} />
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="flex items-center justify-between hover:bg-transparent!"
-          onSelect={(e) => e.preventDefault()}
-        >
+        </div>
+        <div className="px-2 py-1.5">
           <ThemeModeToggle labelClassName={textLabelCls} />
-        </DropdownMenuItem>
+        </div>
 
-        <DropdownMenuItem
-          className="flex items-center justify-between hover:bg-transparent!"
-          onSelect={(e) => e.preventDefault()}
-        >
+        <div className="px-2 py-1.5">
           <LocaleToggle labelClassName={textLabelCls} />
-        </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

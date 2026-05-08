@@ -12,6 +12,8 @@ import type { PhotocopyReadingRow } from "@/types/readings";
 import { useTranslations } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import React from "react";
+import { CalendarFold } from "lucide-react";
+import clsx from "clsx";
 
 export function PhotocopyReadingsResponsive({
   data,
@@ -23,7 +25,8 @@ export function PhotocopyReadingsResponsive({
   const tCommon = useTranslations("Common");
   const tReadings = useTranslations("Readings");
 
-  const { textBodyCls, textSmCls } = useLocaleTypography();
+  const { textHeadingCls, textPageHeadCls, textBodyCls } =
+    useLocaleTypography();
 
   return (
     <div className="space-y-4 w-full">
@@ -32,13 +35,13 @@ export function PhotocopyReadingsResponsive({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted">
-              <TableHead className={`font-semibold ${textSmCls}`}>
+              <TableHead className={`font-semibold ${textBodyCls}`}>
                 {tCommon("Date")}
               </TableHead>
-              <TableHead className={`font-semibold ${textSmCls}`}>
+              <TableHead className={`font-semibold ${textBodyCls}`}>
                 {tCommon("Particulars")}
               </TableHead>
-              <TableHead className={`text-right font-semibold ${textSmCls}`}>
+              <TableHead className={`text-right font-semibold ${textBodyCls}`}>
                 {tCommon("Total")}
               </TableHead>
             </TableRow>
@@ -74,7 +77,7 @@ export function PhotocopyReadingsResponsive({
                         />
                       </TableCell>
                       <TableCell
-                        className={`text-muted-foreground w-0 ${textSmCls}`}
+                        className={`text-muted-foreground w-0 ${textBodyCls}`}
                       >
                         {tReadings("YesterdayReading")}
                       </TableCell>
@@ -91,7 +94,7 @@ export function PhotocopyReadingsResponsive({
                   {showReadings && (
                     <TableRow>
                       <TableCell
-                        className={`text-muted-foreground ${textSmCls}`}
+                        className={`text-muted-foreground ${textBodyCls}`}
                       >
                         {tReadings("TodayReading")}
                       </TableCell>
@@ -105,7 +108,7 @@ export function PhotocopyReadingsResponsive({
                   )}
                   {hasStockAdded && (
                     <TableRow>
-                      <TableCell className={`text-green-700 ${textSmCls}`}>
+                      <TableCell className={`text-green-700 ${textBodyCls}`}>
                         {tReadings("StockAddition")}
                       </TableCell>
 
@@ -130,7 +133,9 @@ export function PhotocopyReadingsResponsive({
                         />
                       </TableCell>
                     )}
-                    <TableCell className={`text-muted-foreground ${textSmCls}`}>
+                    <TableCell
+                      className={`text-muted-foreground ${textBodyCls}`}
+                    >
                       {tReadings("PhotocopyCount")}
                     </TableCell>
 
@@ -143,7 +148,7 @@ export function PhotocopyReadingsResponsive({
 
                   {/* Row 4: Photocopy Value */}
                   <TableRow>
-                    <TableCell className={`${textSmCls}`}>
+                    <TableCell className={`${textBodyCls}`}>
                       {tReadings("PhotocopyAmount")}
                     </TableCell>
                     <TableCell
@@ -172,54 +177,48 @@ export function PhotocopyReadingsResponsive({
         {data.map((r) => (
           <div
             key={r.date}
-            className="rounded-md border p-3 flex flex-col gap-2"
+            className={`rounded-md border p-2 flex flex-col gap-1 ${textBodyCls}`}
           >
-            <div className="flex items-start justify-between">
+            <div className="flex items-center justify-between gap-2">
+              <CalendarFold className="size-8 text-primary" />
               <DateDisplay
                 value={r.date}
                 type="docId"
-                className={`w-full text-primary font-semibold flex items-center gap-1 ${textBodyCls}`}
+                className={`w-full text-primary font-semibold flex items-center gap-1 ${textPageHeadCls}`}
               />
               <div
-                className={`font-semibold w-full text-right gap-2 items-center flex justify-end ${textBodyCls}`}
+                className={`font-medium w-full text-right gap-2 items-center flex justify-end ${textBodyCls}`}
               >
-                <span className="text-muted-foreground font-normal text-sm">
-                  {tCommon("Total")}:
-                </span>{" "}
-                {formatINR(r.amount ?? 0)}
+                {tCommon("Total")}:
+                <span
+                  className={`text-primary font-semibold ${textHeadingCls}`}
+                >
+                  {formatINR(r.amount ?? 0)}
+                </span>
               </div>
             </div>
             <div className="flex flex-col items-start justify-between w-full gap-1">
               {showReadings && (
                 <>
                   <div
-                    className={`flex justify-between w-full tabular-nums text-muted-foreground ${textSmCls}`}
+                    className={`flex justify-between w-full tabular-nums text-muted-foreground ${textBodyCls}`}
                   >
                     <span>{tReadings("YesterdayReading")}:</span>{" "}
                     {r.prevReading ?? 0}
                   </div>
                   <div
-                    className={`flex justify-between w-full tabular-nums text-muted-foreground ${textSmCls}`}
+                    className={`flex justify-between w-full tabular-nums text-muted-foreground ${textBodyCls}`}
                   >
                     <span>{tReadings("TodayReading")}:</span>{" "}
                     {r.todayReading ?? 0}
                   </div>
                 </>
               )}
-              {(r.stockAdded ?? 0) > 0 && (
-                <div
-                  className={`flex justify-between w-full tabular-nums text-green-700 font-semibold ${textSmCls}`}
-                >
-                  <span>{tReadings("StockAddition")}:</span> +{r.stockAdded}
-                </div>
-              )}
               <div
-                className={`flex justify-between w-full tabular-nums font-semibold  ${textSmCls}`}
+                className={`flex justify-between w-full tabular-nums font-medium  ${textBodyCls}`}
               >
-                <span className="font-normal">
-                  {tReadings("PhotocopyCount")}:
-                </span>{" "}
-                {r.difference ?? 0}
+                {tReadings("PhotocopyCount")}:
+                <span className={clsx("font-semibold", textPageHeadCls)}>{r.difference ?? 0}</span>
               </div>
             </div>
           </div>

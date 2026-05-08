@@ -304,7 +304,13 @@ export default function DailyPageReadOnly({
 
             <ReadOnlyListSection
               title={tDailyAccount("Income")}
-              items={(baseData.earnings.otherIncomes ?? []) as LineItem[]}
+              items={[
+                {
+                  label: tDailyAccount("NetIncome"),
+                  amount: baseData.earnings.netIncome ?? 0,
+                },
+                ...((baseData.earnings.otherIncomes ?? []) as LineItem[]),
+              ]}
               totalLabel={tDailyAccount("TotalIncome")}
               totalValue={totalEarnings}
               accentClassName="bg-green-100 text-green-900 rounded-md px-1"

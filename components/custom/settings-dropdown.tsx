@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -61,32 +60,20 @@ export function SettingsDropdown() {
             {tCommon("Settings")}
           </DropdownMenuLabel>
 
-          <DropdownMenuItem
-            className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0 mb-2"
-            onSelect={(e) => e.preventDefault()}
-          >
+          <div className="mb-2">
             <KeyboardSwitch labelClassName={textLabelCls} />
-          </DropdownMenuItem>
+          </div>
 
-          <DropdownMenuItem
-            className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0 mb-2"
-            onSelect={(e) => e.preventDefault()}
-          >
+          <div className="mb-2">
             <ThemeModeToggle labelClassName={textLabelCls} />
-          </DropdownMenuItem>
+          </div>
 
-          <DropdownMenuItem
-            className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0"
-            onSelect={(e) => e.preventDefault()}
-          >
+          <div>
             <LocaleToggle labelClassName={textLabelCls} />
-          </DropdownMenuItem>
+          </div>
 
           {!isPwa ? (
-            <DropdownMenuItem
-              className="flex items-center justify-between hover:bg-transparent! cursor-pointer p-0 mt-2"
-              onSelect={(e) => e.preventDefault()}
-            >
+            <div className="mt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -102,7 +89,7 @@ export function SettingsDropdown() {
                 )}
                 {tCommon("InstallApp")}
               </Button>
-            </DropdownMenuItem>
+            </div>
           ) : null}
         </div>
       </DropdownMenuContent>

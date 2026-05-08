@@ -38,13 +38,13 @@ export function PhotocopyRegisterClient({
   const tPhotocopyRegister = useTranslations("PhotocopyRegister");
   const [showReadings, setShowReadings] = React.useState(false);
 
-  const { textPageHeadCls, textSmCls } = useLocaleTypography();
+  const { textHeadingCls, textBodyCls } = useLocaleTypography();
 
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex items-center justify-between gap-3 w-full">
         <h1
-          className={`text-lg font-semibold flex items-center gap-2 ${textPageHeadCls}`}
+          className={`text-lg font-semibold flex items-center gap-2 ${textHeadingCls}`}
         >
           <Newspaper className="size-6" />
           {tPhotocopyRegister("PhotocopyRegister")}
@@ -56,7 +56,7 @@ export function PhotocopyRegisterClient({
             checked={showReadings}
             onCheckedChange={setShowReadings}
           />
-          <Label htmlFor="show-readings" className={textSmCls}>
+          <Label htmlFor="show-readings" className={textBodyCls}>
             {tCommon("ShowReadings")}
           </Label>
         </div>

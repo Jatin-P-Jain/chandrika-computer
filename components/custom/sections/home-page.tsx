@@ -170,7 +170,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                 </span>
               </div>
               <div className="flex flex-col gap-1 md:gap-2 items-start w-full">
-                <CardTitle className="leading-6 flex items-start justify-between w-full">
+                <CardTitle className="leading-6 flex items-start justify-between w-full text-lg">
                   {tDailyAccount("Title")}
                   {pendingRoute === "/daily-accounts" ? (
                     <div className="text-primary bg-primary/10 p-1 rounded-md">
@@ -217,7 +217,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
               <div className="flex flex-col gap-1 md:gap-2 w-full">
                 <CardTitle
                   className={clsx(
-                    "leading-6 flex items-start w-full justify-between",
+                    "leading-6 flex items-start w-full justify-between text-lg",
                   )}
                 >
                   {tStampRegister("Title")}
@@ -265,7 +265,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
               <div className="flex flex-col gap-1 md:gap-2 w-full">
                 <CardTitle
                   className={clsx(
-                    "leading-6 flex items-start justify-between w-full",
+                    "leading-6 flex items-start justify-between w-full text-lg",
                   )}
                 >
                   {tPhotocopyRegister("Title")}

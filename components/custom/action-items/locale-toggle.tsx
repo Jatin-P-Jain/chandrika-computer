@@ -1,61 +1,40 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "../../ui/button";
 import { Loader2 } from "lucide-react";
-import { useSafeRouter } from "@/hooks/useSafeRouter";
 
 const COOKIE_NAME = "CHANDRIKA_COMPUTER_LOCALE";
-
-function getCookieValue(name: string) {
-  const matches = document.cookie
-    .split("; ")
-    .filter((c) => c.startsWith(`${name}=`))
-    .map((c) => c.split("=").slice(1).join("="));
-
-  return matches.length ? matches[matches.length - 1] : undefined;
-}
 
 function setLocaleCookie(locale: string) {
   // Keep SameSite=Lax (good default for a locale preference cookie)
   document.cookie = `${COOKIE_NAME}=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
 }
 
-function getInitialLocale(): "en" | "hi" {
-  const v = getCookieValue(COOKIE_NAME);
-  if (v === "en" || v === "hi") return v;
-
-  const browser = navigator.language.slice(0, 2);
-  return browser === "hi" ? "hi" : "en";
-}
-
 export function LocaleToggle({ labelClassName }: { labelClassName: string }) {
-  const { refresh } = useSafeRouter();
   const tCommon = useTranslations("Common");
-
-  const [locale, setLocale] = useState<"en" | "hi">(() => getInitialLocale());
-  const [isPending, startTransition] = useTransition();
+  const locale = useLocale() as "en" | "hi";
+  const [pendingLocale, setPendingLocale] = useState<"en" | "hi" | null>(null);
+  const activeLocale = pendingLocale ?? locale;
+  const isPending = pendingLocale !== null;
 
   const toggleLocale = (nextLocale: "en" | "hi") => {
-    if (nextLocale === locale) return;
+    if (nextLocale === activeLocale) return;
 
-    // 1) Write cookie synchronously so refresh sees the new locale immediately
+    // Persist the locale before reloading so the next request renders correctly.
     setLocaleCookie(nextLocale);
+    setPendingLocale(nextLocale);
 
-    // 2) Update button UI state immediately
-    setLocale(nextLocale);
-
-    // 3) Refresh in a transition so we can show loading feedback [web:321][web:330]
-    startTransition(() => {
-      refresh();
-    });
+    window.location.reload();
   };
 
   return (
     <div
       className="flex w-full gap-4 items-center justify-between"
       aria-label="Toggle language"
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
     >
       <span className={labelClassName}>{tCommon("Language")}: </span>
       {isPending ? (
@@ -66,16 +45,28 @@ export function LocaleToggle({ labelClassName }: { labelClassName: string }) {
 
       <div className="flex gap-2 md:gap-4 items-center">
         <Button
+          type="button"
           disabled={isPending}
-          variant={locale === "hi" ? "default" : "outline"}
+          variant={activeLocale === "hi" ? "default" : "outline"}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleLocale("hi");
+          }}
           onClick={() => toggleLocale("hi")}
         >
           {tCommon("Hindi")}
         </Button>
 
         <Button
+          type="button"
           disabled={isPending}
-          variant={locale === "en" ? "default" : "outline"}
+          variant={activeLocale === "en" ? "default" : "outline"}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleLocale("en");
+          }}
           onClick={() => toggleLocale("en")}
         >
           {tCommon("English")}
