@@ -38,14 +38,14 @@ export function GlobalClientEnhancements() {
         closeButton
         richColors
         position="top-center"
-        mobileOffset="calc(env(safe-area-inset-top) + 85px)"
+        mobileOffset={{ top: "calc(env(safe-area-inset-top) + 85px)" }}
         className="flex justify-center"
         toastOptions={{
           classNames: {
             toast:
-              "w-[min(100vw,300px)]! min-h-14! flex items-start gap-2 px-4! py-3!",
-            title: "font-semibold leading-snug text-lg",
-            description: "text-base leading-snug text-muted-foreground",
+              "mx-auto w-[min(100vw,300px)]! min-h-14! flex items-start gap-2 px-4! py-3!",
+            title: "font-semibold leading-snug text-base",
+            description: "text-sm leading-snug text-muted-foreground",
           },
         }}
       />

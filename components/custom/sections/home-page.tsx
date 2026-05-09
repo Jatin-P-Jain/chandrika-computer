@@ -23,6 +23,7 @@ import clsx from "clsx";
 import { PhoneVerification } from "../phone-verification";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const { push, replace } = useSafeRouter();
@@ -33,6 +34,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const tStampRegister = useTranslations("StampRegister");
   const tPhotocopyRegister = useTranslations("PhotocopyRegister");
   const tToast = useTranslations("Toast");
+  const { textPageHeadCls, textBodyCls } = useLocaleTypography();
 
   const auth = useAuth();
   const {
@@ -125,13 +127,18 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
         <div className="w-full md:w-3/4 mx-auto relative flex items-start gap-2 p-3 text-red-800 bg-red-100 border border-red-200 rounded-md">
           <CircleAlert className="size-5 mt-0.5 shrink-0" />
           <div className="flex flex-col gap-1">
-            <span className="text-sm md:text-base font-semibold">
+            <span
+              className={clsx(
+                "text-sm md:text-base font-semibold",
+                textPageHeadCls,
+              )}
+            >
               {tCommon("DeniedAccess")}
             </span>
             <span
               className={clsx(
                 "text-xs md:text-sm",
-                locale === "hi" && "text-sm! md:text-base!",
+                textBodyCls,
               )}
             >
               {tCommon("DeniedAccessDesc")}
