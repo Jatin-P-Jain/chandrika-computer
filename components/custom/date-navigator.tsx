@@ -100,7 +100,7 @@ export function DayNavigator({
               type="button"
               variant="outline"
               disabled={disabled || isPending}
-              className={`justify-center w-full font-semibold text-primary md:text-base ${textSubheadingCls}`}
+              className={`justify-center w-full font-semibold text-primary text-base ${textSubheadingCls}`}
               aria-label="Pick a date"
             >
               {isPending ? (
@@ -126,6 +126,7 @@ export function DayNavigator({
             ) : null}
             <Calendar
               mode="single"
+              locale={{ en: enUS, hi: hi }[locale] || enUS}
               selected={selected}
               onSelect={(d) => {
                 if (d) setSelected(d);
@@ -136,6 +137,7 @@ export function DayNavigator({
                 return false;
               }}
               endMonth={maxDate}
+              className="text-base!"
             />
           </PopoverContent>
         </Popover>

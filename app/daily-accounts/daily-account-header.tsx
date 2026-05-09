@@ -21,7 +21,7 @@ const DailyAccountHeader = () => {
   };
   return (
     <div className="flex justify-between items-center w-full">
-      <h1 className="flex justify-between items-center gap-1 font-semibold text-primary md:text-lg">
+      <h1 className="flex justify-between items-center gap-1 font-semibold text-primary text-lg">
         <ClipboardListIcon className="size-5" />
         {tDailyAccount("Title")}
       </h1>
