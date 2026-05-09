@@ -30,7 +30,7 @@ const DailyAccountHeader = () => {
         onClick={handleViewAll}
         disabled={isNavigatingList}
         className={clsx(
-          "flex gap-2 justify-between items-center font-semibold text-sm md:text-base text-primary p-0! hover:bg-transparent hover:text-primary",
+          "flex gap-2 justify-between items-center font-semibold text-base text-primary p-0! hover:bg-transparent hover:text-primary",
           textSubheadingCls,
         )}
       >

@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DailyFormValues } from "@/schema/daily-page.schema";
 import { AccountLineItemRow } from "./account-line-item-row";
-import { useLocale, useTranslations } from "next-intl";
-import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { Separator } from "@/components/ui/separator";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 type Props = {
   disabled?: boolean;
@@ -43,10 +43,7 @@ export const CreditDebitCardsSection = React.forwardRef<
 >(function CreditDebitCardsSection({ disabled, onPersist }: Props, ref) {
   const tCommon = useTranslations("Common");
   const tCreditsDebits = useTranslations("CreditsDebits");
-
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadCls = clsx(isHi && "text-base! font-[inherit]");
+  const { textBodyCls } = useLocaleTypography();
 
   const { control } = useFormContext<DailyFormValues>();
 
@@ -96,7 +93,7 @@ export const CreditDebitCardsSection = React.forwardRef<
     <div className="flex flex-col md:flex-row md:gap-12 flex-1">
       <Card className="p-2 gap-2 shadow-none h-fit border-0 flex-1">
         <div className="flex items-center justify-between gap-2 border-b pb-2 rounded-md px-2">
-          <div className={`text-sm font-semibold text-primary ${textHeadCls}`}>
+          <div className={`font-semibold text-primary ${textBodyCls}`}>
             {tCreditsDebits("Credits")}
           </div>
           <Button
@@ -127,7 +124,7 @@ export const CreditDebitCardsSection = React.forwardRef<
 
       <Card className="p-3 gap-2 shadow-none h-fit border-0 flex-1">
         <div className="flex items-center justify-between gap-2 border-b pb-2 rounded-md px-2">
-          <div className={`text-sm font-semibold text-primary ${textHeadCls}`}>
+          <div className={`font-semibold text-primary ${textBodyCls}`}>
             {tCreditsDebits("Debits")}
           </div>
           <Button

@@ -115,15 +115,15 @@ export default function StampStep({
 
             return (
               <div key={denom} className="rounded-md border p-3 space-y-1">
-                <div className={clsx("text-sm font-medium", textPageHeadCls)}>
+                <div className={clsx("font-medium", textPageHeadCls)}>
                   ₹ {denom}
                 </div>
-                <div className={clsx("text-xs italic", textBodyCls)}>
+                <div className={clsx("text-sm italic", textBodyCls)}>
                   {tReadings("ClosingStampSerialNumbers")}
                 </div>
                 <div
                   className={clsx(
-                    "text-xs text-muted-foreground flex items-center justify-between pr-3",
+                    "text-sm text-muted-foreground flex items-center justify-between pr-3",
                     textBodyCls,
                   )}
                 >
@@ -141,7 +141,7 @@ export default function StampStep({
                 <div className="flex items-center gap-2 justify-between">
                   <Label
                     className={clsx(
-                      "text-xs text-muted-foreground w-full",
+                      "text-sm text-muted-foreground w-full",
                       textBodyCls,
                     )}
                   >
@@ -176,7 +176,7 @@ export default function StampStep({
                   )}
                 >
                   {tReadings("StampsSold")}:{" "}
-                  <span className={clsx("font-semibold", textPageHeadCls)}>
+                  <span className={clsx("text-base font-semibold", textPageHeadCls)}>
                     {stampSold[denom]}
                   </span>
                 </div>
@@ -189,7 +189,7 @@ export default function StampStep({
                   {tCommon("Amount")}:{" "}
                   <span
                     className={clsx(
-                      "font-semibold text-primary",
+                      "font-semibold text-primary text-lg",
                       textPageHeadCls,
                     )}
                   >
@@ -200,7 +200,7 @@ export default function StampStep({
                   <div className="flex items-center gap-2 justify-between text-green-800">
                     <Label
                       className={clsx(
-                        "text-xs w-full text-green-800",
+                        "text-sm w-full text-green-800",
                         textBodyCls,
                       )}
                     >
@@ -240,12 +240,12 @@ export default function StampStep({
           })}
         </div>
 
-        <div className="rounded-md border p-3 text-sm flex flex-col gap-2 items-center justify-center">
+        <div className="rounded-md border p-3 text-base flex flex-col gap-2 items-center justify-center">
           <span className={clsx("font-medium", textBodyCls)}>
             {tReadings("TotalStampDuty")} (SD):{" "}
             <span
               className={clsx(
-                "text-base tabular-nums text-primary font-semibold",
+                "text-xl tabular-nums text-primary font-semibold",
                 textPageHeadCls,
               )}
             >
@@ -269,7 +269,7 @@ export default function StampStep({
           onClick={() => onToggleStockAddition?.(!includeStockAddition)}
           disabled={saving}
           className={clsx(
-            "gap-0 border-primary border text-primary hover:bg-primary/10 hover:text-primary",
+            "gap-0 border-primary border text-primary hover:bg-primary/10 hover:text-primary text-base",
             includeStockAddition ? "border-red-600 text-red-600" : "",
           )}
         >
@@ -290,14 +290,14 @@ export default function StampStep({
             variant="secondary"
             onClick={onBack}
             disabled={saving}
-            className="gap-0"
+            className="gap-0 text-base"
           >
             <ChevronLeft className="size-4" /> {tCommon("Back")}
           </Button>
           <Button
             onClick={onNext}
             disabled={saving || loadingPrev}
-            className="gap-0"
+            className="gap-0 text-base"
           >
             {tCommon("Next")} <ChevronRight className="size-4" />
           </Button>

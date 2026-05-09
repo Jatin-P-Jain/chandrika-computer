@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { Check, Loader2, X } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useFormContext } from "react-hook-form";
 import { useState } from "react";
 
@@ -21,6 +21,7 @@ import type { DailyFormValues } from "@/schema/daily-page.schema";
 import { AmountInput } from "./amount-input";
 import { TagInput } from "./tag-input";
 import { formatINR } from "@/lib/utils";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 type RowPrefix =
   | `fixed.otherFixedExpenses.${number}`
@@ -41,10 +42,10 @@ export function LineItemRow({
 }) {
   const tCommon = useTranslations("Common");
   const { control, getValues } = useFormContext<DailyFormValues>();
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadCls = clsx(isHi && "text-lg! font-[inherit]");
-  const textBodyCls = clsx(isHi && "text-base! font-medium! font-[inherit]");
+  const { textSubheadingCls, textBodyCls: localeTextBodyCls } =
+    useLocaleTypography();
+  const textHeadCls = textSubheadingCls;
+  const textBodyCls = clsx(localeTextBodyCls, "font-medium");
 
   // UI-only state (doesn't affect RHF values)
   const [isEditing, setIsEditing] = useState(initialEditing);

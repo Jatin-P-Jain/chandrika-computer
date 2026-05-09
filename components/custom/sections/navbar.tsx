@@ -13,7 +13,7 @@ export function Navbar() {
       <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 text-primary md:h-18">
         {/* Left: logo + name */}
         <SafeLink href="/" className="flex items-center gap-1 md:gap-3 mr-2">
-          <div className="relative items-center h-12 shrink-0 w-20 flex mt-auto">
+          <div className="relative items-center h-12 shrink-0 w-22 flex mt-auto">
             <Image
               src="/images/logo.png"
               alt="Chandrika Computer Logo"
@@ -23,7 +23,7 @@ export function Navbar() {
               priority
             />
           </div>
-          <span className="md:hidden text-base font-semibold underline underline-offset-3 leading-none">
+          <span className="md:hidden text-lg font-semibold underline underline-offset-3 leading-none">
             {tCommon("Computer")}
           </span>
           <span className="hidden md:block text-xl font-bold underline underline-offset-3 leading-none">

@@ -2,7 +2,7 @@
 "use client";
 
 import clsx from "clsx";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import {
@@ -28,6 +28,7 @@ import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
 import { InfoIcon, Loader2 } from "lucide-react";
 import { ReadOnlyLineItem } from "../common-components/read-line-item-row";
 import { LineItemRow } from "../common-components/line-item-row";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 export function FixedExpensesSection({
   readOnly,
@@ -50,11 +51,7 @@ export function FixedExpensesSection({
   const tDailyAccount = useTranslations("DailyAccount");
   const tReadings = useTranslations("Readings");
   const { control, setValue } = useFormContext<DailyFormValues>();
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadCls = clsx(isHi && "font-[inherit] text-lg!");
-  const textBodyCls = clsx(isHi && "font-[inherit] text-base");
-  const textSmCls = clsx(isHi && "font-[inherit] text-sm!");
+  const { textSubheadingCls, textBodyCls, textSmCls } = useLocaleTypography();
 
   const stampDutyValue = readings?.stamp?.totalAmount || 0;
   const photocopyValue = readings?.photocopy?.amount || 0;
@@ -109,7 +106,7 @@ export function FixedExpensesSection({
       <AccordionTrigger
         className={clsx(
           "text-base font-semibold text-primary justify-between p-2 pb-0 lg:border-b",
-          textHeadCls,
+          textSubheadingCls,
         )}
       >
         {tDailyAccount("FixedExpenses")}
@@ -145,7 +142,7 @@ export function FixedExpensesSection({
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",
-                          textHeadCls,
+                          textSubheadingCls,
                         )}
                       >
                         {formatINR(stampDutyValue)}
@@ -155,7 +152,7 @@ export function FixedExpensesSection({
                         readOnly={true}
                         value={stampDutyValue}
                         onChange={() => {}}
-                        inputClassName={textHeadCls}
+                        inputClassName={textSubheadingCls}
                         className="border-0 shadow-none"
                       />
                     )}
@@ -191,7 +188,7 @@ export function FixedExpensesSection({
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",
-                          textHeadCls,
+                          textSubheadingCls,
                         )}
                       >
                         {formatINR(Number(surchargeValue) || 0)}
@@ -201,7 +198,7 @@ export function FixedExpensesSection({
                         readOnly={true}
                         value={Number(surchargeValue) || 0}
                         onChange={() => {}}
-                        inputClassName={textHeadCls}
+                        inputClassName={textSubheadingCls}
                         className="border-0 shadow-none"
                       />
                     )}
@@ -232,7 +229,7 @@ export function FixedExpensesSection({
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",
-                          textHeadCls,
+                          textSubheadingCls,
                         )}
                       >
                         {formatINR(Number(photocopyValue) || 0)}
@@ -242,7 +239,7 @@ export function FixedExpensesSection({
                         readOnly={true}
                         value={photocopyValue}
                         onChange={() => {}}
-                        inputClassName={textHeadCls}
+                        inputClassName={textSubheadingCls}
                         className="border-0 shadow-none"
                       />
                     )}
@@ -268,7 +265,7 @@ export function FixedExpensesSection({
                       <div
                         className={clsx(
                           "font-semibold tabular-nums",
-                          textHeadCls,
+                          textSubheadingCls,
                         )}
                       >
                         {formatINR(Number(flexCardValue) || 0)}
@@ -278,7 +275,7 @@ export function FixedExpensesSection({
                         value={Number(field.value) || 0}
                         onChange={(n) => field.onChange(n)}
                         onBlur={onPersist}
-                        inputClassName={textHeadCls}
+                        inputClassName={textSubheadingCls}
                       />
                     )}
                   </FormControl>
@@ -294,7 +291,7 @@ export function FixedExpensesSection({
                 <ReadOnlyLineItem
                   key={f.id}
                   namePrefix={`fixed.otherFixedExpenses.${idx}`}
-                  textHeadCls={textHeadCls}
+                  textHeadCls={textSubheadingCls}
                   textBodyCls={textBodyCls}
                 />
               ) : (
@@ -328,7 +325,7 @@ export function FixedExpensesSection({
           <span className={textBodyCls}>{tDailyAccount("TotalFixed")}</span>
         }
         value={formatINR(totalFixed)}
-        valueClassName={textHeadCls}
+        valueClassName={textSubheadingCls}
       />
     </AccordionItem>
   );

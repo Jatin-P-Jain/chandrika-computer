@@ -95,25 +95,25 @@ export default function ReviewStep({
 
           <div
             className={clsx(
-              "text-xs text-muted-foreground flex justify-between items-center",
+              "text-sm text-muted-foreground flex justify-between items-center",
               textBodyCls,
             )}
           >
             {tReadings("Yesterday")}:{" "}
-            <span className={clsx("text-foreground tabular-nums", textBodyCls)}>
+            <span className={clsx("text-base text-foreground tabular-nums", textBodyCls)}>
               {photoPrev}
             </span>
           </div>
           <div
             className={clsx(
-              "text-xs text-muted-foreground flex justify-between items-center",
+              "text-sm text-muted-foreground flex justify-between items-center",
               textBodyCls,
             )}
           >
             {tReadings("Today")}:{" "}
             <span
               className={clsx(
-                "text-foreground font-medium tabular-nums",
+                "text-base text-foreground font-medium tabular-nums",
                 textBodyCls,
               )}
             >
@@ -122,14 +122,14 @@ export default function ReviewStep({
           </div>
           <div
             className={clsx(
-              "text-xs text-muted-foreground flex justify-between items-center",
+              "text-sm text-muted-foreground flex justify-between items-center",
               textBodyCls,
             )}
           >
             {tReadings("TotalCopies")} ={" "}
             <span
               className={clsx(
-                "text-foreground tabular-nums font-semibold",
+                "text-base text-foreground tabular-nums font-semibold",
                 textBodyCls,
               )}
             >
@@ -140,12 +140,12 @@ export default function ReviewStep({
           {photoIsRounded ? (
             <div
               className={clsx(
-                "text-xs text-muted-foreground flex justify-between items-center",
+                "text-sm text-muted-foreground flex justify-between items-center",
                 textBodyCls,
               )}
             >
               {tReadings("ActualCalculatedAmount")}:{" "}
-              <span className="font-medium tabular-nums text-foreground">
+              <span className="text-base font-medium tabular-nums text-foreground">
                 {formatINR(photoActualAmount)}
               </span>
             </div>
@@ -161,7 +161,7 @@ export default function ReviewStep({
               ? tReadings("RoundedAmount")
               : tReadings("TotalAmount")}{" "}
             (FS):{" "}
-            <span className={clsx("text-primary tabular-nums font-semibold", textBodyCls)}>
+            <span className={clsx("text-primary tabular-nums font-semibold text-lg", textBodyCls)}>
               {formatINR(photoAmount)}
             </span>
           </div>
@@ -192,28 +192,28 @@ export default function ReviewStep({
           <div className="grid md:grid-cols-4 grid-cols-1 gap-1">
             {denoms.map((d) => (
               <div key={d} className="rounded-md border p-2 gap-1 flex flex-col">
-                <div className={clsx("font-medium text-primary", textBodyCls)}>
+                <div className={clsx("text-base font-medium text-primary", textBodyCls)}>
                   ₹ {d}
                 </div>
 
                 <div
                   className={clsx(
-                    "text-xs text-muted-foreground flex items-center justify-between",
+                    "text-sm text-muted-foreground flex items-center justify-between",
                     textBodyCls,
                   )}
                 >
                   {tReadings("Yesterday")}:{" "}
-                  <span className="text-foreground tabular-nums">{stampPrev[d]}</span>
+                  <span className="text-base text-foreground tabular-nums">{stampPrev[d]}</span>
                 </div>
 
                 <div
                   className={clsx(
-                    "text-xs text-muted-foreground flex items-center justify-between",
+                    "text-sm text-muted-foreground flex items-center justify-between",
                     textBodyCls,
                   )}
                 >
                   {tReadings("Today")}:{" "}
-                  <span className="text-foreground tabular-nums font-medium">
+                  <span className="text-base text-foreground tabular-nums font-medium">
                     {todayByDenom[d]}
                   </span>
                 </div>
@@ -221,12 +221,12 @@ export default function ReviewStep({
                 {hasAnyStockAdded ? (
                   <div
                     className={clsx(
-                      "text-xs text-green-700 flex items-center justify-between",
+                      "text-sm text-green-700 flex items-center justify-between",
                       textBodyCls,
                     )}
                   >
                     {tReadings("StockAdded")}:{" "}
-                    <span className="text-green-700 tabular-nums font-medium">
+                    <span className="text-base text-green-700 tabular-nums font-medium">
                       +{stampStockAdded[d]}
                     </span>
                   </div>
@@ -234,12 +234,12 @@ export default function ReviewStep({
 
                 <div
                   className={clsx(
-                    "text-xs text-muted-foreground flex items-center justify-between",
+                    "text-sm text-muted-foreground flex items-center justify-between",
                     textBodyCls,
                   )}
                 >
                   {tReadings("StampsSold")}:{" "}
-                  <span className="text-foreground tabular-nums font-semibold">{stampSold[d]}</span>
+                  <span className="text-base text-foreground tabular-nums font-semibold">{stampSold[d]}</span>
                 </div>
 
                 <div
@@ -249,7 +249,7 @@ export default function ReviewStep({
                   )}
                 >
                   {tCommon("Amount")}:{" "}
-                  <span className="tabular-nums font-semibold">
+                  <span className="text-lg tabular-nums font-semibold">
                     {formatINR(stampAmounts[d])}
                   </span>
                 </div>
@@ -259,12 +259,12 @@ export default function ReviewStep({
 
           <div
             className={clsx(
-              "text-sm flex items-center justify-between gap-1 font-semibold text-primary",
+              "text-base flex items-center justify-between gap-1 font-semibold text-primary",
               textBodyCls,
             )}
           >
             {tReadings("TotalStampDuty")} (SD):{" "}
-            <span className={clsx("text-primary tabular-nums font-semibold", textPageHeadCls)}>
+            <span className={clsx("text-lg text-primary tabular-nums font-semibold", textPageHeadCls)}>
               {formatINR(stampTotal)}
             </span>
           </div>
@@ -288,7 +288,7 @@ export default function ReviewStep({
             variant="secondary"
             onClick={onBack}
             disabled={saving}
-            className="gap-0 active:scale-95 transition-transform"
+            className="gap-0 active:scale-95 transition-transform text-base" 
           >
             <ChevronLeft className="size-4" /> {tCommon("Back")}
           </Button>
@@ -296,7 +296,7 @@ export default function ReviewStep({
           <Button
             onClick={onConfirmSave}
             disabled={saving || loadingPrev}
-            className="gap-1 active:scale-95 transition-transform"
+            className="gap-1 active:scale-95 transition-transform text-base"
           >
             {saving ? (
               <span className={clsx("flex items-center gap-2", textBodyCls)}>
@@ -313,7 +313,7 @@ export default function ReviewStep({
         </div>
       ) : (
         <div className="flex justify-end gap-2">
-          <Button onClick={onClose} className="gap-1">
+          <Button onClick={onClose} className="gap-1 text-base">
             <span className={textBodyCls}>{tCommon("Ok")} 👍🏻</span>
           </Button>
         </div>

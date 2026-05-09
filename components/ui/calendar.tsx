@@ -14,8 +14,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { useLocale } from "next-intl";
-import clsx from "clsx";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 function Calendar({
   className,
@@ -30,9 +29,7 @@ function Calendar({
   buttonVariant?: React.ComponentProps<typeof Button>["variant"];
 }) {
   const defaultClassNames = getDefaultClassNames();
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
+  const { textBodyCls } = useLocaleTypography();
 
   return (
     <DayPicker

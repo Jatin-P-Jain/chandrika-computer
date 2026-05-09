@@ -35,6 +35,7 @@ import { handleDailyFormSubmitErrors } from "./utils/handle-submit-errors";
 import { useSaveReviewFlow } from "./hooks/use-save-review-flow";
 import { useDailyPageSubmitFlow } from "./hooks/use-daily-page-submit-flow";
 import { useReviewNavigationActions } from "./hooks/use-review-navigation-actions";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 const DailyReadingsDialog = dynamic(
   () => import("../daily-readings/daily-readings-dialog"),
@@ -113,9 +114,8 @@ export default function DailyPageEditor({
   const tDailyAccount = useTranslations("DailyAccount");
   const tSaveReview = useTranslations("SaveReview");
   const tCreditsDebits = useTranslations("CreditsDebits");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textBodyCls = clsx(isHi && "text-lg font-[inherit]");
+  const { textPageHeadCls, textSubheadingCls, textBodyCls, textSmCls } =
+    useLocaleTypography();
 
   const tErrors = useTranslations("Validation");
   const dailySchema = useMemo(() => makeDailySchema(tErrors), [tErrors]);
@@ -462,7 +462,7 @@ export default function DailyPageEditor({
                   name="totalCashCollected"
                   render={({ field }) => (
                     <div className="flex flex-col">
-                      <FormItem className="flex w-full items-center justify-center flex-col">
+                      <FormItem className="flex w-3/4! mx-auto items-center justify-center flex-col">
                         <FormLabel
                           className={clsx("text-base text-center", textBodyCls)}
                         >
@@ -474,7 +474,7 @@ export default function DailyPageEditor({
                             value={Number(field.value) || 0}
                             onChange={(n) => field.onChange(n)}
                             onBlur={persistDraft}
-                            inputClassName="h-full text-xl! font-semibold w-full border-0 shadow-none"
+                            inputClassName="h-full text-2xl! font-semibold border-0 shadow-none "
                           />
                         </FormControl>
                       </FormItem>
@@ -490,19 +490,19 @@ export default function DailyPageEditor({
                     onPointerDownCapture={() => {
                       suppressDraftPersistRef.current = true;
                     }}
-                    className="flex gap-2 font-semibold text-sm flex-1 justify-center items-center"
+                    className="flex gap-2 font-semibold text-base flex-1 justify-center items-center"
                   >
                     <span>{primaryActionLabel}</span>
                     {updateMode ? (
                       isSubmitting ? (
-                        <Loader2 className="animate-spin size-4" />
+                        <Loader2 className="animate-spin size-4.5" />
                       ) : (
-                        <Repeat className="size-4" />
+                        <Repeat className="size-4.5" />
                       )
                     ) : isSubmitting ? (
-                      <Loader2 className="animate-spin size-4" />
+                      <Loader2 className="animate-spin size-4.5" />
                     ) : (
-                      <SaveIcon className="size-4" />
+                      <SaveIcon className="size-4.5" />
                     )}
                   </Button>
                   {updateMode && (

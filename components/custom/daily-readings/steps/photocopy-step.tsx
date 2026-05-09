@@ -81,7 +81,7 @@ export default function PhotocopyStep({
             {loadingPrev ? (
               <Loader2Icon className="size-3 animate-spin" />
             ) : (
-              <b>{photoPrev}</b>
+              <span className={clsx("text-base font-medium", textBodyCls)}>{photoPrev}</span>
             )}
             {canEditPreviousReadings ? (
               <Button
@@ -111,7 +111,7 @@ export default function PhotocopyStep({
                 value={(field.value as number) ?? 0}
                 onChange={field.onChange}
                 placeholder="0"
-                inputClassName={clsx("w-fit! text-sm text-right", textBodyCls)}
+                inputClassName={clsx("w-fit! text-right", textBodyCls)}
               />
             )}
           />
@@ -129,19 +129,19 @@ export default function PhotocopyStep({
         >
           {tReadings("TotalCopies")} ={" "}
           <span
-            className={clsx("text-sm text-primary font-semibold", textBodyCls)}
+            className={clsx("text-base text-primary font-semibold", textBodyCls)}
           >
             {photoDiff}
           </span>
         </div>
 
-        <div className="rounded-md border px-3 py-1 text-sm flex flex-col gap-2 my-4">
+        <div className="rounded-md border px-3 py-1 text-base flex flex-col gap-2 my-4">
           <div className="flex justify-between items-center w-full">
             <span className="flex gap-2 justify-start items-center">
               {tReadings("Copies")} × ₹2 ={" "}
-              <b className={clsx("text-base tabular-nums", textBodyCls)}>
+              <span className={clsx("text-base tabular-nums font-medium", textBodyCls)}>
                 {formatINR(photoActualAmount)}
-              </b>
+              </span>
             </span>
             <span
               className={clsx(
@@ -180,7 +180,7 @@ export default function PhotocopyStep({
                   onRoundedAmountChange(Math.max(0, value || 0))
                 }
                 placeholder="0"
-                inputClassName={clsx("w-fit! text-sm text-right", textBodyCls)}
+                inputClassName={clsx("w-fit! text-right", textBodyCls)}
               />
             </div>
           ) : null}
@@ -195,7 +195,7 @@ export default function PhotocopyStep({
               {tReadings("TotalAmount")} ={" "}
               <span
                 className={clsx(
-                  "text-base tabular-nums font-semibold",
+                  "text-lg tabular-nums font-semibold",
                   "text-primary",
                   textPageHeadCls,
                 )}
@@ -216,14 +216,14 @@ export default function PhotocopyStep({
           variant="secondary"
           onClick={onCancel}
           disabled={saving}
-          className="gap-1 active:scale-95 transition-transform"
+          className="gap-1 active:scale-95 transition-transform text-base"
         >
           <X className="size-4" /> {tCommon("Cancel")}
         </Button>
         <Button
           onClick={onNext}
           disabled={saving || loadingPrev || savingPhotocopyStep}
-          className="gap-0 active:scale-95 transition-transform"
+          className="gap-0 active:scale-95 transition-transform text-base"
         >
           {savingPhotocopyStep ? (
             <>

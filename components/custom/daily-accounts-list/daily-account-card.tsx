@@ -88,7 +88,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
         <div className="flex flex-col gap-2 p-2 relative w-full">
           <div className="flex items-center gap-2 justify-start w-full">
             <span
-              className={`flex w-full justify-start gap-2  items-center font-semibold text-primary text-sm ${textHeadingCls}`}
+              className={`flex w-full justify-start gap-2  items-center font-semibold text-primary ${textHeadingCls}`}
             >
               <CalendarFold className="w-4 h-4 text" />
               {<DateDisplay value={id} type="docId" />}
@@ -200,7 +200,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
         </div>
 
         <Button
-          className=" flex flex-1  w-full"
+          className="flex flex-1  w-full"
           disabled={isNavigating}
           onClick={(e) => {
             e.stopPropagation();

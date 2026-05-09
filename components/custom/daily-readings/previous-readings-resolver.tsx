@@ -1,12 +1,13 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ReadingInput } from "@/components/custom/daily-page/common-components/reading-input";
 import { Separator } from "@/components/ui/separator";
 import type { Denomination } from "@/types/readings";
+import clsx from "clsx";
 
 type Props = {
   resolverOpenedFromEdit: boolean;
@@ -47,7 +48,8 @@ export default function PreviousReadingsResolver({
 }: Props) {
   return (
     <div className="w-full rounded-md border p-3 md:p-4 space-y-3 h-full overflow-auto">
-      <div className="text-sm font-medium">
+      <div className="font-medium text-amber-700 flex items-center gap-1 justify-center">
+        <AlertTriangle className="size-4" />
         {resolverOpenedFromEdit
           ? tReadings("EditPreviousReadings")
           : tReadings("NoPreviousReadingsFound")}
@@ -60,12 +62,14 @@ export default function PreviousReadingsResolver({
 
       <div className="flex flex-row items-end gap-2">
         <div className="space-y-1">
-          <Label className={textSmCls}>{tReadings("RecentHolidayCount")}</Label>
+          <Label className={clsx("text-base", textSmCls)}>
+            {tReadings("RecentHolidayCount")}
+          </Label>
           <ReadingInput
             value={lookbackDays}
             onChange={(n) => onLookbackDaysChange(Math.max(1, n || 1))}
             placeholder="1"
-            inputClassName="flex mx-auto items-center text-center"
+            inputClassName="text-base flex mx-auto items-center text-center"
           />
         </div>
 
@@ -93,19 +97,19 @@ export default function PreviousReadingsResolver({
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className={"text-sm font-medium " + textBodyCls}>
+        <div className={"font-medium " + textBodyCls}>
           {tReadings("EnterPreviousReadingsManually")}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="space-y-1">
-            <Label className={textSmCls}>
+            <Label className={clsx("text-base", textSmCls)}>
               {tReadings("PhotocopyPreviousReading")}
             </Label>
             <ReadingInput
               value={manualPhotoPrev}
               onChange={(n) => onManualPhotoPrevChange(Math.max(0, n || 0))}
               placeholder="0"
-              inputClassName="text-right"
+              inputClassName="text-base text-right"
             />
           </div>
         </div>
@@ -113,20 +117,20 @@ export default function PreviousReadingsResolver({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {denoms.map((denom) => (
             <div key={denom} className="space-y-1">
-              <Label className={textSmCls}>₹ {denom}</Label>
+              <Label className={clsx("text-base", textSmCls)}>₹ {denom}</Label>
               <ReadingInput
                 value={manualStampPrev[denom]}
                 onChange={(n) =>
                   onManualStampPrevChange(denom, Math.max(0, n || 0))
                 }
                 placeholder="0"
-                inputClassName="text-right"
+                inputClassName="text-base text-right"
               />
             </div>
           ))}
         </div>
 
-        <Button type="button" onClick={onUseManualReadings}>
+        <Button type="button" onClick={onUseManualReadings} className="text-base">
           {tReadings("UseManualReadings")}
         </Button>
 

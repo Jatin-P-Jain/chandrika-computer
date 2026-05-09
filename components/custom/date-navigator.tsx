@@ -11,8 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useLocale } from "use-intl";
-import clsx from "clsx";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 type DaySelectorProps = {
   value?: Date;
@@ -43,8 +42,7 @@ export function DayNavigator({
   minDate,
   maxDate = new Date(),
 }: DaySelectorProps) {
-  const locale = useLocale();
-  const isHi = locale === "hi";
+  const { locale, textSubheadingCls } = useLocaleTypography();
 
   const [internalDate, setInternalDate] = React.useState<Date>(
     () => value ?? new Date(),
@@ -102,10 +100,7 @@ export function DayNavigator({
               type="button"
               variant="outline"
               disabled={disabled || isPending}
-              className={clsx(
-                "justify-center w-full font-semibold text-primary md:text-base",
-                isHi && "md:text-lg",
-              )}
+              className={`justify-center w-full font-semibold text-primary md:text-base ${textSubheadingCls}`}
               aria-label="Pick a date"
             >
               {isPending ? (

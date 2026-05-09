@@ -114,11 +114,21 @@ function useDebouncedNumber(value: number, delayMs: number) {
   return debouncedValue;
 }
 
-function hasPreviousBaseline(res: {
+function hasUsablePreviousBaseline(res: {
   photocopy: PhotocopyReadingDoc | null;
   stamp: StampReadingDoc | null;
 }) {
-  return Boolean(res.photocopy && res.stamp);
+  if (!res.photocopy || !res.stamp) {
+    return false;
+  }
+
+  const photoReading = res.photocopy.todayReading ?? 0;
+  const stampReadings = Object.values(res.stamp.parts ?? {});
+
+  return (
+    photoReading > 0 ||
+    stampReadings.some((part) => (part?.todayReading ?? 0) > 0)
+  );
 }
 
 type Props = {
@@ -650,7 +660,7 @@ export default function DailyReadingsDialog({
       setLoadingPrev(true);
       try {
         const res = await getReadings(todayDateYmd, -normalizedDays);
-        if (!hasPreviousBaseline(res)) {
+        if (!hasUsablePreviousBaseline(res)) {
           setMissingPreviousReadings(true);
           setResolvedLookbackDays(null);
           return false;
@@ -1053,7 +1063,7 @@ export default function DailyReadingsDialog({
   const StepHeader = () => {
     const itemCls = (active: boolean) =>
       [
-        "text-sm",
+        "",
         active ? "text-foreground font-medium" : "text-muted-foreground",
         textBodyCls,
       ].join(" ");
@@ -1145,7 +1155,7 @@ export default function DailyReadingsDialog({
           textSmCls={textSmCls}
           tCommon={tCommon}
           tReadings={tReadings}
-          canEditPreviousReadings={prevReadingsManual}
+          canEditPreviousReadings={true}
           onEditPreviousReadings={openPreviousReadingsResolverFromEdit}
           onRoundOffChange={(checked) => {
             setRoundOffPhotocopy(checked);
@@ -1262,7 +1272,7 @@ export default function DailyReadingsDialog({
             textSmCls={textSmCls}
             tCommon={tCommon}
             tReadings={tReadings}
-            canEditPreviousReadings={prevReadingsManual}
+            canEditPreviousReadings={true}
             onEditPreviousReadings={openPreviousReadingsResolverFromEdit}
             onRoundOffChange={(checked) => {
               setRoundOffPhotocopy(checked);
@@ -1400,7 +1410,7 @@ export default function DailyReadingsDialog({
     ? Content
     : shouldLoadPreviousReadings && initializingPrev
       ? InitialLoading
-      : shouldLoadPreviousReadings &&
+      : (shouldLoadPreviousReadings || resolverOpenedFromEdit) &&
           (missingPreviousReadings || showPreviousReadingsResolver)
         ? PreviousReadingsResolverContent
         : Content;
@@ -1451,7 +1461,7 @@ export default function DailyReadingsDialog({
       >
         <DrawerHeader className="flex-row items-center justify-between gap-2 text-left">
           <DrawerTitle
-            className={clsx("flex items-center gap-2", textPageHeadCls)}
+            className={clsx("flex items-center gap-2 text-lg", textPageHeadCls)}
           >
             <DateDisplay
               value={todayDateYmd}
