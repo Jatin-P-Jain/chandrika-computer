@@ -2,10 +2,13 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   loginWithEmailAndPass,
-  loginWithGoogle,
+  loginWithGoogle as loginWithGoogleAuth,
   logoutUser,
   sendOTP,
   verifyOTP,
+  GOOGLE_EMAIL_DENIED_ERROR_CODE,
+  GoogleEmailNotAllowedError,
+  isGoogleEmailAllowlisted,
 } from "@/lib/auth/firebase-auth";
 import { auth, firestore } from "@/firebase/client"; // 👈 Add adminAuth
 import { ConfirmationResult, RecaptchaVerifier, User } from "firebase/auth";
@@ -48,6 +51,8 @@ type AuthContextType = {
     confirmationResult: ConfirmationResult,
   ) => Promise<User | undefined>;
   startPhoneVerificationFlow: () => void;
+  accessDenied: boolean;
+  clearAccessDenied: () => void;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -56,6 +61,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authState, setAuthState] = useState<AuthStatus>({ status: "loading" });
   const [inactivityLimit, setInactivityLimit] = useState<number>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+
+  const isDeniedError = (error: unknown) => {
+    if (error instanceof GoogleEmailNotAllowedError) return true;
+    if (typeof error === "object" && error !== null && "code" in error) {
+      return error.code === GOOGLE_EMAIL_DENIED_ERROR_CODE;
+    }
+    return false;
+  };
 
   const getUserToken = async () => {
     const { currentUser } =
@@ -167,6 +181,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
+      if (!isGoogleEmailAllowlisted(user.email)) {
+        setAccessDenied(true);
+        setAuthState({ status: "no-user" });
+        await logoutUser();
+        return;
+      }
+
+      setAccessDenied(false);
+
       try {
         // Claims only for role/admin, and don't force refresh on load
         const idTokenResult = await user.getIdTokenResult(); // [web:125]
@@ -220,6 +243,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         setInactivityLimit(limit);
       } catch (e) {
+        if (isDeniedError(e)) {
+          setAccessDenied(true);
+          setAuthState({ status: "no-user" });
+          await logoutUser();
+          return;
+        }
         console.error("Auth state check failed", e);
         setAuthState({ status: "first-time-setup", currentUser: user });
       }
@@ -244,6 +273,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logout: async () => {
           setIsLoggingOut(true);
           try {
+            setAccessDenied(false);
             await logoutUser();
             window.location.href = "/";
           } catch (err) {
@@ -251,13 +281,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setIsLoggingOut(false);
           }
         },
-        loginWithGoogle,
+        loginWithGoogle: async () => {
+          setAccessDenied(false);
+          try {
+            return await loginWithGoogleAuth();
+          } catch (error) {
+            if (isDeniedError(error)) {
+              setAccessDenied(true);
+            }
+            throw error;
+          }
+        },
         loginWithEmailAndPassword: ({ email, password }) =>
           loginWithEmailAndPass(email, password),
         handleSendOTP: (mobile, appVerifier) => sendOTP(mobile, appVerifier),
         verifyOTP: (otp, confirmationResult) =>
           verifyOTP(otp, confirmationResult),
         startPhoneVerificationFlow,
+        accessDenied,
+        clearAccessDenied: () => setAccessDenied(false),
       }}
     >
       {children}

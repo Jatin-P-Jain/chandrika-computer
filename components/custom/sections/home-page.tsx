@@ -3,6 +3,7 @@
 import { useSafeRouter } from "@/hooks/useSafeRouter";
 import {
   ClipboardListIcon,
+  CircleAlert,
   Info,
   Layers,
   Loader2,
@@ -26,6 +27,7 @@ import { toast } from "sonner";
 export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const { push, replace } = useSafeRouter();
   const locale = useLocale();
+  const tCommon = useTranslations("Common");
   const tHomePage = useTranslations("HomePage");
   const tDailyAccount = useTranslations("DailyAccount");
   const tStampRegister = useTranslations("StampRegister");
@@ -33,7 +35,12 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const tToast = useTranslations("Toast");
 
   const auth = useAuth();
-  const { authState, completePhoneVerification } = auth;
+  const {
+    authState,
+    completePhoneVerification,
+    accessDenied,
+    clearAccessDenied,
+  } = auth;
   const isUserLoading = authState.status === "loading";
   const isPhoneVerification =
     authState.status === "first-time-setup" ||
@@ -102,7 +109,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
           />
         </div>
       )}
-      {isPhoneVerification && authState.status && (
+      {isPhoneVerification && authState.status && !accessDenied && (
         <PhoneVerification
           authStateStatus={
             authState.status as
@@ -112,6 +119,29 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
           onVerified={completePhoneVerification}
           currentUser={currentUser!}
         />
+      )}
+
+      {accessDenied && authState.status !== "ready" && (
+        <div className="w-full md:w-3/4 mx-auto relative flex items-start gap-2 p-3 text-red-800 bg-red-100 border border-red-200 rounded-md">
+          <CircleAlert className="size-5 mt-0.5 shrink-0" />
+          <div className="flex flex-col gap-1">
+            <span className="text-sm md:text-base font-semibold">
+              {tCommon("DeniedAccess")}
+            </span>
+            <span
+              className={clsx(
+                "text-xs md:text-sm",
+                locale === "hi" && "text-sm! md:text-base!",
+              )}
+            >
+              {tCommon("DeniedAccessDesc")}
+            </span>
+          </div>
+          <XIcon
+            className="inline size-5 absolute -right-1 -top-1 cursor-pointer p-1 bg-white text-red-900 rounded-full border-red-300 border"
+            onClick={clearAccessDenied}
+          />
+        </div>
       )}
 
       {authState.status !== "ready" && (

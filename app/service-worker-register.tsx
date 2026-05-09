@@ -8,6 +8,26 @@ export const ServiceWorkerRegister = () => {
       return;
     }
 
+    if (process.env.NODE_ENV !== "production") {
+      void (async () => {
+        try {
+          const registrations =
+            await navigator.serviceWorker.getRegistrations();
+          await Promise.all(
+            registrations.map((registration) => registration.unregister()),
+          );
+
+          if ("caches" in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((key) => caches.delete(key)));
+          }
+        } catch (error) {
+          console.error("SW cleanup in development failed:", error);
+        }
+      })();
+      return;
+    }
+
     let refreshing = false;
 
     const registerSW = async () => {

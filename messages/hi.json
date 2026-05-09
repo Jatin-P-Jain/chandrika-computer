@@ -48,6 +48,8 @@
     "SigningInWithGoogle": "आपको Google से लॉग इन किया जा रहा है",
     "SignInWithGoogle": "Google से लॉग इन करें",
     "SignInWithGoogleMobile": "लॉग इन करें",
+    "DeniedAccess": "प्रवेश अस्वीकृत",
+    "DeniedAccessDesc": "यह Google अकाउंट इस ऐप के लिए अधिकृत नहीं है। कृपया अनुमोदित ईमेल से लॉग इन करें।",
     "Tags": "टैग",
     "Total": "कुल",
     "TypeAndEnter": "टाइप करें और एंटर दबाएं",
@@ -61,7 +63,11 @@
     "InstallFromBrowserMenu": "यहाँ इंस्टॉल प्रॉम्प्ट उपलब्ध नहीं है। Chrome मेन्यू खोलें और Add to Home screen / Install app चुनें।",
     "AppAlreadyInstalled": "यह ऐप इस डिवाइस पर पहले से इंस्टॉल है।",
     "InstallAccepted": "इंस्टॉल शुरू हो गया है।",
-    "InstallDismissed": "इंस्टॉल प्रॉम्प्ट बंद कर दिया गया।"
+    "InstallDismissed": "इंस्टॉल प्रॉम्प्ट बंद कर दिया गया।",
+    "NoInternet": "इंटरनेट उपलब्ध नहीं है",
+    "NoInternetDesc": "आप अभी ऑफलाइन हैं। कृपया अपना इंटरनेट कनेक्शन जांचें।",
+    "SlowInternet": "इंटरनेट धीमा है",
+    "SlowInternetDesc": "आपका इंटरनेट कनेक्शन धीमा है। बेहतर अनुभव के लिए तेज़ नेटवर्क का उपयोग करें।"
   },
   "CreditsDebits": {
     "Accounts": "खातें",

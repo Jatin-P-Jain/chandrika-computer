@@ -10,11 +10,46 @@ import {
 import { auth } from "@/firebase/client";
 import { removeToken, setToken } from "@/context/actions";
 
+export const GOOGLE_EMAIL_DENIED_ERROR_CODE = "auth/email-not-allowed";
+
+export class GoogleEmailNotAllowedError extends Error {
+  code = GOOGLE_EMAIL_DENIED_ERROR_CODE;
+
+  constructor(public readonly email: string | null) {
+    super("Google account is not allowlisted");
+    this.name = "GoogleEmailNotAllowedError";
+  }
+}
+
+const ALLOWED_GOOGLE_EMAILS = new Set(
+  (
+    process.env.NEXT_PUBLIC_ALLOWED_GOOGLE_EMAILS ??
+    process.env.NEXT_PUBLIC_ALLOWED_EMAILS ??
+    ""
+  )
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean)
+);
+
+export const isGoogleEmailAllowlisted = (email: string | null): boolean => {
+  if (!email) return false;
+  if (ALLOWED_GOOGLE_EMAILS.size === 0) return false;
+  return ALLOWED_GOOGLE_EMAILS.has(email.trim().toLowerCase());
+};
+
 export const loginWithGoogle = async (): Promise<User | undefined> => {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
   const result = await signInWithPopup(auth, provider);
   const user = result.user;
+
+  if (!isGoogleEmailAllowlisted(user.email)) {
+    await auth.signOut();
+    await removeToken();
+    throw new GoogleEmailNotAllowedError(user.email);
+  }
+
   const token = await user.getIdToken(true);
   await setToken(token, user.refreshToken);
   return user;

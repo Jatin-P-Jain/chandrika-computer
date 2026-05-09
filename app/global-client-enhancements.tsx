@@ -22,11 +22,16 @@ const ServiceWorkerRegister = dynamic(
     ),
   { ssr: false },
 );
+const NetworkBanner = dynamic(
+  () => import("@/components/custom/network-banner"),
+  { ssr: false },
+);
 
 export function GlobalClientEnhancements() {
   return (
     <>
       <ServiceWorkerRegister />
+      <NetworkBanner />
       <NextTopLoader color="#065884" height={3} showSpinner={false} />
       <DateTimeDisplay />
       <Toaster

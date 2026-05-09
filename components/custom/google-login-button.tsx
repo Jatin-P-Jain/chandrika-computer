@@ -9,6 +9,10 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { LogInIcon } from "lucide-react";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
+import {
+  GOOGLE_EMAIL_DENIED_ERROR_CODE,
+  GoogleEmailNotAllowedError,
+} from "@/lib/auth/firebase-auth";
 type ButtonProps = {
   variant?:
     | "link"
@@ -33,6 +37,13 @@ export default function GoogleLoginButton({
   const auth = useAuth();
   const { refresh } = useSafeRouter();
   const [signingIn, setSigningIn] = useState(false);
+  const isDeniedError = (error: unknown) => {
+    if (error instanceof GoogleEmailNotAllowedError) return true;
+    if (typeof error === "object" && error !== null && "code" in error) {
+      return error.code === GOOGLE_EMAIL_DENIED_ERROR_CODE;
+    }
+    return false;
+  };
   const combinedClassName = `flex ${
     signingIn
       ? ""
@@ -53,6 +64,9 @@ export default function GoogleLoginButton({
           }
         } catch (e) {
           setSigningIn(false);
+          if (isDeniedError(e)) {
+            return;
+          }
           console.log({ e });
         }
       }}
