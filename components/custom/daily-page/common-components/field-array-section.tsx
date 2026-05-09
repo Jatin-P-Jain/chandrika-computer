@@ -2,6 +2,7 @@
 "use client";
 
 import clsx from "clsx";
+import * as React from "react";
 import { useTranslations } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
@@ -46,6 +47,7 @@ export function FieldArraySection({
   const { textSubheadingCls, textBodyCls } = useLocaleTypography();
 
   const fa = useFieldArray({ control, name: value });
+  const [newItemIdx, setNewItemIdx] = React.useState<number | null>(null);
   const otherFixedExpenses = useWatch({
     control: control, // or "control" if you already have it
     name: value,
@@ -110,6 +112,7 @@ export function FieldArraySection({
                 namePrefix={`${value}.${idx}`}
                 onRemove={() => fa.remove(idx)}
                 onPersist={onPersist}
+                initialEditing={idx === newItemIdx}
               />
             ),
           )}
@@ -118,12 +121,14 @@ export function FieldArraySection({
         <div className="flex items-center justify-between">
           {!readOnly && (
             <AddLineItemButton
-              onAdd={() =>
+              onAdd={() => {
+                const nextIdx = fa.fields.length;
+                setNewItemIdx(nextIdx);
                 fa.append(
                   { label: "", amount: 0, tags: [] },
                   { shouldFocus: false },
-                )
-              }
+                );
+              }}
               buttonText={addButtonText}
               disabled={disableAdd}
             />

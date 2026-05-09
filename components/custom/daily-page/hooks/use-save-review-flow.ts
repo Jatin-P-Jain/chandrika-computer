@@ -18,6 +18,7 @@ export function useSaveReviewFlow({ onSubmit, suppressDraftPersistRef }: Args) {
   const [pendingData, setPendingData] = React.useState<DailyFormValues | null>(
     null
   );
+  const [isSaving, setIsSaving] = React.useState(false);
 
   const openBlockingReview = React.useCallback((items: ReviewItem[]) => {
     setReviewMode("BLOCK_READINGS");
@@ -48,11 +49,13 @@ export function useSaveReviewFlow({ onSubmit, suppressDraftPersistRef }: Args) {
   );
 
   const handleReviewConfirm = React.useCallback(async () => {
-    setReviewOpen(false);
     if (!pendingData) return;
+    setIsSaving(true);
     try {
       await onSubmit(pendingData);
+      setReviewOpen(false);
     } finally {
+      setIsSaving(false);
       suppressDraftPersistRef.current = false;
       setPendingData(null);
     }
@@ -62,6 +65,7 @@ export function useSaveReviewFlow({ onSubmit, suppressDraftPersistRef }: Args) {
     reviewOpen,
     reviewItems,
     reviewMode,
+    isSaving,
     openBlockingReview,
     openSoftReview,
     handleReviewOpenChange,

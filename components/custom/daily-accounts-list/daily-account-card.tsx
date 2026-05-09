@@ -36,6 +36,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
     created,
     fixed,
     notes,
+    earnings,
     lastNotedAt,
     lastReadingAt,
     totalEarnings,
@@ -164,6 +165,18 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                     className={`font-bold tabular-nums text-green-600 ${textHeadingCls}`}
                   >
                     {formatINR(Number(totalEarnings || 0))}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4 border-t mt-1 pt-1">
+                  <span
+                    className={`text-sm font-semibold text-muted-foreground ${textBodyCls}`}
+                  >
+                    {tDailyAccount("NetIncome")}:
+                  </span>
+                  <span
+                    className={`font-bold tabular-nums ${Number(earnings?.netIncome || 0) >= 0 ? "text-primary" : "text-red-600"} ${textHeadingCls}`}
+                  >
+                    {formatINR(Number(earnings?.netIncome || 0))}
                   </span>
                 </div>
               </div>

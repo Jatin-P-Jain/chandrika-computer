@@ -2,6 +2,7 @@ import { formatINR } from "@/lib/utils";
 
 import type { ReviewItem } from "../save-review-dialog";
 import type { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
+import type { NoteItem } from "@/types/daily-notes";
 
 type LineItem = { label?: string; amount?: number; accountName?: string };
 
@@ -30,6 +31,7 @@ function formatLineItemSummary(items: LineItem[], max = 6) {
 type Args = {
   fs: number;
   sd: number;
+  notes?: NoteItem[];
   readingsData?: {
     photocopy: PhotocopyReadingDoc | null;
     stamp: StampReadingDoc | null;
@@ -53,6 +55,7 @@ type Args = {
 export function buildSaveReviewItems({
   fs,
   sd,
+  notes,
   readingsData,
   creditItems,
   debitItems,
@@ -157,6 +160,21 @@ export function buildSaveReviewItems({
       : tSaveReview("DailySpendsEmptyConfirm"),
     actionLabel: tDailyAccount("AddSpend"),
     onAction: onGoDailySpends,
+  });
+
+  const openNotes = (notes ?? []).filter((n) => n.status === "open");
+  items.push({
+    id: "notes-summary",
+    title: tSaveReview("Notes"),
+    count: openNotes.length,
+    filled: openNotes.length > 0,
+    description:
+      openNotes.length > 0
+        ? openNotes
+            .slice(0, 3)
+            .map((n) => n.text.split("\n")[0].slice(0, 60))
+            .join(" • ")
+        : tSaveReview("NoNotes"),
   });
 
   return { blocking, items };

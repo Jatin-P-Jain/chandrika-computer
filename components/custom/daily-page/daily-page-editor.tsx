@@ -216,8 +216,8 @@ export default function DailyPageEditor({
     dirtyFields: form.formState.dirtyFields,
     suppressDraftPersistRef,
     tToast,
-    navigateToDoc: (nextDocId) =>
-      replace(`/daily-accounts/${nextDocId}`, { scroll: false }),
+    navigateToDoc: (_nextDocId) =>
+      replace(`/daily-accounts`, { scroll: false }),
   });
 
   const isFormReady =
@@ -235,6 +235,7 @@ export default function DailyPageEditor({
     reviewOpen,
     reviewItems,
     reviewMode,
+    isSaving,
     openBlockingReview,
     openSoftReview,
     handleReviewOpenChange,
@@ -266,6 +267,7 @@ export default function DailyPageEditor({
         const { blocking, items } = buildSaveReviewItems({
           fs,
           sd,
+          notes: initialNotes,
           readingsData: localReadings,
           creditItems,
           debitItems,
@@ -558,6 +560,7 @@ export default function DailyPageEditor({
         }
         hideConfirm={reviewMode === "BLOCK_READINGS"}
         onConfirm={handleReviewConfirm}
+        isSaving={isSaving}
       />
     </>
   ) : (

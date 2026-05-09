@@ -124,7 +124,12 @@ function ReadOnlyAccountSection({
   textBodyCls,
 }: {
   title: string;
-  items: { label: string; accountId?: string; amount: number }[];
+  items: {
+    label: string;
+    accountId?: string;
+    accountName?: string;
+    amount: number;
+  }[];
   textPageHeadCls: string;
   textBodyCls: string;
 }) {
@@ -152,15 +157,26 @@ function ReadOnlyAccountSection({
           items.map((item, index) => (
             <div
               key={`${item.accountId ?? "acc"}-${index}`}
-              className="flex justify-between gap-3"
+              className="flex justify-between items-start gap-3"
             >
-              <div className="flex flex-col items-end text-right">
+              <div className="flex flex-col items-start gap-0.5">
+                {item.accountName || item.accountId ? (
+                  <Badge
+                    variant="secondary"
+                    className="rounded-md text-[10px] font-semibold px-1.5 py-0"
+                  >
+                    {item.accountName || item.accountId}
+                  </Badge>
+                ) : null}
                 <span className={clsx("text-sm", textBodyCls)}>
                   {item.label || "-"}
                 </span>
               </div>
               <span
-                className={clsx("font-medium tabular-nums", textPageHeadCls)}
+                className={clsx(
+                  "font-medium tabular-nums shrink-0",
+                  textPageHeadCls,
+                )}
               >
                 {formatINR(Number(item.amount) || 0)}
               </span>

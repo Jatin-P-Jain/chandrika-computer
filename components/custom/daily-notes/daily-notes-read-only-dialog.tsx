@@ -247,7 +247,7 @@ export default function DailyNotesReadOnlyDialog({
                       <Checkbox checked={isDone} disabled={true} />
                       <span
                         className={clsx(
-                          "text-sm leading-5 w-full",
+                          "text-sm leading-5 w-full whitespace-pre-wrap",
                           isDone && "text-muted-foreground",
                         )}
                       >
@@ -293,7 +293,7 @@ export default function DailyNotesReadOnlyDialog({
                     >
                       <label className="flex items-start py-2 justify-center gap-3 w-full">
                         <Checkbox checked={false} disabled={true} />
-                        <span className="text-sm leading-5 w-full line-through text-muted-foreground">
+                        <span className="text-sm leading-5 w-full line-through text-muted-foreground whitespace-pre-wrap">
                           {item.text}
                         </span>
                       </label>

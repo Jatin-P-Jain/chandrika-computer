@@ -32,10 +32,12 @@ export function LineItemRow({
   namePrefix,
   onRemove,
   onPersist,
+  initialEditing = false,
 }: {
   namePrefix: RowPrefix;
   onRemove: () => void;
   onPersist?: () => void | Promise<void>;
+  initialEditing?: boolean;
 }) {
   const tCommon = useTranslations("Common");
   const { control, getValues } = useFormContext<DailyFormValues>();
@@ -45,7 +47,7 @@ export function LineItemRow({
   const textBodyCls = clsx(isHi && "text-base! font-medium! font-[inherit]");
 
   // UI-only state (doesn't affect RHF values)
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(initialEditing);
   const [isPersisting, setIsPersisting] = useState(false);
   const [pendingAction, setPendingAction] = useState<"remove" | "done" | null>(
     null,
@@ -73,25 +75,17 @@ export function LineItemRow({
       {!isEditing && (
         <div className="w-full">
           <div className="flex justify-between items-center w-full gap-2 ">
-            <div
-              className={clsx(
-                "text-base font-semibold flex-1 tabular-nums",
-                textHeadCls,
-              )}
-            >
-              {formatINR(amount)}
-            </div>
-            <div className="flex flex-col justify-between items-end">
+            <div className="flex flex-col justify-between items-start">
               <div
                 className={clsx(
-                  "text-right text-medium wrap-break-word flex-3",
+                  "text-left text-medium wrap-break-word flex-3",
                   textBodyCls,
                 )}
               >
                 {label || "—"}
               </div>
               {tags.length > 0 ? (
-                <div className="flex flex-wrap gap-1 flex-1 justify-end">
+                <div className="flex flex-wrap gap-1 flex-1 justify-start">
                   {tags.map((t, idx) => (
                     <Badge
                       key={`${t}-${idx}`}
@@ -105,6 +99,14 @@ export function LineItemRow({
               ) : (
                 <></>
               )}
+            </div>
+            <div
+              className={clsx(
+                "text-base font-semibold tabular-nums text-right shrink-0",
+                textHeadCls,
+              )}
+            >
+              {formatINR(amount)}
             </div>
           </div>
         </div>

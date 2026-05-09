@@ -438,7 +438,7 @@ export default function DailyNotesDialog({
                       </div>
                       <span
                         className={clsx(
-                          "text-sm leading-5 w-full",
+                          "text-sm leading-5 w-full whitespace-pre-wrap",
                           isDone && "text-muted-foreground",
                         )}
                       >
@@ -515,7 +515,7 @@ export default function DailyNotesDialog({
                               <Loader2 className="absolute inset-0 size-4 animate-spin" />
                             )}
                           </div>
-                          <span className="text-sm leading-5 w-full line-through text-muted-foreground">
+                          <span className="text-sm leading-5 w-full line-through text-muted-foreground whitespace-pre-wrap">
                             {item.text}
                           </span>
                         </label>

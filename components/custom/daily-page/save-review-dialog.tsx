@@ -38,6 +38,7 @@ export function SaveReviewDialog({
   cancelText,
   onConfirm,
   hideConfirm = false,
+  isSaving = false,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -48,6 +49,7 @@ export function SaveReviewDialog({
   cancelText: string;
   onConfirm: () => void;
   hideConfirm?: boolean;
+  isSaving?: boolean;
 }) {
   const [checkedIds, setCheckedIds] = React.useState<Record<string, boolean>>(
     {},
@@ -68,7 +70,7 @@ export function SaveReviewDialog({
     items.length > 0 && items.every((it) => checkedIds[it.id] === true);
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={isSaving ? undefined : onOpenChange}>
       <AlertDialogContent className=" max-h-[90vh] flex flex-col p-3">
         <AlertDialogHeader className="shrink-0">
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -155,18 +157,21 @@ export function SaveReviewDialog({
         </div>
 
         <AlertDialogFooter className="shrink-0">
-          <AlertDialogCancel type="button">{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel type="button" disabled={isSaving}>
+            {cancelText}
+          </AlertDialogCancel>
 
           {!hideConfirm && (
             <AlertDialogAction
               type="button"
-              disabled={!allChecked}
+              disabled={!allChecked || isSaving}
               onClick={(e) => {
                 e.preventDefault();
-                if (!allChecked) return;
+                if (!allChecked || isSaving) return;
                 onConfirm();
               }}
             >
+              {isSaving ? <Loader2 className="size-4 animate-spin" /> : null}
               {confirmText}
             </AlertDialogAction>
           )}

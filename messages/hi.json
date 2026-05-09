@@ -263,7 +263,9 @@
     "ReadingsNotAdded": "पठन सामग्री नहीं जोड़ी गई",
     "ReadingsPresentDesc": "रीडिंग जोड़ दी गई हैं ✅",
     "ReviewBelowSections": "सेव करने से पहले नीचे दिए गए अनुभागों की समीक्षा करें।",
-    "StampReadingMissing": "स्टाम्प रीडिंग नहीं जोड़ी गई"
+    "StampReadingMissing": "स्टाम्प रीडिंग नहीं जोड़ी गई",
+    "Notes": "नोट्स",
+    "NoNotes": "कोई नोट नहीं जोड़ा गया।"
   },
   "StampRegister": {
     "Desc": "अपने स्टाम्प स्टॉक की गतिविधियों पर नज़र रखें।",

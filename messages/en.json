@@ -263,7 +263,9 @@
     "ReadingsNotAdded": "Readings not added",
     "ReadingsPresentDesc": "Readings added ✅",
     "ReviewBelowSections": "Review below sections before saving.",
-    "StampReadingMissing": "Stamp readings not added"
+    "StampReadingMissing": "Stamp readings not added",
+    "Notes": "Notes",
+    "NoNotes": "No notes added."
   },
   "StampRegister": {
     "Desc": "Track your stamp stock movements.",
