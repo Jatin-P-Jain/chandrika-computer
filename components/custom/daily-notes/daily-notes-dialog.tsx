@@ -110,6 +110,20 @@ export default function DailyNotesDialog({
     setDismissedOpen(false);
   }, [open]);
 
+  const getAuthTokenOrNotify = React.useCallback(async () => {
+    if (authState.status !== "ready") {
+      toast.error("Authentication failed");
+      return null;
+    }
+
+    const token = await authState.currentUser?.getIdToken();
+    if (!token) {
+      toast.error("Authentication failed");
+      return null;
+    }
+    return token;
+  }, [authState]);
+
   const items = React.useMemo(() => sortItems(notes), [notes]);
 
   const startAdd = () => {
@@ -123,7 +137,7 @@ export default function DailyNotesDialog({
   };
 
   const commitAdd = async () => {
-    if (readOnly || authState.status !== "ready") return;
+    if (readOnly || authState.status !== "ready" || addingNote) return;
 
     const parsed = noteItemTextSchema.safeParse(draft);
     if (!parsed.success) {
@@ -143,13 +157,14 @@ export default function DailyNotesDialog({
     };
 
     // Update local state optimistically
-    const updatedNotes = [...notes, newItem];
+    const prevNotes = notes;
+    const updatedNotes = [...prevNotes, newItem];
     setNotes(updatedNotes);
 
     // Save to database
-    const token = await authState.currentUser?.getIdToken();
+    const token = await getAuthTokenOrNotify();
     if (!token) {
-      toast.error("Authentication failed");
+      setNotes(prevNotes);
       setAddingNote(false);
       return;
     }
@@ -168,7 +183,7 @@ export default function DailyNotesDialog({
         description: result.error || "Failed to save note",
       });
       // Revert optimistic update
-      setNotes(notes);
+      setNotes(prevNotes);
       return;
     }
 
@@ -180,7 +195,8 @@ export default function DailyNotesDialog({
   };
 
   const toggleCheckbox = async (item: NoteItem) => {
-    if (readOnly || authState.status !== "ready") return;
+    if (readOnly || authState.status !== "ready" || addingNote || savingNoteId)
+      return;
 
     const nextStatus: NoteItemStatus =
       item.status === "dismissed"
@@ -192,16 +208,17 @@ export default function DailyNotesDialog({
     setSavingNoteId(item.id);
 
     // Update local state optimistically
+    const prevNotes = notes;
     const now = new Date();
-    const next = notes.map((x) =>
+    const next = prevNotes.map((x) =>
       x.id === item.id ? { ...x, status: nextStatus, updatedAt: now } : x,
     );
     setNotes(next);
 
     // Save to database
-    const token = await authState.currentUser?.getIdToken();
+    const token = await getAuthTokenOrNotify();
     if (!token) {
-      toast.error("Authentication failed");
+      setNotes(prevNotes);
       setSavingNoteId(null);
       return;
     }
@@ -217,20 +234,22 @@ export default function DailyNotesDialog({
     if (!result.success) {
       toast.error("Error updating note");
       // Revert optimistic update
-      setNotes(notes);
+      setNotes(prevNotes);
     }
 
     setSavingNoteId(null);
   };
 
   const dismiss = async (item: NoteItem) => {
-    if (readOnly || authState.status !== "ready") return;
+    if (readOnly || authState.status !== "ready" || addingNote || savingNoteId)
+      return;
 
     setSavingNoteId(item.id);
 
     // Update local state optimistically
+    const prevNotes = notes;
     const now = new Date();
-    const next = notes.map((x) =>
+    const next = prevNotes.map((x) =>
       x.id === item.id
         ? { ...x, status: "dismissed" as NoteItemStatus, updatedAt: now }
         : x,
@@ -238,9 +257,9 @@ export default function DailyNotesDialog({
     setNotes(next);
 
     // Save to database
-    const token = await authState.currentUser?.getIdToken();
+    const token = await getAuthTokenOrNotify();
     if (!token) {
-      toast.error("Authentication failed");
+      setNotes(prevNotes);
       setSavingNoteId(null);
       return;
     }
@@ -255,20 +274,22 @@ export default function DailyNotesDialog({
     if (!result.success) {
       toast.error("Error dismissing note");
       // Revert optimistic update
-      setNotes(notes);
+      setNotes(prevNotes);
     }
 
     setSavingNoteId(null);
   };
 
   const undoDismiss = async (item: NoteItem) => {
-    if (readOnly || authState.status !== "ready") return;
+    if (readOnly || authState.status !== "ready" || addingNote || savingNoteId)
+      return;
 
     setSavingNoteId(item.id);
 
     // Update local state optimistically
+    const prevNotes = notes;
     const now = new Date();
-    const next = notes.map((x) =>
+    const next = prevNotes.map((x) =>
       x.id === item.id
         ? { ...x, status: "open" as NoteItemStatus, updatedAt: now }
         : x,
@@ -276,9 +297,9 @@ export default function DailyNotesDialog({
     setNotes(next);
 
     // Save to database
-    const token = await authState.currentUser?.getIdToken();
+    const token = await getAuthTokenOrNotify();
     if (!token) {
-      toast.error("Authentication failed");
+      setNotes(prevNotes);
       setSavingNoteId(null);
       return;
     }
@@ -293,7 +314,7 @@ export default function DailyNotesDialog({
     if (!result.success) {
       toast.error("Error restoring note");
       // Revert optimistic update
-      setNotes(notes);
+      setNotes(prevNotes);
     }
 
     setSavingNoteId(null);

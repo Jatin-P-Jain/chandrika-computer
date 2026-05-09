@@ -22,7 +22,6 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 
 import type {
   Denomination,
@@ -54,10 +53,19 @@ import { useTranslations } from "next-intl";
 import { useBreakpoints } from "@/hooks/useBreakPoints";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useAuth } from "@/context/useAuth";
-import { ReadingInput } from "@/components/custom/daily-page/common-components/reading-input";
-import { Separator } from "@/components/ui/separator";
 import { DateDisplay } from "../date-display";
 import clsx from "clsx";
+import PreviousReadingsResolver from "./previous-readings-resolver";
+import {
+  EMPTY_DENOM_RECORD,
+  normalizeDenomRecord,
+  useLocalReadingsDraft,
+  type LocalPhotocopyDraft,
+  type LocalPreviousBaselineDraft,
+  type LocalReadingsFlags,
+  type LocalStampDraft,
+} from "./hooks/use-local-readings-draft";
+import { useReadingsDialogNavigation } from "./hooks/use-readings-dialog-navigation";
 
 const PhotocopyStep = dynamic(() => import("./steps/photocopy-step"), {
   loading: () => (
@@ -139,50 +147,34 @@ export default function DailyReadingsDialog({
   startOpen = false,
   readOnly = false,
 }: Props) {
-  type LocalPhotocopyDraft = {
-    todayReading: number;
-    roundOffPhotocopy: boolean;
-    roundedPhotocopyAmount: number;
-  };
-  type LocalStampDraft = {
-    readings: Record<Denomination, number>;
-    includeStockAddition: boolean;
-    stockAdded: Record<Denomination, number>;
-  };
-  type LocalReadingsFlags = {
-    photocopyDone: boolean;
-    stampDone: boolean;
-    fullyDone: boolean;
-  };
-
   const tCommon = useTranslations("Common");
   const tReadings = useTranslations("Readings");
   const { textPageHeadCls, textBodyCls, textSmCls, textXsCls } =
     useLocaleTypography();
   const { authState } = useAuth();
-  const localPhotocopyDraftKey = React.useMemo(
-    () => `daily-readings-photocopy-draft:${todayDateYmd}`,
-    [todayDateYmd],
-  );
-  const localStampDraftKey = React.useMemo(
-    () => `daily-readings-stamp-draft:${todayDateYmd}`,
-    [todayDateYmd],
-  );
-  const localReadingsFlagsKey = React.useMemo(
-    () => `daily-readings-flags:${todayDateYmd}`,
-    [todayDateYmd],
-  );
-  const [localPhotocopyDraft, setLocalPhotocopyDraft] =
-    React.useState<LocalPhotocopyDraft | null>(null);
-  const [localStampDraft, setLocalStampDraft] =
-    React.useState<LocalStampDraft | null>(null);
-  const [localReadingsFlags, setLocalReadingsFlags] =
-    React.useState<LocalReadingsFlags | null>(null);
+
   const hasPhotocopyReading = Boolean(readings?.photocopy);
-  const hasLocalPhotocopyDraft = Boolean(localPhotocopyDraft);
   const hasStampReading = Boolean(readings?.stamp);
-  const hasLocalStampDraft = Boolean(localStampDraft);
   const hasSavedReadings = hasPhotocopyReading && hasStampReading;
+  const {
+    localPhotocopyDraft,
+    localStampDraft,
+    localReadingsFlags,
+    localPreviousBaselineDraft,
+    isPreviousBaselineHydrated,
+    persistPhotocopyDraft,
+    persistStampDraft,
+    persistReadingsFlags,
+    persistPreviousBaseline,
+    clearStepDrafts,
+  } = useLocalReadingsDraft({
+    todayDateYmd,
+    hasPhotocopyReading,
+    hasStampReading,
+    hasSavedReadings,
+  });
+  const hasLocalPhotocopyDraft = Boolean(localPhotocopyDraft);
+  const hasLocalStampDraft = Boolean(localStampDraft);
   const hasEffectivePhotocopy =
     (localReadingsFlags
       ? Boolean(localReadingsFlags.photocopyDone)
@@ -202,15 +194,18 @@ export default function DailyReadingsDialog({
       ? "review"
       : "stamp"
     : "photocopy";
+  const hasPersistedPreviousBaseline = Boolean(
+    localPreviousBaselineDraft || readings?.stamp?.parts,
+  );
   const shouldLoadPreviousReadings =
+    isPreviousBaselineHydrated &&
     localReadingsFlags !== null &&
     !isReadOnlyView &&
-    !(hasEffectivePhotocopy && hasEffectiveStamp);
+    !hasPersistedPreviousBaseline;
 
   const { isTabletUp } = useBreakpoints();
 
   const [open, setOpen] = React.useState(startOpen);
-  const allowMobileCloseRef = React.useRef(false);
   const prevReadingsInitKeyRef = React.useRef<string | null>(null);
   const [mobileViewportMaxHeight, setMobileViewportMaxHeight] = React.useState<
     number | null
@@ -231,14 +226,8 @@ export default function DailyReadingsDialog({
     number | null
   >(null);
   const [manualPhotoPrev, setManualPhotoPrev] = React.useState(0);
-  const [manualStampPrev, setManualStampPrev] = React.useState<
-    Record<Denomination, number>
-  >({
-    50: 0,
-    100: 0,
-    500: 0,
-    1000: 0,
-  });
+  const [manualStampPrev, setManualStampPrev] =
+    React.useState<Record<Denomination, number>>(EMPTY_DENOM_RECORD);
   const [saving, setSaving] = React.useState(false);
   const [savingPhotocopyStep, setSavingPhotocopyStep] = React.useState(false);
   const [includeStockAddition, setIncludeStockAddition] = React.useState(false);
@@ -251,14 +240,8 @@ export default function DailyReadingsDialog({
 
   // yesterday readings
   const [photoPrev, setPhotoPrev] = React.useState(0);
-  const [stampPrev, setStampPrev] = React.useState<
-    Record<Denomination, number>
-  >({
-    50: 0,
-    100: 0,
-    500: 0,
-    1000: 0,
-  });
+  const [stampPrev, setStampPrev] =
+    React.useState<Record<Denomination, number>>(EMPTY_DENOM_RECORD);
   const [prevReadingsManual, setPrevReadingsManual] = React.useState(
     Boolean(
       readings?.photocopy?.prevReadingWasManual ||
@@ -312,152 +295,21 @@ export default function DailyReadingsDialog({
 
   const readingsFound = hasSavedReadings;
 
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const rawDraft = window.localStorage.getItem(localPhotocopyDraftKey);
-    if (!rawDraft) {
-      setLocalPhotocopyDraft(null);
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(rawDraft) as Partial<LocalPhotocopyDraft>;
-      if (typeof parsed.todayReading !== "number") {
-        setLocalPhotocopyDraft(null);
-        return;
-      }
-
-      setLocalPhotocopyDraft({
-        todayReading: clamp0(parsed.todayReading),
-        roundOffPhotocopy: Boolean(parsed.roundOffPhotocopy),
-        roundedPhotocopyAmount: clamp0(parsed.roundedPhotocopyAmount ?? 0),
-      });
-    } catch {
-      setLocalPhotocopyDraft(null);
-    }
-  }, [localPhotocopyDraftKey]);
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const rawDraft = window.localStorage.getItem(localStampDraftKey);
-    if (!rawDraft) {
-      setLocalStampDraft(null);
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(rawDraft) as Partial<LocalStampDraft>;
-      const readingsDraft = parsed.readings;
-      if (!readingsDraft) {
-        setLocalStampDraft(null);
-        return;
-      }
-
-      const nextDraft: LocalStampDraft = {
-        readings: {
-          50: clamp0(readingsDraft[50] ?? 0),
-          100: clamp0(readingsDraft[100] ?? 0),
-          500: clamp0(readingsDraft[500] ?? 0),
-          1000: clamp0(readingsDraft[1000] ?? 0),
-        },
-        includeStockAddition: Boolean(parsed.includeStockAddition),
-        stockAdded: {
-          50: clamp0(parsed.stockAdded?.[50] ?? 0),
-          100: clamp0(parsed.stockAdded?.[100] ?? 0),
-          500: clamp0(parsed.stockAdded?.[500] ?? 0),
-          1000: clamp0(parsed.stockAdded?.[1000] ?? 0),
-        },
-      };
-
-      setLocalStampDraft(nextDraft);
-    } catch {
-      setLocalStampDraft(null);
-    }
-  }, [localStampDraftKey]);
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const rawFlags = window.localStorage.getItem(localReadingsFlagsKey);
-    if (rawFlags) {
-      try {
-        const parsed = JSON.parse(rawFlags) as Partial<LocalReadingsFlags>;
-        setLocalReadingsFlags({
-          photocopyDone: Boolean(parsed.photocopyDone),
-          stampDone: Boolean(parsed.stampDone),
-          fullyDone: Boolean(parsed.fullyDone),
-        });
-        return;
-      } catch {
-        // Fallback to DB-derived initialization below.
-      }
-    }
-
-    const initialFlags: LocalReadingsFlags = {
-      photocopyDone: hasPhotocopyReading,
-      stampDone: hasStampReading,
-      fullyDone: hasSavedReadings,
-    };
-    setLocalReadingsFlags(initialFlags);
-    window.localStorage.setItem(
-      localReadingsFlagsKey,
-      JSON.stringify(initialFlags),
-    );
-  }, [
-    hasPhotocopyReading,
-    hasSavedReadings,
-    hasStampReading,
-    localReadingsFlagsKey,
-  ]);
-
-  const dismissKeyboard = React.useCallback(() => {
-    const activeEl = document.activeElement;
-    if (activeEl instanceof HTMLElement) {
-      activeEl.blur();
-    }
-  }, []);
-
-  const closeDialog = React.useCallback(() => {
-    dismissKeyboard();
-    allowMobileCloseRef.current = true;
-    setOpen(false);
-  }, [dismissKeyboard]);
-
-  const goToStep = React.useCallback(
-    (nextStep: Step) => {
-      dismissKeyboard();
-      setStep(nextStep);
-    },
-    [dismissKeyboard],
-  );
-
-  const openPreviousReadingsResolverFromEdit = React.useCallback(() => {
-    dismissKeyboard();
-    setManualPhotoPrev(photoPrev);
-    setManualStampPrev(stampPrev);
-    setResolverOpenedFromEdit(true);
-    setShowPreviousReadingsResolver(true);
-  }, [dismissKeyboard, photoPrev, stampPrev]);
-
-  const handleMobileDrawerOpenChange = React.useCallback(
-    (nextOpen: boolean) => {
-      if (nextOpen) {
-        allowMobileCloseRef.current = false;
-        setOpen(true);
-        return;
-      }
-
-      if (!allowMobileCloseRef.current) {
-        return;
-      }
-
-      allowMobileCloseRef.current = false;
-      setOpen(false);
-    },
-    [],
-  );
+  const {
+    closeDialog,
+    goToStep,
+    openPreviousReadingsResolverFromEdit,
+    handleMobileDrawerOpenChange,
+  } = useReadingsDialogNavigation({
+    photoPrev,
+    stampPrev,
+    setOpen,
+    setStep,
+    setManualPhotoPrev,
+    setManualStampPrev,
+    setResolverOpenedFromEdit,
+    setShowPreviousReadingsResolver,
+  });
 
   // In read-only mode, always reset back to review on open/close.
   React.useEffect(() => {
@@ -497,13 +349,14 @@ export default function DailyReadingsDialog({
   // reset step when dialog opens (optional but keeps UX clean)
   React.useEffect(() => {
     if (!open) return;
+    if (!isPreviousBaselineHydrated) return;
     if (isReadOnlyView) {
       setStep("review");
       return;
     }
 
     setStep(preferredEditableStep);
-  }, [open, isReadOnlyView, preferredEditableStep]);
+  }, [open, isReadOnlyView, preferredEditableStep, isPreviousBaselineHydrated]);
 
   // NEW: reset edit state when dialog opens/closes
   React.useEffect(() => {
@@ -531,40 +384,36 @@ export default function DailyReadingsDialog({
     stampForm.reset(
       {
         r50: toBaseTodayReading(
-          readings?.stamp?.parts?.[50]?.todayReading ??
-            localStampDraft?.readings[50] ??
-            0,
-          readings?.stamp?.parts?.[50]?.stockAdded ??
-            localStampDraft?.stockAdded[50] ??
-            0,
+          readings?.stamp?.parts?.[50]?.todayReading ?? 0,
+          readings?.stamp?.parts?.[50]?.stockAdded ?? 0,
         ),
         r100: toBaseTodayReading(
-          readings?.stamp?.parts?.[100]?.todayReading ??
-            localStampDraft?.readings[100] ??
-            0,
-          readings?.stamp?.parts?.[100]?.stockAdded ??
-            localStampDraft?.stockAdded[100] ??
-            0,
+          readings?.stamp?.parts?.[100]?.todayReading ?? 0,
+          readings?.stamp?.parts?.[100]?.stockAdded ?? 0,
         ),
         r500: toBaseTodayReading(
-          readings?.stamp?.parts?.[500]?.todayReading ??
-            localStampDraft?.readings[500] ??
-            0,
-          readings?.stamp?.parts?.[500]?.stockAdded ??
-            localStampDraft?.stockAdded[500] ??
-            0,
+          readings?.stamp?.parts?.[500]?.todayReading ?? 0,
+          readings?.stamp?.parts?.[500]?.stockAdded ?? 0,
         ),
         r1000: toBaseTodayReading(
-          readings?.stamp?.parts?.[1000]?.todayReading ??
-            localStampDraft?.readings[1000] ??
-            0,
-          readings?.stamp?.parts?.[1000]?.stockAdded ??
-            localStampDraft?.stockAdded[1000] ??
-            0,
+          readings?.stamp?.parts?.[1000]?.todayReading ?? 0,
+          readings?.stamp?.parts?.[1000]?.stockAdded ?? 0,
         ),
       },
       { keepDirty: false },
     );
+
+    if (!readings?.stamp?.parts && localStampDraft) {
+      stampForm.reset(
+        {
+          r50: localStampDraft.readings[50],
+          r100: localStampDraft.readings[100],
+          r500: localStampDraft.readings[500],
+          r1000: localStampDraft.readings[1000],
+        },
+        { keepDirty: false },
+      );
+    }
 
     stockForm.reset(
       {
@@ -599,7 +448,11 @@ export default function DailyReadingsDialog({
     } else {
       setIncludeStockAddition(false);
     }
-    setPhotoPrev(readings?.photocopy?.prevReading ?? 0);
+    setPhotoPrev(
+      readings?.photocopy?.prevReading ??
+        localPreviousBaselineDraft?.photoPrev ??
+        0,
+    );
     if (readings?.stamp?.parts) {
       setStampPrev({
         50: readings.stamp.parts?.[50]?.prevReading ?? 0,
@@ -607,11 +460,14 @@ export default function DailyReadingsDialog({
         500: readings.stamp.parts?.[500]?.prevReading ?? 0,
         1000: readings.stamp.parts?.[1000]?.prevReading ?? 0,
       });
+    } else if (localPreviousBaselineDraft?.stampPrev) {
+      setStampPrev(localPreviousBaselineDraft.stampPrev);
     }
     setPrevReadingsManual(
       Boolean(
         readings?.photocopy?.prevReadingWasManual ||
-        readings?.stamp?.prevReadingWasManual,
+        readings?.stamp?.prevReadingWasManual ||
+        localPreviousBaselineDraft?.prevReadingsManual,
       ),
     );
     setRoundOffPhotocopy(
@@ -638,6 +494,8 @@ export default function DailyReadingsDialog({
     readings?.photocopy?.isRounded,
     localPhotocopyDraft,
     localStampDraft,
+    localPreviousBaselineDraft,
+    isPreviousBaselineHydrated,
     readings?.stamp?.parts,
     readings?.stamp?.prevReadingWasManual,
     photoForm,
@@ -673,15 +531,30 @@ export default function DailyReadingsDialog({
       setPhotoPrev(res.photocopy?.todayReading ?? 0);
 
       const prevParts = res.stamp?.parts;
-      setStampPrev({
-        50: prevParts?.[50]?.todayReading ?? 0,
-        100: prevParts?.[100]?.todayReading ?? 0,
-        500: prevParts?.[500]?.todayReading ?? 0,
-        1000: prevParts?.[1000]?.todayReading ?? 0,
-      });
+      setStampPrev(
+        normalizeDenomRecord({
+          50: prevParts?.[50]?.todayReading,
+          100: prevParts?.[100]?.todayReading,
+          500: prevParts?.[500]?.todayReading,
+          1000: prevParts?.[1000]?.todayReading,
+        }),
+      );
       setPrevReadingsManual(false);
+
+      const nextBaseline: LocalPreviousBaselineDraft = {
+        photoPrev: res.photocopy?.todayReading ?? 0,
+        stampPrev: normalizeDenomRecord({
+          50: prevParts?.[50]?.todayReading,
+          100: prevParts?.[100]?.todayReading,
+          500: prevParts?.[500]?.todayReading,
+          1000: prevParts?.[1000]?.todayReading,
+        }),
+        prevReadingsManual: false,
+        resolvedLookbackDays: null,
+      };
+      persistPreviousBaseline(nextBaseline);
     },
-    [],
+    [persistPreviousBaseline],
   );
 
   const getAuthForPrevReadings = React.useCallback(async () => {
@@ -715,12 +588,7 @@ export default function DailyReadingsDialog({
       persistInDb = true,
     ) => {
       const nextPhotoPrev = clamp0(manual.photoPrev);
-      const nextStampPrev = {
-        50: clamp0(manual.stampPrev[50]),
-        100: clamp0(manual.stampPrev[100]),
-        500: clamp0(manual.stampPrev[500]),
-        1000: clamp0(manual.stampPrev[1000]),
-      };
+      const nextStampPrev = normalizeDenomRecord(manual.stampPrev);
 
       setManualPhotoPrev(nextPhotoPrev);
       setManualStampPrev(nextStampPrev);
@@ -729,6 +597,14 @@ export default function DailyReadingsDialog({
       setPrevReadingsManual(true);
       setMissingPreviousReadings(false);
       setResolvedLookbackDays(null);
+
+      const nextBaseline: LocalPreviousBaselineDraft = {
+        photoPrev: nextPhotoPrev,
+        stampPrev: nextStampPrev,
+        prevReadingsManual: true,
+        resolvedLookbackDays: null,
+      };
+      persistPreviousBaseline(nextBaseline);
 
       if (!persistInDb) {
         return true;
@@ -751,7 +627,7 @@ export default function DailyReadingsDialog({
         return false;
       }
     },
-    [getAuthForPrevReadings, tReadings, todayDateYmd],
+    [getAuthForPrevReadings, persistPreviousBaseline, tReadings, todayDateYmd],
   );
 
   const loadManualPreviousReadingsFromDb = React.useCallback(async () => {
@@ -785,6 +661,18 @@ export default function DailyReadingsDialog({
         setShowPreviousReadingsResolver(false);
         setResolverOpenedFromEdit(false);
         setResolvedLookbackDays(normalizedDays);
+        const nextBaseline: LocalPreviousBaselineDraft = {
+          photoPrev: res.photocopy?.todayReading ?? 0,
+          stampPrev: normalizeDenomRecord({
+            50: res.stamp?.parts?.[50]?.todayReading,
+            100: res.stamp?.parts?.[100]?.todayReading,
+            500: res.stamp?.parts?.[500]?.todayReading,
+            1000: res.stamp?.parts?.[1000]?.todayReading,
+          }),
+          prevReadingsManual: false,
+          resolvedLookbackDays: normalizedDays,
+        };
+        persistPreviousBaseline(nextBaseline);
         await clearManualPreviousReadingsInDb();
         return true;
       } catch (e) {
@@ -799,6 +687,7 @@ export default function DailyReadingsDialog({
     [
       applyPreviousReadings,
       clearManualPreviousReadingsInDb,
+      persistPreviousBaseline,
       tReadings,
       todayDateYmd,
     ],
@@ -829,6 +718,17 @@ export default function DailyReadingsDialog({
         readings?.photocopy?.roundedAmount ?? readings?.photocopy?.amount ?? 0,
       );
 
+      if (localPreviousBaselineDraft) {
+        setPhotoPrev(localPreviousBaselineDraft.photoPrev);
+        setStampPrev(localPreviousBaselineDraft.stampPrev);
+        setPrevReadingsManual(localPreviousBaselineDraft.prevReadingsManual);
+        setResolvedLookbackDays(
+          localPreviousBaselineDraft.resolvedLookbackDays,
+        );
+        setInitializingPrev(false);
+        return;
+      }
+
       if (manualPreviousFromDb?.isManual) {
         await applyManualPreviousReadings(
           {
@@ -842,12 +742,7 @@ export default function DailyReadingsDialog({
       }
 
       setManualPhotoPrev(0);
-      setManualStampPrev({
-        50: 0,
-        100: 0,
-        500: 0,
-        1000: 0,
-      });
+      setManualStampPrev(EMPTY_DENOM_RECORD);
 
       const found = await fetchPreviousByLookback(1);
       if (!found) {
@@ -860,6 +755,7 @@ export default function DailyReadingsDialog({
     open,
     applyManualPreviousReadings,
     fetchPreviousByLookback,
+    localPreviousBaselineDraft,
     loadManualPreviousReadingsFromDb,
     readings?.photocopy?.amount,
     readings?.photocopy?.isRounded,
@@ -959,24 +855,14 @@ export default function DailyReadingsDialog({
         roundedPhotocopyAmount: clamp0(roundedPhotocopyAmount),
       };
 
-      setLocalPhotocopyDraft(nextDraft);
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          localPhotocopyDraftKey,
-          JSON.stringify(nextDraft),
-        );
+      persistPhotocopyDraft(nextDraft);
 
-        const nextFlags: LocalReadingsFlags = {
-          photocopyDone: true,
-          stampDone: Boolean(localReadingsFlags?.stampDone),
-          fullyDone: false,
-        };
-        setLocalReadingsFlags(nextFlags);
-        window.localStorage.setItem(
-          localReadingsFlagsKey,
-          JSON.stringify(nextFlags),
-        );
-      }
+      const nextFlags: LocalReadingsFlags = {
+        photocopyDone: true,
+        stampDone: Boolean(localReadingsFlags?.stampDone),
+        fullyDone: false,
+      };
+      persistReadingsFlags(nextFlags);
       photoForm.reset(
         { todayReading: nextDraft.todayReading },
         { keepDirty: false },
@@ -1010,32 +896,21 @@ export default function DailyReadingsDialog({
       },
     };
 
-    setLocalStampDraft(nextStampDraft);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(
-        localStampDraftKey,
-        JSON.stringify(nextStampDraft),
-      );
+    persistStampDraft(nextStampDraft);
 
-      const nextFlags: LocalReadingsFlags = {
-        photocopyDone: Boolean(
-          localReadingsFlags?.photocopyDone || hasLocalPhotocopyDraft,
-        ),
-        stampDone: true,
-        fullyDone: false,
-      };
-      setLocalReadingsFlags(nextFlags);
-      window.localStorage.setItem(
-        localReadingsFlagsKey,
-        JSON.stringify(nextFlags),
-      );
-    }
+    const nextFlags: LocalReadingsFlags = {
+      photocopyDone: Boolean(
+        localReadingsFlags?.photocopyDone || hasLocalPhotocopyDraft,
+      ),
+      stampDone: true,
+      fullyDone: false,
+    };
+    persistReadingsFlags(nextFlags);
 
     goToStep("review");
   };
 
   const goBack = () => {
-    dismissKeyboard();
     setStep((s) => (s === "review" ? "stamp" : "photocopy"));
   };
 
@@ -1155,23 +1030,14 @@ export default function DailyReadingsDialog({
         );
       }
       setHasEdits(false);
-      setLocalPhotocopyDraft(null);
-      setLocalStampDraft(null);
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem(localPhotocopyDraftKey);
-        window.localStorage.removeItem(localStampDraftKey);
+      clearStepDrafts();
 
-        const nextFlags: LocalReadingsFlags = {
-          photocopyDone: true,
-          stampDone: true,
-          fullyDone: true,
-        };
-        setLocalReadingsFlags(nextFlags);
-        window.localStorage.setItem(
-          localReadingsFlagsKey,
-          JSON.stringify(nextFlags),
-        );
-      }
+      const nextFlags: LocalReadingsFlags = {
+        photocopyDone: true,
+        stampDone: true,
+        fullyDone: true,
+      };
+      persistReadingsFlags(nextFlags);
       await clearManualPreviousReadingsInDb();
 
       closeDialog();
@@ -1476,129 +1342,51 @@ export default function DailyReadingsDialog({
     </>
   );
 
-  const PreviousReadingsResolver = (
-    <div className="w-full rounded-md border p-3 md:p-4 space-y-3 h-full overflow-auto">
-      <div className="text-sm font-medium">
-        {resolverOpenedFromEdit
-          ? tReadings("EditPreviousReadings")
-          : tReadings("NoPreviousReadingsFound")}
-      </div>
-      <p className={"text-xs text-muted-foreground " + textSmCls}>
-        {resolverOpenedFromEdit
-          ? tReadings("EditPreviousReadingsHelp")
-          : tReadings("AskRecentHolidays")}
-      </p>
+  const PreviousReadingsResolverContent = (
+    <PreviousReadingsResolver
+      resolverOpenedFromEdit={resolverOpenedFromEdit}
+      textBodyCls={textBodyCls}
+      textSmCls={textSmCls}
+      denoms={DENOMS}
+      lookbackDays={lookbackDays}
+      loadingPrev={loadingPrev}
+      manualPhotoPrev={manualPhotoPrev}
+      manualStampPrev={manualStampPrev}
+      tCommon={tCommon}
+      tReadings={tReadings}
+      onLookbackDaysChange={setLookbackDays}
+      onFindLatestReadings={async () => {
+        const days = Math.max(1, Math.floor(lookbackDays || 1));
+        const found = await fetchPreviousByLookback(days);
+        if (!found) {
+          toast.error(tReadings("NoReadingsForHolidayOffset"));
+          return;
+        }
+        toast.success(tReadings("LatestReadingsFoundVerify"));
+      }}
+      onManualPhotoPrevChange={setManualPhotoPrev}
+      onManualStampPrevChange={(denom, value) =>
+        setManualStampPrev((prev) => ({
+          ...prev,
+          [denom]: value,
+        }))
+      }
+      onUseManualReadings={async () => {
+        const saved = await applyManualPreviousReadings({
+          photoPrev: manualPhotoPrev,
+          stampPrev: manualStampPrev,
+        });
+        if (!saved) return;
 
-      <div className="flex flex-row items-end gap-2">
-        <div className="space-y-1">
-          <Label className={textSmCls}>{tReadings("RecentHolidayCount")}</Label>
-          <ReadingInput
-            value={lookbackDays}
-            onChange={(n) => setLookbackDays(Math.max(1, n || 1))}
-            placeholder="1"
-            inputClassName="flex mx-auto items-center text-center"
-          />
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          disabled={loadingPrev}
-          onClick={async () => {
-            const days = Math.max(1, Math.floor(lookbackDays || 1));
-            const found = await fetchPreviousByLookback(days);
-            if (!found) {
-              toast.error(tReadings("NoReadingsForHolidayOffset"));
-              return;
-            }
-            toast.success(tReadings("LatestReadingsFoundVerify"));
-          }}
-        >
-          {loadingPrev ? (
-            <span className="inline-flex items-center gap-1">
-              <Loader2 className="size-4 animate-spin" />
-              {tReadings("LoadingYesterdaysReadings")}
-            </span>
-          ) : (
-            tReadings("FindLatestReadings")
-          )}
-        </Button>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <Separator className="flex-1" />
-        <span className="text-xs">{tCommon("Or")}</span>
-        <Separator className="flex-1" />
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <div className={"text-sm font-medium " + textBodyCls}>
-          {tReadings("EnterPreviousReadingsManually")}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className={textSmCls}>
-              {tReadings("PhotocopyPreviousReading")}
-            </Label>
-            <ReadingInput
-              value={manualPhotoPrev}
-              onChange={(n) => setManualPhotoPrev(Math.max(0, n || 0))}
-              placeholder="0"
-              inputClassName="text-right"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {DENOMS.map((denom) => (
-            <div key={denom} className="space-y-1">
-              <Label className={textSmCls}>₹ {denom}</Label>
-              <ReadingInput
-                value={manualStampPrev[denom]}
-                onChange={(n) =>
-                  setManualStampPrev((prev) => ({
-                    ...prev,
-                    [denom]: Math.max(0, n || 0),
-                  }))
-                }
-                placeholder="0"
-                inputClassName="text-right"
-              />
-            </div>
-          ))}
-        </div>
-
-        <Button
-          type="button"
-          onClick={async () => {
-            const saved = await applyManualPreviousReadings({
-              photoPrev: manualPhotoPrev,
-              stampPrev: manualStampPrev,
-            });
-            if (!saved) return;
-
-            setShowPreviousReadingsResolver(false);
-            setResolverOpenedFromEdit(false);
-            toast.success(tReadings("ManualPreviousReadingsSet"));
-          }}
-        >
-          {tReadings("UseManualReadings")}
-        </Button>
-
-        {resolverOpenedFromEdit ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setShowPreviousReadingsResolver(false);
-              setResolverOpenedFromEdit(false);
-            }}
-          >
-            {tReadings("BackToReadings")}
-          </Button>
-        ) : null}
-      </div>
-    </div>
+        setShowPreviousReadingsResolver(false);
+        setResolverOpenedFromEdit(false);
+        toast.success(tReadings("ManualPreviousReadingsSet"));
+      }}
+      onBackToReadings={() => {
+        setShowPreviousReadingsResolver(false);
+        setResolverOpenedFromEdit(false);
+      }}
+    />
   );
 
   const InitialLoading = (
@@ -1614,7 +1402,7 @@ export default function DailyReadingsDialog({
       ? InitialLoading
       : shouldLoadPreviousReadings &&
           (missingPreviousReadings || showPreviousReadingsResolver)
-        ? PreviousReadingsResolver
+        ? PreviousReadingsResolverContent
         : Content;
 
   if (isTabletUp) {

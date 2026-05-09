@@ -1,0 +1,49 @@
+"use client";
+
+import dynamic from "next/dynamic";
+
+const Toaster = dynamic(() => import("sonner").then((mod) => mod.Toaster), {
+  ssr: false,
+});
+const DateTimeDisplay = dynamic(
+  () =>
+    import("@/components/custom/date-time-display").then(
+      (mod) => mod.DateTimeDisplay,
+    ),
+  { ssr: false },
+);
+const NextTopLoader = dynamic(() => import("nextjs-toploader"), {
+  ssr: false,
+});
+const ServiceWorkerRegister = dynamic(
+  () =>
+    import("./service-worker-register").then(
+      (mod) => mod.ServiceWorkerRegister,
+    ),
+  { ssr: false },
+);
+
+export function GlobalClientEnhancements() {
+  return (
+    <>
+      <ServiceWorkerRegister />
+      <NextTopLoader color="#065884" height={3} showSpinner={false} />
+      <DateTimeDisplay />
+      <Toaster
+        closeButton
+        richColors
+        position="top-center"
+        mobileOffset="calc(env(safe-area-inset-top) + 85px)"
+        className="flex justify-center"
+        toastOptions={{
+          classNames: {
+            toast:
+              "w-[min(100vw,300px)]! min-h-14! flex items-start gap-2 px-4! py-3!",
+            title: "font-semibold leading-snug text-lg",
+            description: "text-base leading-snug text-muted-foreground",
+          },
+        }}
+      />
+    </>
+  );
+}

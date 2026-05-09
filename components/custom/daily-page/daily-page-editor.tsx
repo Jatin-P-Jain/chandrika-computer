@@ -3,7 +3,6 @@
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
 import { useForm, useWatch } from "react-hook-form";
-import type { FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import dynamic from "next/dynamic";
 
@@ -25,19 +24,17 @@ import { AmountInput } from "./common-components/amount-input";
 import { Loader2, Repeat, SaveIcon, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/useAuth";
-import { toast } from "sonner";
-import {
-  createDailyAccountItem,
-  saveDailyAccountDraft,
-  updateDailyAccountItem,
-} from "@/app/daily-accounts/write-actions";
 import { DailyAccount } from "@/types/daily-account";
 import type { NoteItem } from "@/types/daily-notes";
 import { PhotocopyReadingDoc, StampReadingDoc } from "@/types/readings";
-import type { ReviewItem } from "./save-review-dialog";
 import type { CreditDebitImperative } from "../accounts/credit-debit-section";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
 import AuditTrail from "../audit-trail";
+import { buildSaveReviewItems } from "./utils/build-save-review-items";
+import { handleDailyFormSubmitErrors } from "./utils/handle-submit-errors";
+import { useSaveReviewFlow } from "./hooks/use-save-review-flow";
+import { useDailyPageSubmitFlow } from "./hooks/use-daily-page-submit-flow";
+import { useReviewNavigationActions } from "./hooks/use-review-navigation-actions";
 
 const DailyReadingsDialog = dynamic(
   () => import("../daily-readings/daily-readings-dialog"),
@@ -103,55 +100,6 @@ type DailyPageProps = {
     stamp: StampReadingDoc | null;
   };
 };
-
-function isNonEmptyArray<T>(v: T[] | undefined | null) {
-  return Array.isArray(v) && v.length > 0;
-}
-
-function formatLineItemSummary(
-  items: { label?: string; amount?: number; accountName?: string }[],
-  max = 6,
-) {
-  const parts = items.slice(0, max).map((x, i) => {
-    const label =
-      String(x.accountName ?? "").trim() ||
-      String(x.label ?? "").trim() ||
-      `#${i + 1}`;
-    const amount = typeof x.amount === "number" ? x.amount : 0;
-    return `${label}: ${formatINR(amount)}`;
-  });
-
-  const remaining = items.length - parts.length;
-  return remaining > 0
-    ? `${parts.join(", ")}, +${remaining} more`
-    : parts.join(", ");
-}
-
-function collectInvalidPaths(
-  errors: FieldErrors<DailyFormValues>,
-  prefix = "",
-): string[] {
-  const out: string[] = [];
-
-  for (const [key, val] of Object.entries(errors)) {
-    if (!val) continue;
-    const path = prefix ? `${prefix}.${key}` : key;
-    const node = val as unknown as { message?: string };
-
-    if (typeof node.message === "string") {
-      out.push(path);
-      continue;
-    }
-
-    if (typeof val === "object") {
-      out.push(
-        ...collectInvalidPaths(val as FieldErrors<DailyFormValues>, path),
-      );
-    }
-  }
-
-  return out;
-}
 
 export default function DailyPageEditor({
   mode,
@@ -232,13 +180,7 @@ export default function DailyPageEditor({
   const creditDebitAnchorRef = useRef<HTMLDivElement | null>(null);
   const suppressDraftPersistRef = useRef(false);
 
-  const [reviewOpen, setReviewOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
-  const [reviewMode, setReviewMode] = useState<
-    "BLOCK_READINGS" | "SOFT_CONFIRM"
-  >("SOFT_CONFIRM");
-  const [pendingData, setPendingData] = useState<DailyFormValues | null>(null);
   const [localReadings, setLocalReadings] = useState(readings);
 
   const { user, getUserToken } = useAuth();
@@ -264,84 +206,19 @@ export default function DailyPageEditor({
     setLocalReadings(readings);
   }, [readings]);
 
-  const persistDraft = async () => {
-    // In edit mode, persist only on explicit Update action.
-    if (mode === "edit") return;
-    if (suppressDraftPersistRef.current || !form.formState.isDirty) return;
-
-    const token = await getUserToken();
-    if (!token) return;
-
-    const result = await saveDailyAccountDraft(
-      docId,
-      form.getValues(),
-      user,
-      token,
-    );
-    if (result.error || result.success === false) {
-      toast.error("Error!", {
-        description:
-          ("message" in result && result.message) ||
-          result.error ||
-          "Failed to save changes",
-      });
-    }
-  };
-
-  const onSubmit = async (data: DailyFormValues) => {
-    const token = await getUserToken();
-    if (!token) return;
-
-    if (mode === "edit") {
-      if (!docId) {
-        toast.error("Error!", { description: "Missing docId" });
-        return;
-      }
-
-      const dirtyFields = form.formState.dirtyFields;
-
-      const res = await updateDailyAccountItem(
-        docId,
-        data,
-        user,
-        dirtyFields,
-        token,
-      );
-
-      if (res.error) {
-        toast.error("Error!", {
-          description: res.message || "An error occurred",
-        });
-        return;
-      }
-
-      toast.success("Success!", {
-        description: tToast("DailyAccountFinalized"),
-      });
-      replace(`/daily-accounts/${docId}`, { scroll: false });
-      return;
-    }
-
-    const accountExistsErrorMessage = tToast("DailyAccountExists");
-    const saveResponse = await createDailyAccountItem(
-      data,
-      user,
-      token,
-      accountExistsErrorMessage,
-      docId,
-    );
-
-    if (!!saveResponse.error || !saveResponse.docId) {
-      toast.error("Error!", { description: saveResponse.error });
-      return;
-    }
-    replace(`/daily-accounts/${saveResponse.docId}`, {
-      scroll: false,
-    });
-    toast.success("Success!", {
-      description: tToast("DailyAccountCompleted"),
-    });
-  };
+  const { persistDraft, submitDaily } = useDailyPageSubmitFlow({
+    mode,
+    docId,
+    user,
+    getUserToken,
+    getValues: () => form.getValues(),
+    isDirty: form.formState.isDirty,
+    dirtyFields: form.formState.dirtyFields,
+    suppressDraftPersistRef,
+    tToast,
+    navigateToDoc: (nextDocId) =>
+      replace(`/daily-accounts/${nextDocId}`, { scroll: false }),
+  });
 
   const isFormReady =
     isExistingDraft || form.formState.isSubmitted || form.formState.isDirty;
@@ -353,6 +230,25 @@ export default function DailyPageEditor({
     : isSubmitting
       ? tCommon("Completing")
       : tDailyAccount("CompleteDailyAccount");
+
+  const {
+    reviewOpen,
+    reviewItems,
+    reviewMode,
+    openBlockingReview,
+    openSoftReview,
+    handleReviewOpenChange,
+    handleReviewConfirm,
+  } = useSaveReviewFlow({
+    onSubmit: submitDaily,
+    suppressDraftPersistRef,
+  });
+
+  const { scrollToSection, addCredit, addDebit } = useReviewNavigationActions({
+    creditDebitAnchorRef,
+    creditDebitRef,
+    closeReview: () => handleReviewOpenChange(false),
+  });
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     void form.handleSubmit(
@@ -367,213 +263,59 @@ export default function DailyPageEditor({
         const businessExpensesNow = form.getValues("businessExpenses") ?? [];
         const extraEarnings = form.getValues("earnings.otherIncomes") ?? [];
 
-        const blocking: ReviewItem[] = [];
-        const readingsData = localReadings;
-        if (readingsData?.photocopy == null) {
-          blocking.push({
-            id: "missing-photocopy",
-            title: tSaveReview("PhotocopyReadingMissing"),
-            description: tSaveReview("PleaseAddReadingsAndSave"),
-          });
-        }
-        if (readingsData?.stamp == null) {
-          blocking.push({
-            id: "missing-stamp",
-            title: tSaveReview("StampReadingMissing"),
-            description: tSaveReview("PleaseAddReadingsAndSave"),
-          });
-        }
-
-        const scrollToSection = (id: string) => {
-          setReviewOpen(false);
-          requestAnimationFrame(() => {
-            document
-              .getElementById(id)
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
-          });
-        };
-
-        const items: ReviewItem[] = [];
-
-        const readingsDone = fs > 0 && sd > 0;
-        items.push({
-          id: "readings-summary",
-          title: tSaveReview("Readings"),
-          filled: readingsDone,
-          description: readingsDone
-            ? tSaveReview("ReadingsPresentDesc")
-            : tSaveReview("ReadingsMissingDesc"),
-        });
-
-        items.push({
-          id: "extra-earnings",
-          title: tDailyAccount("OtherEarnings"),
-          count: extraEarnings.length,
-          filled: isNonEmptyArray(extraEarnings),
-          description: isNonEmptyArray(extraEarnings)
-            ? formatLineItemSummary(extraEarnings)
-            : tSaveReview("NoExtraEarnings"),
-          actionLabel: tDailyAccount("AddIncome"),
-          onAction: () => scrollToSection("section-other-incomes"),
-        });
-
-        items.push({
-          id: "businessexpenses-summary",
-          title: tDailyAccount("BusinessExpense"),
-          count: businessExpensesNow.length,
-          filled: isNonEmptyArray(businessExpensesNow),
-          description: isNonEmptyArray(businessExpensesNow)
-            ? formatLineItemSummary(businessExpensesNow)
-            : tSaveReview("BusinessExpenseEmptyConfirm"),
-          actionLabel: tDailyAccount("AddExpense"),
-          onAction: () => scrollToSection("section-business-expenses"),
-        });
-
-        items.push({
-          id: "credits-summary",
-          title: tCreditsDebits("Credits"),
-          count: creditItems.length,
-          filled: isNonEmptyArray(creditItems),
-          description: isNonEmptyArray(creditItems)
-            ? formatLineItemSummary(creditItems)
-            : (tSaveReview("NoCreditsAdded") ?? "No credits added."),
-          actionLabel: tCommon("Add"),
-          onAction: () => {
-            setReviewOpen(false);
-            requestAnimationFrame(() => {
-              creditDebitAnchorRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
-            });
-            creditDebitRef.current?.addCredit();
-          },
-        });
-
-        items.push({
-          id: "debits-summary",
-          title: tCreditsDebits("Debits"),
-          count: debitItems.length,
-          filled: isNonEmptyArray(debitItems),
-          description: isNonEmptyArray(debitItems)
-            ? formatLineItemSummary(debitItems)
-            : tSaveReview("NoDebitsAdded"),
-          actionLabel: tCommon("Add"),
-          onAction: () => {
-            setReviewOpen(false);
-            requestAnimationFrame(() => {
-              creditDebitAnchorRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
-            });
-            creditDebitRef.current?.addDebit();
-          },
-        });
-
-        items.push({
-          id: "dailyspends-summary",
-          title: tDailyAccount("DailySpends"),
-          count: dailySpendsNow.length,
-          filled: isNonEmptyArray(dailySpendsNow),
-          description: isNonEmptyArray(dailySpendsNow)
-            ? formatLineItemSummary(dailySpendsNow)
-            : tSaveReview("DailySpendsEmptyConfirm"),
-          actionLabel: tDailyAccount("AddSpend"),
-          onAction: () => scrollToSection("section-daily-spends"),
+        const { blocking, items } = buildSaveReviewItems({
+          fs,
+          sd,
+          readingsData: localReadings,
+          creditItems,
+          debitItems,
+          dailySpendsNow,
+          businessExpensesNow,
+          extraEarnings,
+          tSaveReview,
+          tDailyAccount,
+          tCreditsDebits,
+          tCommon,
+          onGoOtherIncomes: () => scrollToSection("section-other-incomes"),
+          onGoBusinessExpenses: () =>
+            scrollToSection("section-business-expenses"),
+          onAddCredit: addCredit,
+          onAddDebit: addDebit,
+          onGoDailySpends: () => scrollToSection("section-daily-spends"),
         });
 
         if (blocking.length > 0) {
-          setReviewMode("BLOCK_READINGS");
-          setReviewItems([...blocking, ...items]);
-          setPendingData(null);
-          setReviewOpen(true);
+          openBlockingReview([...blocking, ...items]);
           return;
         }
 
-        setReviewMode("SOFT_CONFIRM");
-        setReviewItems(items);
-        setPendingData(data);
-        setReviewOpen(true);
+        openSoftReview(data, items);
       },
       (errors) => {
         suppressDraftPersistRef.current = false;
-        const invalidPaths = collectInvalidPaths(errors);
-
-        const hasMissingCash =
-          invalidPaths.includes("totalCashCollected") ||
-          Number(form.getValues("totalCashCollected") ?? 0) <= 0;
-
-        if (hasMissingCash) {
-          toast.error(tDailyAccount("TotalCashCollected"), {
-            description: "Please enter total cash collected before saving.",
-          });
-          requestAnimationFrame(() => {
-            const input = document.getElementById("total-cash-collected-input");
-            if (input instanceof HTMLInputElement) {
-              input.focus();
-            }
-          });
-          return;
-        }
-
-        const toReadableFieldName = (path: string): string => {
-          if (path === "totalCashCollected") {
-            return tDailyAccount("TotalCashCollected");
-          }
-          if (path === "earnings.netIncome") {
-            return tDailyAccount("TotalIncome");
-          }
-          if (path.startsWith("fixed.")) {
-            return tDailyAccount("FixedExpenses");
-          }
-          if (path.startsWith("earnings.otherIncomes")) {
-            return tDailyAccount("OtherEarnings");
-          }
-          if (path.startsWith("businessExpenses")) {
-            return tDailyAccount("BusinessExpense");
-          }
-          if (path.startsWith("dailySpends")) {
-            return tDailyAccount("DailySpends");
-          }
-          if (path.startsWith("creditItems")) {
-            return tCreditsDebits("Credits");
-          }
-          if (path.startsWith("debitItems")) {
-            return tCreditsDebits("Debits");
-          }
-          return path
-            .replace(/\.\d+\./g, " - ")
-            .replace(/\./g, " - ")
-            .replace(/([a-z])([A-Z])/g, "$1 $2");
-        };
-
-        const readableFields = Array.from(
-          new Set(
-            invalidPaths
-              .filter((path) => path !== "totalCashCollected")
-              .map(toReadableFieldName),
-          ),
-        );
-
-        if (readableFields.length > 0) {
-          const firstFew = readableFields.slice(0, 4).join(", ");
-          const more =
-            readableFields.length > 4
-              ? ` +${readableFields.length - 4} more`
-              : "";
-
-          toast.error("Please fix these fields", {
-            description: `${firstFew}${more}`,
-          });
-        }
+        handleDailyFormSubmitErrors({
+          errors,
+          totalCashCollected: Number(form.getValues("totalCashCollected") ?? 0),
+          tDailyAccount,
+          tCreditsDebits,
+          focusCashInput: () => {
+            requestAnimationFrame(() => {
+              const input = document.getElementById(
+                "total-cash-collected-input",
+              );
+              if (input instanceof HTMLInputElement) {
+                input.focus();
+              }
+            });
+          },
+        });
       },
     )(event);
   };
 
   return renderForm ? (
     <>
-      <div className="flex flex-col justify-start items-start w-full pb-16">
+      <div className="flex flex-col justify-start items-start w-full">
         <div className="flex w-full justify-between items-center mb-2">
           <DailyReadingsDialog
             readings={localReadings}
@@ -796,13 +538,7 @@ export default function DailyPageEditor({
       </div>
       <SaveReviewDialog
         open={reviewOpen}
-        onOpenChange={(open) => {
-          setReviewOpen(open);
-          if (!open) {
-            suppressDraftPersistRef.current = false;
-            setPendingData(null);
-          }
-        }}
+        onOpenChange={handleReviewOpenChange}
         title={
           reviewMode === "BLOCK_READINGS"
             ? tSaveReview("ReadingsNotAdded")
@@ -821,16 +557,7 @@ export default function DailyPageEditor({
             : tCommon("ContinueAndComplete")
         }
         hideConfirm={reviewMode === "BLOCK_READINGS"}
-        onConfirm={async () => {
-          setReviewOpen(false);
-          if (!pendingData) return;
-          try {
-            await onSubmit(pendingData);
-          } finally {
-            suppressDraftPersistRef.current = false;
-            setPendingData(null);
-          }
-        }}
+        onConfirm={handleReviewConfirm}
       />
     </>
   ) : (

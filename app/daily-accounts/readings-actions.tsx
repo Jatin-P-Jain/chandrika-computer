@@ -28,6 +28,65 @@ type GetReadingsOptions = {
 
 const DENOMS: Denomination[] = [50, 100, 500, 1000];
 
+function invalidateDailyAccountCaches(docId: string) {
+  revalidatePath(`/daily-accounts/${docId}`);
+  revalidatePath(`/daily-accounts`);
+  updateTag("daily-account-list");
+  updateTag("daily-account-latest");
+  updateTag(`daily-account:${docId}`);
+}
+
+function normalizeDenominationRecord(
+  values?: Partial<Record<Denomination, number>>,
+) {
+  return {
+    50: nn(values?.[50] ?? 0),
+    100: nn(values?.[100] ?? 0),
+    500: nn(values?.[500] ?? 0),
+    1000: nn(values?.[1000] ?? 0),
+  } as Record<Denomination, number>;
+}
+
+function createEmptyStampParts(): Record<Denomination, StampPartDoc> {
+  return {
+    50: {
+      todayReading: 0,
+      prevReading: 0,
+      stockAdded: 0,
+      difference: 0,
+      amount: 0,
+    },
+    100: {
+      todayReading: 0,
+      prevReading: 0,
+      stockAdded: 0,
+      difference: 0,
+      amount: 0,
+    },
+    500: {
+      todayReading: 0,
+      prevReading: 0,
+      stockAdded: 0,
+      difference: 0,
+      amount: 0,
+    },
+    1000: {
+      todayReading: 0,
+      prevReading: 0,
+      stockAdded: 0,
+      difference: 0,
+      amount: 0,
+    },
+  };
+}
+
+async function requireAdminAccess(user: UserData, authtoken: string) {
+  const access = await ensureAdminAccess(user, authtoken);
+  if (!access.ok) {
+    throw new Error(access.message);
+  }
+}
+
 async function syncDailyAccountFromReadings(opts: {
   docId: string;
   fsAmount?: number;
@@ -127,11 +186,7 @@ async function syncDailyAccountFromReadings(opts: {
     { merge: true },
   );
 
-  revalidatePath(`/daily-accounts/${opts.docId}`);
-  revalidatePath(`/daily-accounts`);
-  updateTag("daily-account-list");
-  updateTag("daily-account-latest");
-  updateTag(`daily-account:${opts.docId}`);
+  invalidateDailyAccountCaches(opts.docId);
 }
 
 type TimestampLike = { toMillis: () => number };
@@ -177,10 +232,7 @@ export async function getManualPreviousReadings(opts: {
   user: UserData;
   authtoken: string;
 }) {
-  const access = await ensureAdminAccess(opts.user, opts.authtoken);
-  if (!access.ok) {
-    throw new Error(access.message);
-  }
+  await requireAdminAccess(opts.user, opts.authtoken);
 
   const done = startFirestoreMetric({
     source: "server",
@@ -211,12 +263,7 @@ export async function getManualPreviousReadings(opts: {
   const parsed: ManualPreviousReadingsDoc = {
     date: String(raw.date ?? opts.todayDateYmd),
     photoPrev: nn(raw.photoPrev ?? 0),
-    stampPrev: {
-      50: nn(raw.stampPrev?.[50] ?? 0),
-      100: nn(raw.stampPrev?.[100] ?? 0),
-      500: nn(raw.stampPrev?.[500] ?? 0),
-      1000: nn(raw.stampPrev?.[1000] ?? 0),
-    },
+    stampPrev: normalizeDenominationRecord(raw.stampPrev),
     isManual: Boolean(raw.isManual),
     createdAt: toDate(raw.createdAt),
     updatedAt: toDate(raw.updatedAt),
@@ -232,10 +279,7 @@ export async function saveManualPreviousReadings(opts: {
   user: UserData;
   authtoken: string;
 }) {
-  const access = await ensureAdminAccess(opts.user, opts.authtoken);
-  if (!access.ok) {
-    throw new Error(access.message);
-  }
+  await requireAdminAccess(opts.user, opts.authtoken);
 
   const done = startFirestoreMetric({
     source: "server",
@@ -250,12 +294,7 @@ export async function saveManualPreviousReadings(opts: {
   const payload: ManualPreviousReadingsDoc = {
     date: opts.todayDateYmd,
     photoPrev: nn(opts.photoPrev),
-    stampPrev: {
-      50: nn(opts.stampPrev[50] ?? 0),
-      100: nn(opts.stampPrev[100] ?? 0),
-      500: nn(opts.stampPrev[500] ?? 0),
-      1000: nn(opts.stampPrev[1000] ?? 0),
-    },
+    stampPrev: normalizeDenominationRecord(opts.stampPrev),
     isManual: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -277,10 +316,7 @@ export async function clearManualPreviousReadings(opts: {
   user: UserData;
   authtoken: string;
 }) {
-  const access = await ensureAdminAccess(opts.user, opts.authtoken);
-  if (!access.ok) {
-    throw new Error(access.message);
-  }
+  await requireAdminAccess(opts.user, opts.authtoken);
 
   const done = startFirestoreMetric({
     source: "server",
@@ -442,10 +478,7 @@ export async function savePhotocopyReading(opts: {
   auditTimestamp: string;
   auditKind: "saved" | "updated";
 }) {
-  const access = await ensureAdminAccess(opts.user, opts.authtoken);
-  if (!access.ok) {
-    throw new Error(access.message);
-  }
+  await requireAdminAccess(opts.user, opts.authtoken);
 
   const done = startFirestoreMetric({
     source: "server",
@@ -567,10 +600,7 @@ export async function saveStampReading(opts: {
   auditTimestamp: string;
   auditKind: "saved" | "updated";
 }) {
-  const access = await ensureAdminAccess(opts.user, opts.authtoken);
-  if (!access.ok) {
-    throw new Error(access.message);
-  }
+  await requireAdminAccess(opts.user, opts.authtoken);
 
   const done = startFirestoreMetric({
     source: "server",
@@ -578,36 +608,7 @@ export async function saveStampReading(opts: {
     collection: "stampReadings",
   });
 
-  const parts: Record<Denomination, StampPartDoc> = {
-    50: {
-      todayReading: 0,
-      prevReading: 0,
-      stockAdded: 0,
-      difference: 0,
-      amount: 0,
-    },
-    100: {
-      todayReading: 0,
-      prevReading: 0,
-      stockAdded: 0,
-      difference: 0,
-      amount: 0,
-    },
-    500: {
-      todayReading: 0,
-      prevReading: 0,
-      stockAdded: 0,
-      difference: 0,
-      amount: 0,
-    },
-    1000: {
-      todayReading: 0,
-      prevReading: 0,
-      stockAdded: 0,
-      difference: 0,
-      amount: 0,
-    },
-  };
+  const parts = createEmptyStampParts();
 
   for (const d of DENOMS) {
     const prevReading = nn(opts.prevPartsReadings[d] ?? 0);

@@ -1,14 +1,14 @@
 # Route Cost Report
 
-Generated at: 2026-04-22T12:51:08.810Z
+Generated at: 2026-05-09T03:41:35.810Z
 
 | Route | Client JS (KB) | Unique Client JS (KB) | Server JS (KB) | Total (KB) | Client Chunks |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| /daily-accounts/[accountDate] | 872.12 | 69.88 | 1.39 | 873.51 | 14 |
-| /daily-accounts | 831.75 | 29.51 | 1.29 | 833.04 | 13 |
-| / | 793.54 | 22.34 | 1.23 | 794.77 | 12 |
-| /stamp-register | 778.63 | 7.43 | 1.30 | 779.93 | 12 |
-| /photocopy-register | 778.58 | 7.38 | 1.30 | 779.88 | 12 |
+| /daily-accounts/[accountDate] | 870.11 | 67.32 | 1.39 | 871.50 | 14 |
+| /daily-accounts | 832.17 | 29.38 | 1.34 | 833.51 | 13 |
+| / | 795.13 | 23.37 | 1.26 | 796.39 | 12 |
+| /photocopy-register | 778.72 | 6.96 | 1.34 | 780.06 | 12 |
+| /stamp-register | 778.44 | 6.68 | 1.33 | 779.77 | 12 |
 
 ## Notes
 
