@@ -1388,9 +1388,16 @@ export default function DailyReadingsDialog({
             >
               |
             </span>
-            {isReadOnlyView
-              ? tReadings("PhotocopyStampReadings")
-              : tReadings("EnterReadings")}
+            {isReadOnlyView ? (
+              <>
+                <span className="hidden md:flex">
+                  {tReadings("PhotocopyStampReadings")}{" "}
+                </span>
+                <span className="md:hidden">{tReadings("SD&FSReadings")} </span>
+              </>
+            ) : (
+              tReadings("EnterReadings")
+            )}
           </DrawerTitle>
           <Button
             type="button"

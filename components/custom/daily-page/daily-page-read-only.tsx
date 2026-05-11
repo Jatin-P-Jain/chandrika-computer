@@ -368,7 +368,7 @@ export default function DailyPageReadOnly({
             />
           </div>
 
-          <div className="flex gap-4 w-full justify-center items-center mt-4 flex-col">
+          <div className="flex w-full justify-center items-center flex-col">
             <div className="flex flex-col md:flex-row justify-center w-full gap-3">
               <div className="flex flex-col items-center justify-center w-full lg:pl-42">
                 <span
@@ -398,7 +398,7 @@ export default function DailyPageReadOnly({
                 {dailyItemData.status === "draft" && (
                   <Badge
                     variant="outline"
-                    className="text-[11px] border-amber-400 text-amber-700 bg-amber-50"
+                    className="text-xs border-amber-400 text-amber-700 bg-amber-50"
                   >
                     {tDailyAccount("Draft")} —{" "}
                   </Badge>

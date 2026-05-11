@@ -100,7 +100,7 @@ export default function PhotocopyStep({
         </div>
 
         <div className="space-y-1 flex items-center justify-between gap-2">
-          <div className={clsx("text-xs text-muted-foreground", textSmCls)}>
+          <div className={clsx("text-sm text-muted-foreground", textSmCls)}>
             {tReadings("Today")} :
           </div>
           <Controller
@@ -123,7 +123,7 @@ export default function PhotocopyStep({
 
         <div
           className={clsx(
-            "text-xs text-muted-foreground flex justify-between items-center pr-3",
+            "text-sm text-muted-foreground flex justify-between items-center pr-3",
             textBodyCls,
           )}
         >
