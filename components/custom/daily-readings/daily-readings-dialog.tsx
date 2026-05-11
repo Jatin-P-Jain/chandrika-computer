@@ -29,10 +29,7 @@ import type {
   StampReadingDoc,
 } from "@/types/readings";
 import {
-  clearManualPreviousReadings,
-  getManualPreviousReadings,
   getReadings,
-  saveManualPreviousReadings,
   savePhotocopyReading,
   saveStampReading,
 } from "@/app/daily-accounts/readings-actions";
@@ -567,36 +564,11 @@ export default function DailyReadingsDialog({
     [persistPreviousBaseline],
   );
 
-  const getAuthForPrevReadings = React.useCallback(async () => {
-    if (authState.status !== "ready") {
-      throw new Error("Authentication required");
-    }
-
-    const token = await authState.currentUser.getIdToken();
-    return { token, user: authState.clientUser };
-  }, [authState]);
-
-  const clearManualPreviousReadingsInDb = React.useCallback(async () => {
-    try {
-      const { token, user } = await getAuthForPrevReadings();
-      await clearManualPreviousReadings({
-        todayDateYmd,
-        user,
-        authtoken: token,
-      });
-    } catch {
-      // Best-effort cleanup; not critical for the UI flow.
-    }
-  }, [getAuthForPrevReadings, todayDateYmd]);
-
   const applyManualPreviousReadings = React.useCallback(
-    async (
-      manual: {
-        photoPrev: number;
-        stampPrev: Record<Denomination, number>;
-      },
-      persistInDb = true,
-    ) => {
+    (manual: {
+      photoPrev: number;
+      stampPrev: Record<Denomination, number>;
+    }) => {
       const nextPhotoPrev = clamp0(manual.photoPrev);
       const nextStampPrev = normalizeDenomRecord(manual.stampPrev);
 
@@ -615,44 +587,9 @@ export default function DailyReadingsDialog({
         resolvedLookbackDays: null,
       };
       persistPreviousBaseline(nextBaseline);
-
-      if (!persistInDb) {
-        return true;
-      }
-
-      try {
-        const { token, user } = await getAuthForPrevReadings();
-        await saveManualPreviousReadings({
-          todayDateYmd,
-          photoPrev: nextPhotoPrev,
-          stampPrev: nextStampPrev,
-          user,
-          authtoken: token,
-        });
-        return true;
-      } catch (e) {
-        toast.error(tReadings("FailedToSaveManualPreviousReadings"), {
-          description: e instanceof Error ? e.message : "Unknown error",
-        });
-        return false;
-      }
     },
-    [getAuthForPrevReadings, persistPreviousBaseline, tReadings, todayDateYmd],
+    [persistPreviousBaseline],
   );
-
-  const loadManualPreviousReadingsFromDb = React.useCallback(async () => {
-    try {
-      const { token, user } = await getAuthForPrevReadings();
-      const res = await getManualPreviousReadings({
-        todayDateYmd,
-        user,
-        authtoken: token,
-      });
-      return res.data;
-    } catch {
-      return null;
-    }
-  }, [getAuthForPrevReadings, todayDateYmd]);
 
   const fetchPreviousByLookback = React.useCallback(
     async (days: number) => {
@@ -683,7 +620,6 @@ export default function DailyReadingsDialog({
           resolvedLookbackDays: normalizedDays,
         };
         persistPreviousBaseline(nextBaseline);
-        await clearManualPreviousReadingsInDb();
         return true;
       } catch (e) {
         toast.error(tReadings("FailedToLoadPreviousReadings"), {
@@ -694,13 +630,7 @@ export default function DailyReadingsDialog({
         setLoadingPrev(false);
       }
     },
-    [
-      applyPreviousReadings,
-      clearManualPreviousReadingsInDb,
-      persistPreviousBaseline,
-      tReadings,
-      todayDateYmd,
-    ],
+    [applyPreviousReadings, persistPreviousBaseline, tReadings, todayDateYmd],
   );
 
   // Resolve previous readings when dialog opens.
@@ -715,8 +645,6 @@ export default function DailyReadingsDialog({
     prevReadingsInitKeyRef.current = initKey;
 
     (async () => {
-      const manualPreviousFromDb = await loadManualPreviousReadingsFromDb();
-
       setInitializingPrev(true);
       setMissingPreviousReadings(false);
       setShowPreviousReadingsResolver(false);
@@ -739,18 +667,6 @@ export default function DailyReadingsDialog({
         return;
       }
 
-      if (manualPreviousFromDb?.isManual) {
-        await applyManualPreviousReadings(
-          {
-            photoPrev: manualPreviousFromDb.photoPrev,
-            stampPrev: manualPreviousFromDb.stampPrev,
-          },
-          false,
-        );
-        setInitializingPrev(false);
-        return;
-      }
-
       setManualPhotoPrev(0);
       setManualStampPrev(EMPTY_DENOM_RECORD);
 
@@ -766,7 +682,6 @@ export default function DailyReadingsDialog({
     applyManualPreviousReadings,
     fetchPreviousByLookback,
     localPreviousBaselineDraft,
-    loadManualPreviousReadingsFromDb,
     readings?.photocopy?.amount,
     readings?.photocopy?.isRounded,
     readings?.photocopy?.roundedAmount,
@@ -1048,7 +963,6 @@ export default function DailyReadingsDialog({
         fullyDone: true,
       };
       persistReadingsFlags(nextFlags);
-      await clearManualPreviousReadingsInDb();
 
       closeDialog();
     } catch (e) {
@@ -1382,11 +1296,10 @@ export default function DailyReadingsDialog({
         }))
       }
       onUseManualReadings={async () => {
-        const saved = await applyManualPreviousReadings({
+        applyManualPreviousReadings({
           photoPrev: manualPhotoPrev,
           stampPrev: manualStampPrev,
         });
-        if (!saved) return;
 
         setShowPreviousReadingsResolver(false);
         setResolverOpenedFromEdit(false);

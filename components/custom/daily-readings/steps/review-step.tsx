@@ -100,7 +100,12 @@ export default function ReviewStep({
             )}
           >
             {tReadings("Yesterday")}:{" "}
-            <span className={clsx("text-base text-foreground tabular-nums", textBodyCls)}>
+            <span
+              className={clsx(
+                "text-base text-foreground tabular-nums",
+                textBodyCls,
+              )}
+            >
               {photoPrev}
             </span>
           </div>
@@ -161,7 +166,12 @@ export default function ReviewStep({
               ? tReadings("RoundedAmount")
               : tReadings("TotalAmount")}{" "}
             (FS):{" "}
-            <span className={clsx("text-primary tabular-nums font-semibold text-lg", textBodyCls)}>
+            <span
+              className={clsx(
+                "text-primary tabular-nums font-semibold text-lg",
+                textBodyCls,
+              )}
+            >
               {formatINR(photoAmount)}
             </span>
           </div>
@@ -191,8 +201,16 @@ export default function ReviewStep({
 
           <div className="grid md:grid-cols-4 grid-cols-1 gap-1">
             {denoms.map((d) => (
-              <div key={d} className="rounded-md border p-2 gap-1 flex flex-col">
-                <div className={clsx("text-base font-medium text-primary", textBodyCls)}>
+              <div
+                key={d}
+                className="rounded-md border p-2 gap-1 flex flex-col"
+              >
+                <div
+                  className={clsx(
+                    "text-base font-medium text-primary",
+                    textBodyCls,
+                  )}
+                >
                   ₹ {d}
                 </div>
 
@@ -203,7 +221,9 @@ export default function ReviewStep({
                   )}
                 >
                   {tReadings("Yesterday")}:{" "}
-                  <span className="text-base text-foreground tabular-nums">{stampPrev[d]}</span>
+                  <span className="text-base text-foreground tabular-nums">
+                    {stampPrev[d]}
+                  </span>
                 </div>
 
                 <div
@@ -239,7 +259,9 @@ export default function ReviewStep({
                   )}
                 >
                   {tReadings("StampsSold")}:{" "}
-                  <span className="text-base text-foreground tabular-nums font-semibold">{stampSold[d]}</span>
+                  <span className="text-base text-foreground tabular-nums font-semibold">
+                    {stampSold[d]}
+                  </span>
                 </div>
 
                 <div
@@ -264,7 +286,12 @@ export default function ReviewStep({
             )}
           >
             {tReadings("TotalStampDuty")} (SD):{" "}
-            <span className={clsx("text-lg text-primary tabular-nums font-semibold", textPageHeadCls)}>
+            <span
+              className={clsx(
+                "text-lg text-primary tabular-nums font-semibold",
+                textPageHeadCls,
+              )}
+            >
               {formatINR(stampTotal)}
             </span>
           </div>
@@ -275,8 +302,8 @@ export default function ReviewStep({
         </div>
       </div>
 
-      {readOnly ? (
-        // Read-only mode: Show only OK button
+      {readOnly && readingsFound && !hasEdits ? (
+        // Read-only mode without edits: show only OK button
         <div className="flex justify-end gap-2">
           <Button onClick={onClose} className="gap-1">
             <span className={textSmCls}>{tCommon("Ok")} 👍🏻</span>
@@ -288,7 +315,7 @@ export default function ReviewStep({
             variant="secondary"
             onClick={onBack}
             disabled={saving}
-            className="gap-0 active:scale-95 transition-transform text-base" 
+            className="gap-0 active:scale-95 transition-transform text-base"
           >
             <ChevronLeft className="size-4" /> {tCommon("Back")}
           </Button>
@@ -305,7 +332,9 @@ export default function ReviewStep({
               </span>
             ) : (
               <>
-                <span className={textBodyCls}>{tCommon("ConfirmAndSave")}</span>
+                <span className={textBodyCls}>
+                  {hasEdits ? tCommon("Update") : tCommon("ConfirmAndSave")}
+                </span>
                 <SaveIcon className="size-4" />
               </>
             )}
