@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
 import { useState } from "react";
+import { SortControl } from "../filter-section/sort-control";
 
 const FiltersSection = dynamic(
   () =>
@@ -55,6 +56,7 @@ export default function DailyAccountListHeader() {
       </Button>
       <div className="lg:flex hidden ml-auto flex-1 items-center gap-4">
         <FiltersSection />
+        <SortControl className="w-auto" />
       </div>
     </div>
   );

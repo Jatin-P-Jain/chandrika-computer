@@ -13,7 +13,7 @@ export function Navbar() {
       <div className="mx-auto flex h-15 items-center justify-between px-4 sm:px-6 lg:px-8 text-primary md:h-18">
         {/* Left: logo + name */}
         <SafeLink href="/" className="flex items-center gap-1 md:gap-3 mr-2">
-          <div className="relative items-center h-15 shrink-0 w-28 flex">
+          <div className="relative items-center h-15 shrink-0 w-26 flex">
             <Image
               src="/images/logo.png"
               alt="Chandrika Computer Logo"

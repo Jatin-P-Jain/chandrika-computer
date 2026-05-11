@@ -185,9 +185,9 @@ export function MoreFiltersPopover({
           variant="outline"
           size="sm"
           className={clsx(
-            "gap-1 transition-all duration-300 hover:shadow-md hover:scale-102 ",
+            "gap-1 transition-all duration-300 hover:shadow-md md:hover:scale-102 w-full md:w-auto justify-center md:justify-between",
             {
-              "text-primary border-primary scale-102 shadow-md":
+              "text-primary border-primary md:scale-102 shadow-md":
                 open || totalSelected > 0,
             },
             textSmCls,
@@ -209,7 +209,7 @@ export function MoreFiltersPopover({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" sideOffset={5}>
+      <PopoverContent className=" max-w-sm md:w-80 p-0" align="start">
         <div className="max-h-96 overflow-auto">
           <FilterSection
             title={tFilters("CreatedBy")}
