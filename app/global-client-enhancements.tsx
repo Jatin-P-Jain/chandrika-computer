@@ -32,7 +32,7 @@ export function GlobalClientEnhancements() {
     <>
       <ServiceWorkerRegister />
       <NetworkBanner />
-      <NextTopLoader color="#065884" height={3} showSpinner={false} />
+      <NextTopLoader color="#065884" height={4} showSpinner={false} />
       <DateTimeDisplay />
       <Toaster
         closeButton

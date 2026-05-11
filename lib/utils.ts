@@ -7,8 +7,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const DAILY_ACCOUNTS_LIST_PAGE_SIZE =
-  Number(process.env.DAILY_ACCOUNTS_LIST_PAGE_SIZE) || 10;
+const parsePageSize = (value: string | undefined, fallback = 10) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+export const DAILY_ACCOUNTS_LIST_PAGE_SIZE = parsePageSize(
+  process.env.NEXT_PUBLIC_DAILY_ACCOUNTS_LIST_PAGE_SIZE
+);
 
 export const getDeviceMetadata = () => {
   const ua = navigator.userAgent;

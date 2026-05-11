@@ -79,14 +79,14 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
     <Card
       onClick={handleNavigate}
       className={clsx(
-        "cursor-pointer w-full flex p-1 lg:p-0 shadow-sm border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
+        "cursor-pointer w-full flex p-1 shadow-sm border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
         isNavigating && "pointer-events-none opacity-85",
         isDraft && "bg-amber-50/60",
       )}
     >
-      <CardContent className="flex items-start w-full p-2 flex-col">
-        <div className="flex flex-col gap-2 p-2 relative w-full">
-          <div className="flex items-center gap-2 justify-start w-full">
+      <CardContent className="flex items-start w-full p-1 flex-col">
+        <div className="flex flex-col gap-2 p-1 relative w-full">
+          <div className="flex items-center gap-1 justify-start w-full">
             <span
               className={`flex w-full justify-start gap-2  items-center font-semibold text-primary ${textHeadingCls}`}
             >
@@ -126,7 +126,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
           ) : null}
           {/* Status badge — source of truth for account state */}
 
-          <div className="flex flex-col w-full justify-between items-start gap-2">
+          <div className="flex flex-col w-full justify-between items-start">
             {/* Main content: financial summary for saved/edited, draft info otherwise */}
             {isPersistedAccount ? (
               <div className="flex flex-col gap-0 w-full pl-2">
@@ -149,7 +149,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                     {tDailyAccount("TotalExpenses")}:
                   </span>
                   <span
-                    className={`font-medium! tabular-nums text-red-600 ${textHeadingCls}`}
+                    className={`font-medium! tabular-nums text-red-700 ${textHeadingCls}`}
                   >
                     {formatINR(Number(totalSpends || 0))}
                   </span>
@@ -162,19 +162,19 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                     {tDailyAccount("TotalIncome")}:
                   </span>
                   <span
-                    className={`font-bold tabular-nums text-green-600 ${textHeadingCls}`}
+                    className={`font-semibold tabular-nums text-primary  ${textHeadingCls}`}
                   >
                     {formatINR(Number(totalEarnings || 0))}
                   </span>
                 </div>
-                <div className="flex items-center justify-between gap-4 border-t mt-1 pt-1">
+                <div className="flex items-center justify-between border mt-1 py-1 rounded-md px-2">
                   <span
                     className={`text-sm font-semibold text-muted-foreground ${textBodyCls}`}
                   >
-                    {tDailyAccount("NetIncome")}:
+                    {tDailyAccount("Income")}:
                   </span>
                   <span
-                    className={`font-bold tabular-nums ${Number(earnings?.netIncome || 0) >= 0 ? "text-primary" : "text-red-600"} ${textHeadingCls}`}
+                    className={`font-bold tabular-nums ${Number(earnings?.netIncome || 0) >= 0 ? " text-green-600" : "text-red-600"} ${textHeadingCls}`}
                   >
                     {formatINR(Number(earnings?.netIncome || 0))}
                   </span>

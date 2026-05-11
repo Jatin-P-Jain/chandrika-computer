@@ -3,6 +3,7 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
+  PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { usePaginatedFirestore } from "@/hooks/usePaginatedFirestore";
@@ -194,7 +195,7 @@ export default function DailyAccountsList({
       </p>
 
       <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-140 overflow-auto no-scrollbar pb-1">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-[calc(100vh-220px)] overflow-auto no-scrollbar rounded-md pb-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 max-h-[calc(100vh-220px)] overflow-auto no-scrollbar rounded-md pb-1">
           {data.map((dailyAccount: DailyAccount, index: number) => (
             <DailyAccountCard
               key={dailyAccount.id || index}
@@ -211,6 +212,14 @@ export default function DailyAccountsList({
                 <PaginationItem>
                   <PaginationPrevious
                     onClick={() => handlePageChange(currentPage - 1)}
+                  />
+                </PaginationItem>
+              )}
+
+              {currentPage < totalPages && (
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => handlePageChange(currentPage + 1)}
                   />
                 </PaginationItem>
               )}
