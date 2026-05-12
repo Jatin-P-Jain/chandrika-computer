@@ -38,6 +38,7 @@ function ReadOnlyListSection({
   accentClassName,
   textPageHeadCls,
   textBodyCls,
+  isDailySpends = false,
 }: {
   title: string;
   items: LineItem[];
@@ -46,6 +47,7 @@ function ReadOnlyListSection({
   accentClassName?: string;
   textPageHeadCls: string;
   textBodyCls: string;
+  isDailySpends?: boolean;
 }) {
   return (
     <Card className="p-3 gap-2 border shadow-sm">
@@ -75,7 +77,13 @@ function ReadOnlyListSection({
               className="flex justify-between gap-3"
             >
               <div className="flex flex-col items-start text-left">
-                <span className={clsx("text-sm", textBodyCls)}>
+                <span
+                  className={clsx(
+                    "text-sm",
+                    isDailySpends ? "text-base! font-medium" : "",
+                    textBodyCls,
+                  )}
+                >
                   {item.label || "-"}
                 </span>
                 <div className="flex flex-wrap gap-1 justify-end">
@@ -298,8 +306,8 @@ export default function DailyPageReadOnly({
           <span className="text-orange-600"> श्री गणेशाय नमः</span>
         </div>
 
-        <div className="flex flex-col flex-1">
-          <div className="grow min-h-0 lg:grid lg:grid-cols-4 gap-3 md:gap-4 flex flex-col w-full overflow-auto no-scrollbar pb-3 md:pb-0">
+        <div className="flex flex-col flex-1 gap-2">
+          <div className="grow min-h-0 lg:grid lg:grid-cols-4 gap-2 md:gap-4 flex flex-col w-full overflow-auto no-scrollbar md:pb-0">
             <ReadOnlyListSection
               title={tDailyAccount("FixedExpenses")}
               items={[
@@ -344,6 +352,7 @@ export default function DailyPageReadOnly({
             />
 
             <ReadOnlyListSection
+              isDailySpends={true}
               title={tDailyAccount("DailySpends")}
               items={(baseData.dailySpends ?? []) as LineItem[]}
               totalLabel={tDailyAccount("TotalDailySpends")}
@@ -353,7 +362,7 @@ export default function DailyPageReadOnly({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 md:gap-36 gap-4 mt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 md:gap-36 gap-2">
             <ReadOnlyAccountSection
               title={tCreditsDebits("Credits")}
               items={baseData.creditItems ?? []}
@@ -368,7 +377,7 @@ export default function DailyPageReadOnly({
             />
           </div>
 
-          <div className="flex w-full justify-center items-center flex-col">
+          <div className="flex w-full justify-center items-center flex-col mt-4">
             <div className="flex flex-col md:flex-row justify-center w-full gap-3">
               <div className="flex flex-col items-center justify-center w-full lg:pl-42">
                 <span

@@ -179,21 +179,28 @@ export function PhotocopyReadingsResponsive({
             key={r.date}
             className={`rounded-md border p-2 flex flex-col gap-1 ${textBodyCls}`}
           >
-            <div className="flex items-center justify-between gap-2">
-              <CalendarFold className="size-8 text-primary" />
-              <DateDisplay
-                value={r.date}
-                type="docId"
-                className={`w-full text-primary font-semibold flex items-center gap-1 ${textPageHeadCls}`}
-              />
+            <div className="flex items-center gap-2 w-full">
               <div
-                className={`font-medium w-full text-right gap-2 items-center flex justify-end ${textBodyCls}`}
+                className={` font-semibold flex flex-1 min-w-0 items-center gap-1 ${textPageHeadCls}`}
               >
-                {tCommon("Total")}:
+                <CalendarFold className="size-5 text-primary" />
+                <DateDisplay
+                  value={r.date}
+                  type="docId"
+                  className={`text-base flex-1 min-w-0 text-primary font-semibold flex items-center gap-1 ${textPageHeadCls}`}
+                />
+              </div>
+              <div
+                className={`flex shrink-0 text-sm text-right whitespace-nowrap gap-1 items-center ${textBodyCls}`}
+              >
+                {tCommon("Total")}:{" "}
                 <span
-                  className={`text-primary font-semibold ${textHeadingCls}`}
+                  className={clsx(
+                    "font-semibold text-primary text-base",
+                    textHeadingCls,
+                  )}
                 >
-                  {formatINR(r.amount ?? 0)}
+                  {formatINR(r.amount)}
                 </span>
               </div>
             </div>
@@ -201,13 +208,13 @@ export function PhotocopyReadingsResponsive({
               {showReadings && (
                 <>
                   <div
-                    className={`flex justify-between w-full tabular-nums text-muted-foreground ${textBodyCls}`}
+                    className={`flex justify-between w-full tabular-nums text-muted-foreground text-sm ${textBodyCls}`}
                   >
                     <span>{tReadings("YesterdayReading")}:</span>{" "}
                     {r.prevReading ?? 0}
                   </div>
                   <div
-                    className={`flex justify-between w-full tabular-nums text-muted-foreground ${textBodyCls}`}
+                    className={`flex justify-between w-full tabular-nums text-muted-foreground text-sm ${textBodyCls}`}
                   >
                     <span>{tReadings("TodayReading")}:</span>{" "}
                     {r.todayReading ?? 0}
@@ -215,10 +222,24 @@ export function PhotocopyReadingsResponsive({
                 </>
               )}
               <div
-                className={`flex justify-between w-full tabular-nums font-medium  ${textBodyCls}`}
+                className={`flex justify-between w-full tabular-nums text-sm  ${textBodyCls}`}
               >
                 {tReadings("PhotocopyCount")}:
-                <span className={clsx("font-semibold", textPageHeadCls)}>{r.difference ?? 0}</span>
+                <span
+                  className={clsx("font-semibold text-base", textPageHeadCls)}
+                >
+                  {r.difference ?? 0}
+                </span>
+              </div>
+              <div
+                className={`flex justify-between w-full text-sm  ${textBodyCls}`}
+              >
+                {tReadings("ActualCalculatedAmount")}:
+                <span
+                  className={clsx("font-semibold text-base", textPageHeadCls)}
+                >
+                  {formatINR(r.actualAmount)}
+                </span>
               </div>
             </div>
           </div>

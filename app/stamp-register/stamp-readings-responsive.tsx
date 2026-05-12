@@ -257,17 +257,23 @@ export function StampReadingsResponsive({
             key={r.date}
             className="rounded-md border p-2 flex flex-col gap-2 border-primary/50 shadow-md"
           >
-            <div className="flex items-center justify-between gap-2">
-              <CalendarFold className="size-8 text-primary" />
-              <DateDisplay
-                value={r.date}
-                type="docId"
-                className={`w-full text-primary font-semibold flex items-center gap-1 ${textPageHeadCls}`}
-              />
-              <div className={`font-medium w-full text-right ${textBodyCls}`}>
+            <div className="flex items-center gap-2 w-full">
+              <div
+                className={` font-semibold flex flex-1 min-w-0 items-center gap-1 ${textPageHeadCls}`}
+              >
+                <CalendarFold className="size-5 text-primary" />
+                <DateDisplay
+                  value={r.date}
+                  type="docId"
+                  className={`text-base flex-1 min-w-0 text-primary font-semibold flex items-center gap-1 ${textPageHeadCls}`}
+                />
+              </div>
+              <div
+                className={`flex shrink-0 text-sm text-right whitespace-nowrap gap-1 items-center ${textBodyCls}`}
+              >
                 {tCommon("Total")}:{" "}
                 <span
-                  className={clsx("font-semibold text-primary", textHeadingCls)}
+                  className={clsx("font-semibold text-primary text-base", textHeadingCls)}
                 >
                   {formatINR(r.totalAmount)}
                 </span>
@@ -277,7 +283,7 @@ export function StampReadingsResponsive({
             <div className="grid grid-cols-2 gap-2 text-sm">
               {DENOMS.map((d) => (
                 <div key={d} className="rounded-md bg-muted p-1 shadow-sm">
-                  <div className={`font-semibold ${textBodyCls}`}>₹{d}</div>
+                  <div className={`font-semibold text-sm ${textBodyCls}`}>₹{d}</div>
                   {showReadings && (
                     <>
                       <div
@@ -302,18 +308,18 @@ export function StampReadingsResponsive({
                     className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
                   >
                     {tReadings("StampCount")}:
-                    <span className={clsx("font-semibold", textPageHeadCls)}>
+                    <span className={clsx("font-medium", textPageHeadCls)}>
                       {r.parts[d]?.difference ?? 0}
                     </span>
                   </div>
 
                   <div
-                    className={`font-medium justify-between flex items-center ${textBodyCls}`}
+                    className={`justify-between flex items-center ${textBodyCls}`}
                   >
                     {tReadings("StampAmount")}:
                     <span
                       className={clsx(
-                        "font-semibold text-primary",
+                        "font-semibold text-primary text-sm",
                         textPageHeadCls,
                       )}
                     >
@@ -322,7 +328,7 @@ export function StampReadingsResponsive({
                   </div>
                   {(r.parts[d]?.stockAdded ?? 0) > 0 && (
                     <div
-                      className={`text-green-700 justify-between flex items-center font-semibold ${textBodyCls}`}
+                      className={`text-green-700 justify-between flex items-center font-medium ${textBodyCls}`}
                     >
                       <span className="text-sm">
                         {tReadings("StockAdded")}:

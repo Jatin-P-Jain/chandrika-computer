@@ -71,6 +71,7 @@ export default function ReviewStep({
   onClose,
 }: Props) {
   const hasAnyStockAdded = denoms.some((denom) => stampStockAdded[denom] > 0);
+  const showValuesUsedNote = !readOnly || hasEdits || !readingsFound;
 
   return (
     <div className="space-y-4 w-full">
@@ -168,7 +169,7 @@ export default function ReviewStep({
             (FS):{" "}
             <span
               className={clsx(
-                "text-primary tabular-nums font-semibold text-lg",
+                "text-primary tabular-nums font-semibold text-base",
                 textBodyCls,
               )}
             >
@@ -176,9 +177,11 @@ export default function ReviewStep({
             </span>
           </div>
 
-          <span className={clsx("text-xs text-amber-700 italic", textXsCls)}>
-            {tReadings("NoteValuesUsedDirectly")}
-          </span>
+          {showValuesUsedNote ? (
+            <span className={clsx("text-xs text-amber-700 italic", textXsCls)}>
+              {tReadings("NoteValuesUsedDirectly")}
+            </span>
+          ) : null}
         </div>
 
         <div className="rounded-md border p-3 text-sm flex flex-col gap-2">
@@ -271,7 +274,7 @@ export default function ReviewStep({
                   )}
                 >
                   {tCommon("Amount")}:{" "}
-                  <span className="text-lg tabular-nums font-semibold">
+                  <span className="text-base tabular-nums font-semibold">
                     {formatINR(stampAmounts[d])}
                   </span>
                 </div>
@@ -296,20 +299,23 @@ export default function ReviewStep({
             </span>
           </div>
 
-          <span className={clsx("text-xs text-amber-700 italic", textXsCls)}>
-            {tReadings("NoteValuesUsedDirectly")}
-          </span>
+          {showValuesUsedNote ? (
+            <span className={clsx("text-xs text-amber-700 italic", textXsCls)}>
+              {tReadings("NoteValuesUsedDirectly")}
+            </span>
+          ) : null}
         </div>
       </div>
 
-      {readOnly && readingsFound && !hasEdits ? (
-        // Read-only mode without edits: show only OK button
-        <div className="flex justify-end gap-2">
-          <Button onClick={onClose} className="gap-1">
-            <span className={textSmCls}>{tCommon("Ok")} 👍🏻</span>
-          </Button>
-        </div>
-      ) : !readingsFound || hasEdits ? (
+      {readOnly &&
+      readingsFound &&
+      !hasEdits ? // Read-only mode without edits: show only OK button
+      // <div className="flex justify-end gap-2">
+      //   <Button onClick={onClose} className="gap-1">
+      //     <span className={textSmCls}>{tCommon("Ok")} 👍🏻</span>
+      //   </Button>
+      // </div>
+      null : !readingsFound || hasEdits ? (
         <div className="flex justify-end gap-2">
           <Button
             variant="secondary"
@@ -340,13 +346,12 @@ export default function ReviewStep({
             )}
           </Button>
         </div>
-      ) : (
-        <div className="flex justify-end gap-2">
-          <Button onClick={onClose} className="gap-1 text-base">
-            <span className={textBodyCls}>{tCommon("Ok")} 👍🏻</span>
-          </Button>
-        </div>
-      )}
+      ) : // <div className="flex justify-end gap-2">
+      //   <Button onClick={onClose} className="gap-1 text-base">
+      //     <span className={textBodyCls}>{tCommon("Ok")} 👍🏻</span>
+      //   </Button>
+      // </div>
+      null}
     </div>
   );
 }

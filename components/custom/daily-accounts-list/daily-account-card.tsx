@@ -129,7 +129,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
           <div className="flex flex-col w-full justify-between items-start">
             {/* Main content: financial summary for saved/edited, draft info otherwise */}
             {isPersistedAccount ? (
-              <div className="flex flex-col gap-0 w-full pl-2">
+              <div className="flex flex-col w-full px-2">
                 <div className="flex items-center justify-between gap-4">
                   <span
                     className={`text-sm text-muted-foreground ${textBodyCls}`}
@@ -181,7 +181,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
                 </div>
               </div>
             ) : (
-              <div className="text-xs italic flex flex-col gap-2 font-medium w-full">
+              <div className="text-xs italic flex flex-col gap-2 font-medium w-full px-2">
                 {hasNotesTaken && (
                   <div className="flex items-start gap-1 text-green-800 font-normal">
                     <BookOpenCheck className="w-4 h-4" />
