@@ -17,6 +17,7 @@ import { Loader2, PencilIcon } from "lucide-react";
 import type { NoteItem } from "@/types/daily-notes";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
+import { Separator } from "@/components/ui/separator";
 
 const DailyReadingsDialog = dynamic(
   () => import("../daily-readings/daily-readings-dialog"),
@@ -167,16 +168,19 @@ function ReadOnlyAccountSection({
               key={`${item.accountId ?? "acc"}-${index}`}
               className="flex justify-between items-start gap-3"
             >
-              <div className="flex flex-col items-start gap-0.5">
+              <div className="flex items-center gap-2">
                 {item.accountName || item.accountId ? (
-                  <Badge
-                    variant="secondary"
-                    className="rounded-md text-[10px] font-semibold px-1.5 py-0"
-                  >
-                    {item.accountName || item.accountId}
-                  </Badge>
+                  <>
+                    <Badge
+                      variant="secondary"
+                      className="rounded-md text-sm font-semibold px-1.5 py-0"
+                    >
+                      {item.accountName || item.accountId}
+                    </Badge>
+                    <div className="w-0.5 h-6 bg-primary" />
+                  </>
                 ) : null}
-                <span className={clsx("text-sm", textBodyCls)}>
+                <span className={clsx("text-sm font-medium", textBodyCls)}>
                   {item.label || "-"}
                 </span>
               </div>
