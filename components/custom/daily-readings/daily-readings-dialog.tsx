@@ -1114,6 +1114,7 @@ export default function DailyReadingsDialog({
           textPageHeadCls={textPageHeadCls}
           textBodyCls={textBodyCls}
           textSmCls={textSmCls}
+          textXsCls={textXsCls}
           tCommon={tCommon}
           tReadings={tReadings}
           photoPrev={photoPrev}
@@ -1234,6 +1235,7 @@ export default function DailyReadingsDialog({
             textPageHeadCls={textPageHeadCls}
             textBodyCls={textBodyCls}
             textSmCls={textSmCls}
+            textXsCls={textXsCls}
             tCommon={tCommon}
             tReadings={tReadings}
             photoPrev={photoPrev}
