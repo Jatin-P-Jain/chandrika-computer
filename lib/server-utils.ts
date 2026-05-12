@@ -455,9 +455,13 @@ export function normalizeCreditDebitAccount(raw: unknown): CreditDebitAccount {
     totalCredits: toNumber(getNested(r, "totalCredits"), 0),
     totalDebits: toNumber(getNested(r, "totalDebits"), 0),
     createdBy:
-      getNested(r, "createdBy") == null ? null : toUser(getNested(r, "createdBy")),
+      getNested(r, "createdBy") == null
+        ? null
+        : toUser(getNested(r, "createdBy")),
     updatedBy:
-      getNested(r, "updatedBy") == null ? null : toUser(getNested(r, "updatedBy")),
+      getNested(r, "updatedBy") == null
+        ? null
+        : toUser(getNested(r, "updatedBy")),
     created: createdMillis ? new Date(createdMillis).toISOString() : "",
     updated: updatedMillis ? new Date(updatedMillis).toISOString() : "",
   } as CreditDebitAccount;
