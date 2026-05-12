@@ -93,7 +93,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
               <CalendarFold className="w-4 h-4 text" />
               {<DateDisplay value={id} type="docId" />}
             </span>
-            {isDraft ? (
+            {/* {isDraft ? (
               <Badge
                 variant="outline"
                 className="text-[10px] border-amber-400 text-amber-700 bg-amber-50 px-1.5 py-0 h-fit w-fit"
@@ -114,7 +114,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
               >
                 {tDailyAccount("Saved")}
               </Badge>
-            ) : null}
+            ) : null} */}
           </div>
           {createdDateTimeLabel ? (
             <div

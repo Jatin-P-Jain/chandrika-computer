@@ -382,7 +382,7 @@ export default function DailyPageReadOnly({
           </div>
 
           <div className="flex w-full justify-center items-center flex-col mt-4">
-            <div className="flex flex-col md:flex-row justify-center w-full gap-3">
+            <div className="flex flex-col justify-center w-full gap-3">
               <div className="flex flex-col items-center justify-center w-full lg:pl-42">
                 <span
                   className={clsx(

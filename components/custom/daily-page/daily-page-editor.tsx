@@ -394,7 +394,7 @@ export default function DailyPageEditor({
                 ]}
                 orientation="horizontal"
                 type="multiple"
-                className="grow min-h-0 lg:grid lg:grid-cols-4 gap-1 md:gap-0 flex flex-col w-full overflow-auto no-scrollbar pb-3 md:pb-0"
+                className="grow min-h-0 md:grid md:grid-cols-4 gap-2 flex flex-col w-full md:w-fit overflow-auto no-scrollbar pb-3 md:pb-0"
               >
                 <FixedExpensesSection
                   totalBarClassName="p-2"
@@ -407,43 +407,46 @@ export default function DailyPageEditor({
                   onPersist={persistDraft}
                 />
 
-                <span id="section-other-incomes" />
-                <FieldArraySection
-                  value="earnings.otherIncomes"
-                  title={tDailyAccount("Income")}
-                  addButtonText={tDailyAccount("AddIncome")}
-                  totalLabel={tDailyAccount("TotalIncome")}
-                  totalValue={formatINR(totalEarnings)}
-                  totalBarClassName="bg-green-100! text-green-900! p-2"
-                  showNet={true}
-                  netForDay={netForDay}
-                  readOnly={false}
-                  onPersist={persistDraft}
-                />
+                <div id="section-other-incomes">
+                  <FieldArraySection
+                    value="earnings.otherIncomes"
+                    title={tDailyAccount("Income")}
+                    addButtonText={tDailyAccount("AddIncome")}
+                    totalLabel={tDailyAccount("TotalIncome")}
+                    totalValue={formatINR(totalEarnings)}
+                    totalBarClassName="bg-green-100! text-green-900! p-2"
+                    showNet={true}
+                    netForDay={netForDay}
+                    readOnly={false}
+                    onPersist={persistDraft}
+                  />
+                </div>
 
-                <span id="section-business-expenses" />
-                <FieldArraySection
-                  value="businessExpenses"
-                  title={tDailyAccount("BusinessExpense")}
-                  addButtonText={tDailyAccount("AddExpense")}
-                  totalLabel={tDailyAccount("TotalBusinessExpense")}
-                  totalValue={formatINR(totalBusiness)}
-                  totalBarClassName="p-2"
-                  readOnly={false}
-                  onPersist={persistDraft}
-                />
+                <div id="section-business-expenses">
+                  <FieldArraySection
+                    value="businessExpenses"
+                    title={tDailyAccount("BusinessExpense")}
+                    addButtonText={tDailyAccount("AddExpense")}
+                    totalLabel={tDailyAccount("TotalBusinessExpense")}
+                    totalValue={formatINR(totalBusiness)}
+                    totalBarClassName="p-2"
+                    readOnly={false}
+                    onPersist={persistDraft}
+                  />
+                </div>
 
-                <span id="section-daily-spends" />
-                <FieldArraySection
-                  value="dailySpends"
-                  title={tDailyAccount("DailySpends")}
-                  addButtonText={tDailyAccount("AddSpend")}
-                  totalLabel={tDailyAccount("TotalDailySpends")}
-                  totalValue={formatINR(totalSpends)}
-                  totalBarClassName="p-2"
-                  readOnly={false}
-                  onPersist={persistDraft}
-                />
+                <div id="section-daily-spends">
+                  <FieldArraySection
+                    value="dailySpends"
+                    title={tDailyAccount("DailySpends")}
+                    addButtonText={tDailyAccount("AddSpend")}
+                    totalLabel={tDailyAccount("TotalDailySpends")}
+                    totalValue={formatINR(totalSpends)}
+                    totalBarClassName="p-2"
+                    readOnly={false}
+                    onPersist={persistDraft}
+                  />
+                </div>
               </Accordion>
               <div
                 ref={creditDebitAnchorRef}
