@@ -16,9 +16,61 @@ import { revalidatePath, updateTag } from "next/cache";
 import { DailyAccountInput } from "@/lib/daily-accounts/types";
 import { ensureAdminAccess } from "@/lib/daily-accounts/policy";
 import { validateDailyAccountInput } from "@/lib/daily-accounts/validation";
-import { DailyAccount, AuditEvent } from "@/types/daily-account";
+import {
+  DailyAccount,
+  AuditEvent,
+  AccountAttachedLineItem,
+} from "@/types/daily-account";
 import { startFirestoreMetric } from "@/lib/firebase/firestore-metrics";
 import { FieldValue } from "@/firebase/server";
+
+/**
+ * Extract all referenced credit/debit account IDs from credit/debit items
+ */
+function extractReferencedAccountIds(
+  creditItems: AccountAttachedLineItem[] = [],
+  debitItems: AccountAttachedLineItem[] = []
+): Set<string> {
+  const ids = new Set<string>();
+
+  for (const item of creditItems) {
+    if (item?.accountId) ids.add(item.accountId);
+  }
+
+  for (const item of debitItems) {
+    if (item?.accountId) ids.add(item.accountId);
+  }
+
+  return ids;
+}
+
+/**
+ * Sync totals for all referenced credit/debit accounts
+ * (This runs outside the transaction for performance)
+ */
+async function syncReferencedAccountTotals(
+  creditItems: AccountAttachedLineItem[] = [],
+  debitItems: AccountAttachedLineItem[] = []
+) {
+  const accountIds = extractReferencedAccountIds(creditItems, debitItems);
+
+  for (const accountId of accountIds) {
+    try {
+      const { syncCreditDebitAccountTotals } = await import(
+        "../credit-debit-accounts/actions"
+      );
+      // Fire and forget - don't await to avoid blocking the main response
+      syncCreditDebitAccountTotals(accountId, null, "").catch((e) => {
+        console.error(
+          `Failed to sync totals for account ${accountId}:`,
+          e instanceof Error ? e.message : e
+        );
+      });
+    } catch (e) {
+      console.error("Failed to import sync function:", e);
+    }
+  }
+}
 
 function getEmptyDailyAccountInput(): DailyAccountInput {
   return {
@@ -230,6 +282,9 @@ export const createDailyAccountItem = async (
     updateTag(`daily-account:${documentId}`);
     updateTag("daily-account-filters");
 
+    // Sync credit/debit account totals (fire and forget)
+    await syncReferencedAccountTotals(data.creditItems, data.debitItems);
+
     return { docId: documentId };
   } catch (e: unknown) {
     return {
@@ -315,6 +370,9 @@ export const updateDailyAccountItem = async (
     updateTag("daily-account-latest");
     updateTag(`daily-account:${docId}`);
     updateTag("daily-account-filters");
+
+    // Sync credit/debit account totals (fire and forget)
+    await syncReferencedAccountTotals(data.creditItems, data.debitItems);
 
     return { docId };
   } catch (e: unknown) {

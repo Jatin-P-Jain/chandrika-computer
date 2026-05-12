@@ -119,18 +119,32 @@ export const updateAccountUpdaterIndex = onDocumentWritten(
 );
 
 function extractAccountIds(data) {
-  const ids = new Set();
+  const refsByAccount = new Map();
+  const dailyAccountId = data?.id;
+
+  if (!dailyAccountId) return refsByAccount;
+
   if (Array.isArray(data?.creditItems)) {
     data.creditItems.forEach((item) => {
-      if (item.accountId) ids.add(item.accountId);
+      if (!item?.accountId) return;
+
+      const existingTypes = refsByAccount.get(item.accountId) ?? new Set();
+      existingTypes.add("credit");
+      refsByAccount.set(item.accountId, existingTypes);
     });
   }
+
   if (Array.isArray(data?.debitItems)) {
     data.debitItems.forEach((item) => {
-      if (item.accountId) ids.add(item.accountId);
+      if (!item?.accountId) return;
+
+      const existingTypes = refsByAccount.get(item.accountId) ?? new Set();
+      existingTypes.add("debit");
+      refsByAccount.set(item.accountId, existingTypes);
     });
   }
-  return [...ids];
+
+  return refsByAccount;
 }
 
 export const updateAccountMentionsIndex = onDocumentWritten(
@@ -142,34 +156,61 @@ export const updateAccountMentionsIndex = onDocumentWritten(
     const newData = after.exists ? after.data() : null;
     const oldData = before.exists ? before.data() : null;
 
-    const newIds = extractAccountIds(newData);
-    const oldIds = extractAccountIds(oldData);
+    const newRefsByAccount = extractAccountIds(newData);
+    const oldRefsByAccount = extractAccountIds(oldData);
 
-    const added = newIds.filter((id) => !oldIds.includes(id));
-    const removed = oldIds.filter((id) => !newIds.includes(id));
+    const accountIds = new Set([
+      ...newRefsByAccount.keys(),
+      ...oldRefsByAccount.keys(),
+    ]);
 
     const batch = db.batch();
 
-    added.forEach((accountId) => {
-      batch.set(
-        db.collection("accounts").doc(accountId),
-        {
-          mentions: FieldValue.arrayUnion(docId),
-          mentionsCount: FieldValue.increment(1),
-        },
-        { merge: true },
-      );
-    });
+    accountIds.forEach((accountId) => {
+      const newTypes = newRefsByAccount.get(accountId) ?? new Set();
+      const oldTypes = oldRefsByAccount.get(accountId) ?? new Set();
+      const hadReferenceBefore = oldTypes.size > 0;
+      const hasReferenceAfter = newTypes.size > 0;
+      const mentionRef = db
+        .collection("credit-debit-accounts")
+        .doc(accountId)
+        .collection("mentions")
+        .doc(docId);
 
-    removed.forEach((accountId) => {
-      batch.set(
-        db.collection("accounts").doc(accountId),
-        {
-          mentions: FieldValue.arrayRemove(docId),
-          mentionsCount: FieldValue.increment(-1),
-        },
-        { merge: true },
-      );
+      if (hasReferenceAfter) {
+        batch.set(
+          mentionRef,
+          {
+            dailyAccountId: docId,
+            accountTypes: [...newTypes],
+          },
+          { merge: true },
+        );
+      }
+
+      if (hadReferenceBefore && !hasReferenceAfter) {
+        batch.delete(mentionRef);
+      }
+
+      if (!hadReferenceBefore && hasReferenceAfter) {
+        batch.set(
+          db.collection("credit-debit-accounts").doc(accountId),
+          {
+            mentionsCount: FieldValue.increment(1),
+          },
+          { merge: true },
+        );
+      }
+
+      if (hadReferenceBefore && !hasReferenceAfter) {
+        batch.set(
+          db.collection("credit-debit-accounts").doc(accountId),
+          {
+            mentionsCount: FieldValue.increment(-1),
+          },
+          { merge: true },
+        );
+      }
     });
 
     await batch.commit().catch(() => {});

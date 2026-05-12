@@ -22,8 +22,8 @@ import {
 import {
   createAccount,
   listAccounts,
-  AccountDoc,
-} from "@/app/accounts/accounts-actions";
+} from "@/app/credit-debit-accounts/actions";
+import { CreditDebitAccount } from "@/types/credit-debit-account";
 import { useTranslations } from "next-intl";
 
 type Props = {
@@ -43,8 +43,7 @@ export function AccountComboBox({
   const tCommon = useTranslations("Common");
   const tCreditsDebits = useTranslations("CreditsDebits");
   const [open, setOpen] = React.useState(false);
-  const [accounts, setAccounts] = React.useState<AccountDoc[]>([]);
-  const [loading, setLoading] = React.useState(false);
+  const [accounts, setAccounts] = React.useState<CreditDebitAccount[]>([]);
   const [creating, setCreating] = React.useState(false);
   const [query, setQuery] = React.useState("");
 
@@ -65,13 +64,8 @@ export function AccountComboBox({
   }, [selected]);
 
   const refresh = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await listAccounts();
-      setAccounts(res.data ?? []);
-    } finally {
-      setLoading(false);
-    }
+    const res = await listAccounts();
+    setAccounts(res.data ?? []);
   }, []);
 
   React.useEffect(() => {
@@ -109,7 +103,7 @@ export function AccountComboBox({
     }
   }
 
-  function onSelectAccount(a: AccountDoc) {
+  function onSelectAccount(a: CreditDebitAccount) {
     onChange(a.id);
     onAccountMeta?.({ id: a.id, name: a.name });
     setOpen(false);

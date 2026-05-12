@@ -1,4 +1,8 @@
 import { DailyAccount } from "@/types/daily-account";
+import {
+  CreditDebitAccount,
+  ReferencedDailyAccount,
+} from "@/types/credit-debit-account";
 
 export type DirtyFields =
   | true
@@ -431,4 +435,30 @@ export function calculateTotals(data: unknown): {
   }
 
   return { earnings, spends };
+}
+
+/**
+ * Normalize credit/debit account data from Firestore
+ */
+export function normalizeCreditDebitAccount(raw: unknown): CreditDebitAccount {
+  const r = getObj(raw);
+
+  const createdMillis = toMillis(getNested(r, "created"));
+  const updatedMillis = toMillis(getNested(r, "updated"));
+
+  return {
+    id: toStringSafe(getNested(r, "id")),
+    name: toStringSafe(getNested(r, "name")),
+    description: toStringSafe(getNested(r, "description")),
+    type: getNested(r, "type") === "debit" ? "debit" : "credit",
+    mentionsCount: toNumber(getNested(r, "mentionsCount"), 0),
+    totalCredits: toNumber(getNested(r, "totalCredits"), 0),
+    totalDebits: toNumber(getNested(r, "totalDebits"), 0),
+    createdBy:
+      getNested(r, "createdBy") == null ? null : toUser(getNested(r, "createdBy")),
+    updatedBy:
+      getNested(r, "updatedBy") == null ? null : toUser(getNested(r, "updatedBy")),
+    created: createdMillis ? new Date(createdMillis).toISOString() : "",
+    updated: updatedMillis ? new Date(updatedMillis).toISOString() : "",
+  } as CreditDebitAccount;
 }
