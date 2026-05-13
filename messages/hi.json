@@ -167,6 +167,7 @@
     "SendOTP": "OTP भेजें",
     "Verification": "मोबाइल नंबर पुष्टिकरण",
     "VerificationDesc": "सुरक्षित सेवाओं का उपयोग करने के लिए कृपया अपने मोबाइल नंबर की पुष्टि करें।",
+    "AccountDate": "खाता दिनांक",
     "Verifying": "OTP वेरीफाई किया जा रहा है",
     "VerifyOTP": "ओटीपी वेरीफाई करें"
   },
@@ -293,6 +294,9 @@
     "OTPReSent": "आपके मोबाइल नंबर पर OTP दोबारा भेजा गया है।",
     "OTPSent": "OTP भेजा गया",
     "OTPSentDesc": "आपके मोबाइल नंबर पर 6 अंकों का OTP भेजा गया",
+    "PleaseEnterPhoneNumber": "कृपया मोबाइल नंबर दर्ज करें",
+    "OtpResentSuccessfully": "OTP सफलतापूर्वक दोबारा भेजा गया",
+    "SessionExpired": "सत्र समाप्त हो गया है",
     "PleaseLoginToAccessServiceDesc": "सेवा का उपयोग करने के लिए कृपया लॉग इन करें।",
     "SecuredService": "सुरक्षित सेवा",
     "SomethingWentWrong": "कुछ तो गलत हुआ ",

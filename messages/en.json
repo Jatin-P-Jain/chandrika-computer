@@ -146,6 +146,7 @@
     "Description": "This is the best place to find awesome content.",
     "SecureServices": "Secured Services",
     "SecureServicesDesc": "To protect your data, access to the services below requires you to be signed in. Please log in to continue.",
+    "WelcomeMessage": "Welcome to Chandrika Computer!",
     "SessionExpiredMessage": "You’ve been logged out",
     "SessionExpiredMessageDesc": "Looks like you were away for a bit. Please sign in again."
   },
@@ -293,6 +294,9 @@
     "OTPReSent": "OTP resent to your mobile number",
     "OTPSent": "OTP Sent",
     "OTPSentDesc": "An 6 digit OTP is sent your mobile number",
+    "PleaseEnterPhoneNumber": "Please enter mobile number",
+    "OtpResentSuccessfully": "OTP resent successfully",
+    "SessionExpired": "Session expired",
     "PleaseLoginToAccessServiceDesc": "Please login to access the service",
     "SecuredService": "Secured Service",
     "SomethingWentWrong": "Something went wrong",
