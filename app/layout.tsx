@@ -32,6 +32,9 @@ export const metadata: Metadata = {
   title: "Chandrika Computer",
   description: "",
   applicationName: "Chandrika Computer",
+  appleWebApp: {
+    title: "Chandrika Computer",
+  },
   icons: {
     icon: "/icons/favicon.ico",
     shortcut: "/icons/favicon.ico",
