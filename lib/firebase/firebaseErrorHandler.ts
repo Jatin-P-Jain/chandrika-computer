@@ -14,11 +14,13 @@ export function handleFirebaseAuthError(
   if (error instanceof FirebaseError) {
     switch (error.code) {
       case "auth/invalid-verification-code":
+      case "auth/invalid-credential":
         toast.error(tToast("InvalidOTP"), {
           description: tToast("InvalidOTPDesc"),
         });
         break;
       case "auth/code-expired":
+      case "auth/session-expired":
         toast.error(tToast("OTPExpired"), {
           description: tToast("OTPExpiredDesc"),
         });

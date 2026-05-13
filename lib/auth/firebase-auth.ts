@@ -69,13 +69,8 @@ export const loginWithEmailAndPass = async (
 export const sendOTP = async (
   mobile: string,
   verifier: RecaptchaVerifier
-): Promise<ConfirmationResult | null> => {
-  try {
-    return await signInWithPhoneNumber(auth, `+91${mobile}`, verifier);
-  } catch (error) {
-    console.log("Error in signInWithPhoneNumber", error);
-    return null;
-  }
+): Promise<ConfirmationResult> => {
+  return signInWithPhoneNumber(auth, `+91${mobile}`, verifier);
 };
 
 export const verifyOTP = async (

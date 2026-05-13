@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "guest";
+export type UserRole = "admin" | "user";
 
 export type UserMini = {
   displayName?: string | null;
