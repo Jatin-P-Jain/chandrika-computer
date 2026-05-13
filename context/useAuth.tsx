@@ -105,42 +105,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // 👇 Reload to get the latest phone number
       await currentUser.reload();
 
-      // Fetch current Firestore doc
-      const snap = await getDoc(doc(firestore, "users", currentUser.uid));
+      const idTokenResult = await currentUser.getIdTokenResult(true);
+      const claims = idTokenResult.claims;
+      const phoneNumber = currentUser.phoneNumber
+        ? currentUser.phoneNumber.slice(3)
+        : null;
+      const role = claims.admin ? "admin" : "user";
+      const userDocRef = doc(firestore, "users", currentUser.uid);
 
-      if (!snap.exists()) {
-        throw new Error("User document not found");
-      }
+      // Always upsert here so prod does not get stuck if profile doc was never created.
+      await setDoc(
+        userDocRef,
+        {
+          uid: currentUser.uid,
+          email: currentUser.email ?? null,
+          displayName: currentUser.displayName ?? null,
+          photoURL: currentUser.photoURL ?? null,
+          phoneNumber,
+          role,
+          phoneVerified: true,
+          phoneVerifiedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
 
-      const dbUser = snap.data();
-      const phoneVerified = dbUser.phoneVerified === true;
-
-      // 👇 Update Firestore ONLY if phone wasn't verified before
-      if (!phoneVerified) {
-        const idTokenResult = await currentUser.getIdTokenResult(true);
-        const claims = idTokenResult.claims;
-        const phoneNumber = currentUser.phoneNumber
-          ? currentUser.phoneNumber.slice(3)
-          : null;
-        const role = claims.admin ? "admin" : "user";
-        const userDocRef = doc(firestore, "users", currentUser.uid);
-
-        await setDoc(
-          userDocRef,
-          {
-            phoneNumber,
-            role,
-            phoneVerified: true,
-            phoneVerifiedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true },
-        );
-
-        console.log(
-          `✅ First-time setup complete: phone=${phoneNumber}, role=${role}`,
-        );
-      }
+      console.log(
+        `✅ Phone verification complete: uid=${currentUser.uid}, phone=${phoneNumber}, role=${role}`,
+      );
 
       // 👇 Set session storage flag for returning users
       const phoneVerifiedKey = `phone_verified:${currentUser.uid}`;
@@ -165,7 +157,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await refreshAndSaveFcmToken(currentUser.uid);
         })();
       } else {
-        throw new Error("User document not found after update");
+        throw new Error("User document not found after phone verification");
       }
     } catch (e) {
       console.error("completePhoneVerification failed", e);

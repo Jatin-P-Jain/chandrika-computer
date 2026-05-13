@@ -103,6 +103,7 @@ export function useMobileOtp({
         const token = await currentUser.getIdToken(true);
         await setToken(token, currentUser.refreshToken);
         await setUserClaims(token, mobileNumber);
+        sessionStorage.setItem(`phone_verified:${currentUser.uid}`, "1");
         console.log("✅ Phone linked to Google account:", currentUser.uid);
         console.log("✅ Updated phone number:", currentUser.phoneNumber);
       } catch (linkError: unknown) {
@@ -114,6 +115,7 @@ export function useMobileOtp({
             await currentUser.reload();
             const token = await currentUser.getIdToken(true);
             await setToken(token, currentUser.refreshToken);
+            sessionStorage.setItem(`phone_verified:${currentUser.uid}`, "1");
           } else if (errorCode === "auth/credential-already-in-use") {
             console.error("Phone linked to different account");
             handleFirebaseAuthError(linkError, tToast);
