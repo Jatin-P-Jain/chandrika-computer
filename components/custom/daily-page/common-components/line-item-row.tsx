@@ -1,8 +1,8 @@
 "use client";
 
 import clsx from "clsx";
-import { Check, X } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { Check, Loader2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useFormContext } from "react-hook-form";
 import { useState } from "react";
 
@@ -17,12 +17,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import type { DailyFormValues } from "@/schema/dailay-page.schema";
+import type { DailyFormValues } from "@/schema/daily-page.schema";
 import { AmountInput } from "./amount-input";
 import { TagInput } from "./tag-input";
 import { formatINR } from "@/lib/utils";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 type RowPrefix =
+  | `fixed.otherFixedExpenses.${number}`
   | `earnings.otherIncomes.${number}`
   | `businessExpenses.${number}`
   | `dailySpends.${number}`;
@@ -30,26 +32,34 @@ type RowPrefix =
 export function LineItemRow({
   namePrefix,
   onRemove,
+  onPersist,
+  initialEditing = false,
 }: {
   namePrefix: RowPrefix;
   onRemove: () => void;
+  onPersist?: () => void | Promise<void>;
+  initialEditing?: boolean;
 }) {
   const tCommon = useTranslations("Common");
   const { control, getValues } = useFormContext<DailyFormValues>();
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadCls = clsx(isHi && "text-lg! font-[inherit]");
-  const textBodyCls = clsx(isHi && "text-base! font-medium! font-[inherit]");
+  const { textSubheadingCls, textBodyCls: localeTextBodyCls } =
+    useLocaleTypography();
+  const textHeadCls = textSubheadingCls;
+  const textBodyCls = clsx(localeTextBodyCls, "font-medium");
 
   // UI-only state (doesn't affect RHF values)
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(initialEditing);
+  const [isPersisting, setIsPersisting] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"remove" | "done" | null>(
+    null,
+  );
   // const inputRef = useRef<HTMLInputElement>(null);
 
   // read current values for view mode (keeps submit logic unchanged)
-  const amount = Number(getValues(`${namePrefix}.amount` as any)) || 0;
-  const label = (getValues(`${namePrefix}.label` as any) as string) || "";
+  const amount = Number(getValues(`${namePrefix}.amount` as const) || 0);
+  const label = (getValues(`${namePrefix}.label` as const) as string) || "";
   const tags =
-    (getValues(`${namePrefix}.tags` as any) as string[] | undefined) ?? [];
+    (getValues(`${namePrefix}.tags` as const) as string[] | undefined) ?? [];
 
   const isRowValid = amount > 0 && label.trim().length > 0;
 
@@ -66,22 +76,17 @@ export function LineItemRow({
       {!isEditing && (
         <div className="w-full">
           <div className="flex justify-between items-center w-full gap-2 ">
-            <div
-              className={clsx("text-base font-semibold flex-1", textHeadCls)}
-            >
-              {formatINR(amount)}
-            </div>
-            <div className="flex flex-col justify-between items-end">
+            <div className="flex flex-col justify-between items-start">
               <div
                 className={clsx(
-                  "text-right text-medium wrap-break-word flex-3",
-                  textBodyCls
+                  "text-left text-medium wrap-break-word flex-3",
+                  textBodyCls,
                 )}
               >
                 {label || "—"}
               </div>
               {tags.length > 0 ? (
-                <div className="flex flex-wrap gap-1 flex-1 justify-end">
+                <div className="flex flex-wrap gap-1 flex-1 justify-start">
                   {tags.map((t, idx) => (
                     <Badge
                       key={`${t}-${idx}`}
@@ -95,6 +100,14 @@ export function LineItemRow({
               ) : (
                 <></>
               )}
+            </div>
+            <div
+              className={clsx(
+                "text-base font-semibold tabular-nums text-right shrink-0",
+                textHeadCls,
+              )}
+            >
+              {formatINR(amount)}
             </div>
           </div>
         </div>
@@ -126,7 +139,7 @@ export function LineItemRow({
           <FormField
             control={control}
             name={`${namePrefix}.label`}
-            render={({ field, fieldState }) => (
+            render={({ field }) => (
               <FormItem className="w-full gap-1">
                 <FormLabel className={textBodyCls}>{tCommon("For")}</FormLabel>
                 <FormControl>
@@ -175,36 +188,65 @@ export function LineItemRow({
               type="button"
               variant="outline"
               size="icon"
-              onClick={onRemove}
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (isPersisting) return;
+                setIsPersisting(true);
+                setPendingAction("remove");
+                onRemove();
+                try {
+                  await onPersist?.();
+                } finally {
+                  setIsPersisting(false);
+                  setPendingAction(null);
+                }
+              }}
+              disabled={isPersisting}
               aria-label="Remove row"
               className="w-[45%] border-red-600 bg-red-100 text-red-700 hover:bg-red-200 hover:border-red-700"
             >
-              <X className="size-4" />
+              {pendingAction === "remove" ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <X className="size-4" />
+              )}
             </Button>
 
             <Button
               type="button"
               variant="outline"
               size="icon"
-              disabled={!isRowValid}
-              onClick={(e) => {
+              disabled={!isRowValid || isPersisting}
+              onClick={async (e) => {
                 e.stopPropagation();
+                if (isPersisting) return;
+                setIsPersisting(true);
+                setPendingAction("done");
                 setIsEditing(false);
+                try {
+                  await onPersist?.();
+                } finally {
+                  setIsPersisting(false);
+                  setPendingAction(null);
+                }
               }}
               aria-label="Mark done"
               className={clsx(
                 "w-[45%] border-green-600 bg-green-100 text-green-700 hover:bg-green-200 hover:border-green-700",
-                !isRowValid ? "opacity-30! cursor-not-allowed" : ""
+                !isRowValid || isPersisting
+                  ? "opacity-30! cursor-not-allowed"
+                  : "",
               )}
             >
-              <Check className="size-4" />
+              {pendingAction === "done" ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Check className="size-4" />
+              )}
             </Button>
           </div>
         </>
       )}
-
-      {/* Hidden fields (optional safety) */}
-      {/* If you ever unmount edit fields completely, keep these to preserve registration. [web:149] */}
     </div>
   );
 }

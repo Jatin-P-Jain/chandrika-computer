@@ -6,83 +6,46 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Filter, X } from "lucide-react";
+import { Filter, Loader2, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFilterOptions } from "@/hooks/useFilterOptions";
 import { FilterTag, FilterUser } from "@/types/filters";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
-export function MoreFiltersPopover({
-  updateSearchParams,
+type FilterItem = FilterUser | FilterTag;
+
+function FilterSection({
+  title,
+  items,
+  currentSelected,
+  filterType,
+  textSmCls,
+  onClear,
+  onToggle,
 }: {
-  updateSearchParams: (params: Record<string, string | string[]>) => void;
-}) {
-  const tFilters = useTranslations("Filters");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textSmCls = clsx(
-    isHi ? "text-sm! md:text-base! font-[inherit]" : "text-xs! md:text-sm!"
-  );
-
-  const searchParams = useSearchParams();
-  const currentCreatedBy = searchParams.get("createdBy")?.split(",") || [];
-  const currentUpdatedBy = searchParams.get("updatedBy")?.split(",") || [];
-  const currentTags = searchParams.get("tags")?.split(",") || [];
-
-  const { creators, updaters, tags } = useFilterOptions();
-  const [open, setOpen] = useState(false);
-
-  const totalSelected =
-    currentCreatedBy.length + currentUpdatedBy.length + currentTags.length;
-
-  const updateFilterList = (
+  title: string;
+  items: FilterItem[];
+  currentSelected: string[];
+  filterType: "createdBy" | "updatedBy" | "tags";
+  textSmCls: string;
+  onClear: (filterType: "createdBy" | "updatedBy" | "tags") => void;
+  onToggle: (
     filterType: "createdBy" | "updatedBy" | "tags",
-    items: FilterUser[] | FilterTag[],
-    selectedIds: string[]
-  ) => {
-    const values = items
-      .filter((item) => selectedIds.includes(item.value))
-      .map((item) => item.value);
-
-    updateSearchParams({
-      [filterType]: values.length > 0 ? values.join(",") : "",
-    });
-  };
-
-  const clearSection = (filterType: "createdBy" | "updatedBy" | "tags") => {
-    updateSearchParams({ [filterType]: "" });
-  };
-
-  // 🔥 Clear ONLY more filters (keeps date/sort)
-  const clearMoreFiltersOnly = () => {
-    updateSearchParams({
-      createdBy: "",
-      updatedBy: "",
-      tags: "",
-    });
-  };
-
-  const Section = ({
-    title,
-    items,
-    currentSelected,
-    filterType,
-  }: {
-    title: string;
-    items: FilterUser[] | FilterTag[];
-    currentSelected: string[];
-    filterType: "createdBy" | "updatedBy" | "tags";
-  }) => (
+    itemValue: string,
+  ) => void;
+}) {
+  return (
     <div className="py-2">
       <div className="flex items-center justify-between mb-2 px-2">
         <span
           className={clsx(
             "text-xs font-medium text-muted-foreground uppercase tracking-wider",
-            textSmCls
+            textSmCls,
           )}
         >
           {title}
@@ -91,10 +54,10 @@ export function MoreFiltersPopover({
           <Button
             variant="ghost"
             size="sm"
-            className="h-5 px-1 text-xs" // ✅ Fixed button styling
+            className="h-5 px-1 text-xs"
             onClick={(e) => {
               e.stopPropagation();
-              clearSection(filterType);
+              onClear(filterType);
             }}
           >
             <X className="size-3 h-3 w-3" />
@@ -106,18 +69,15 @@ export function MoreFiltersPopover({
           <div
             key={item.value}
             className="flex gap-2 justify-between p-2 cursor-pointer hover:bg-accent rounded-md items-center"
-            onClick={() => {
-              const newSelected = currentSelected.includes(item.value)
-                ? currentSelected.filter((id) => id !== item.value)
-                : [...currentSelected, item.value];
-              updateFilterList(filterType, items as any, newSelected);
-            }}
+            onClick={() => onToggle(filterType, item.value)}
           >
             <div className="flex items-center gap-2 flex-1">
               <Checkbox checked={currentSelected.includes(item.value)} />
               {filterType !== "tags" ? (
                 <Avatar className="size-5 ring-1 ring-primary border">
-                  <AvatarImage src={(item as FilterUser)?.photoUrl || ""} />
+                  <AvatarImage
+                    src={"photoUrl" in item ? (item.photoUrl ?? "") : ""}
+                  />
                   <AvatarFallback className="text-[10px]">
                     {item.label?.[0] || "?"}
                   </AvatarFallback>
@@ -138,6 +98,85 @@ export function MoreFiltersPopover({
       )}
     </div>
   );
+}
+
+export function MoreFiltersPopover({
+  updateSearchParams,
+}: {
+  updateSearchParams: (params: Record<string, string | string[]>) => void;
+}) {
+  const tFilters = useTranslations("Filters");
+  const { isHi } = useLocaleTypography();
+  // textSmCls has a non-empty default for both locales – derive inline from isHi
+  const textSmCls = isHi
+    ? "text-sm! md:text-base! font-[inherit]"
+    : "text-xs! md:text-sm!";
+
+  const searchParams = useSearchParams();
+  const currentCreatedBy = searchParams.get("createdBy")?.split(",") || [];
+  const currentUpdatedBy = searchParams.get("updatedBy")?.split(",") || [];
+  const currentTags = searchParams.get("tags")?.split(",") || [];
+
+  const { creators, updaters, tags } = useFilterOptions();
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const totalSelected =
+    currentCreatedBy.length + currentUpdatedBy.length + currentTags.length;
+
+  const updateFilterList = (
+    filterType: "createdBy" | "updatedBy" | "tags",
+    items: FilterItem[],
+    selectedIds: string[],
+  ) => {
+    const values = items
+      .filter((item) => selectedIds.includes(item.value))
+      .map((item) => item.value);
+
+    updateSearchParams({
+      [filterType]: values.length > 0 ? values.join(",") : "",
+    });
+  };
+
+  const clearSection = (filterType: "createdBy" | "updatedBy" | "tags") => {
+    startTransition(() => {
+      updateSearchParams({ [filterType]: "" });
+    });
+  };
+
+  // 🔥 Clear ONLY more filters (keeps date/sort)
+  const clearMoreFiltersOnly = () => {
+    startTransition(() => {
+      updateSearchParams({
+        createdBy: "",
+        updatedBy: "",
+        tags: "",
+      });
+    });
+  };
+
+  const toggleItem = (
+    filterType: "createdBy" | "updatedBy" | "tags",
+    itemValue: string,
+  ) => {
+    const itemMap = {
+      createdBy: creators,
+      updatedBy: updaters,
+      tags,
+    } as const;
+    const currentSelectedMap = {
+      createdBy: currentCreatedBy,
+      updatedBy: currentUpdatedBy,
+      tags: currentTags,
+    } as const;
+
+    const currentSelected = currentSelectedMap[filterType];
+    const newSelected = currentSelected.includes(itemValue)
+      ? currentSelected.filter((id) => id !== itemValue)
+      : [...currentSelected, itemValue];
+
+    updateFilterList(filterType, [...itemMap[filterType]], newSelected);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -146,18 +185,18 @@ export function MoreFiltersPopover({
           variant="outline"
           size="sm"
           className={clsx(
-            "gap-1 transition-all duration-300 hover:shadow-md hover:scale-102 ",
+            "gap-1 transition-all duration-300 hover:shadow-md md:hover:scale-102 w-full md:w-auto justify-center md:justify-between",
             {
-              "text-primary border-primary scale-102 shadow-md":
+              "text-primary border-primary md:scale-102 shadow-md":
                 open || totalSelected > 0,
             },
-            textSmCls
+            textSmCls,
           )}
         >
           <span
             className={clsx(
               textSmCls,
-              "flex justify-center items-center gap-2"
+              "flex justify-center items-center gap-2",
             )}
           >
             <Filter className="size-4" />
@@ -170,27 +209,36 @@ export function MoreFiltersPopover({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" sideOffset={5}>
+      <PopoverContent className=" max-w-sm md:w-80 p-0" align="start">
         <div className="max-h-96 overflow-auto">
-          <Section
+          <FilterSection
             title={tFilters("CreatedBy")}
             items={creators}
             currentSelected={currentCreatedBy}
             filterType="createdBy"
+            textSmCls={textSmCls}
+            onClear={clearSection}
+            onToggle={toggleItem}
           />
           <div className="border-t mx-2" />
-          <Section
+          <FilterSection
             title={tFilters("UpdatedBy")}
             items={updaters}
             currentSelected={currentUpdatedBy}
             filterType="updatedBy"
+            textSmCls={textSmCls}
+            onClear={clearSection}
+            onToggle={toggleItem}
           />
           <div className="border-t mx-2" />
-          <Section
+          <FilterSection
             title={tFilters("Tags")}
             items={tags}
             currentSelected={currentTags}
             filterType="tags"
+            textSmCls={textSmCls}
+            onClear={clearSection}
+            onToggle={toggleItem}
           />
         </div>
         <div className="border-t p-3 flex justify-between items-center">
@@ -204,8 +252,12 @@ export function MoreFiltersPopover({
             variant="outline"
             size="sm"
             onClick={clearMoreFiltersOnly} // ✅ Only clears more filters!
+            disabled={isPending}
           >
-            <span className={clsx(textSmCls)}>{tFilters("ClearAll")}</span>
+            <span className={clsx(textSmCls, "inline-flex items-center gap-1")}>
+              {isPending ? <Loader2 className="size-3 animate-spin" /> : null}
+              {tFilters("ClearAll")}
+            </span>
           </Button>
         </div>
       </PopoverContent>

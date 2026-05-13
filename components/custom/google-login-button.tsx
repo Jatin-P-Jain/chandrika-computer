@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { useAuth } from "@/context/useAuth";
 import GoogleIcon from "@/assets/google-icon.svg";
@@ -9,6 +8,11 @@ import Image from "next/image";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { LogInIcon } from "lucide-react";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
+import {
+  GOOGLE_EMAIL_DENIED_ERROR_CODE,
+  GoogleEmailNotAllowedError,
+} from "@/lib/auth/firebase-auth";
 type ButtonProps = {
   variant?:
     | "link"
@@ -31,8 +35,15 @@ export default function GoogleLoginButton({
 }: ButtonProps) {
   const tSignIn = useTranslations("Common");
   const auth = useAuth();
-  const router = useRouter();
+  const { refresh } = useSafeRouter();
   const [signingIn, setSigningIn] = useState(false);
+  const isDeniedError = (error: unknown) => {
+    if (error instanceof GoogleEmailNotAllowedError) return true;
+    if (typeof error === "object" && error !== null && "code" in error) {
+      return error.code === GOOGLE_EMAIL_DENIED_ERROR_CODE;
+    }
+    return false;
+  };
   const combinedClassName = `flex ${
     signingIn
       ? ""
@@ -48,11 +59,14 @@ export default function GoogleLoginButton({
             onSuccess();
             setSigningIn(false);
           } else {
-            router.refresh();
+            refresh();
             setSigningIn(false);
           }
         } catch (e) {
           setSigningIn(false);
+          if (isDeniedError(e)) {
+            return;
+          }
           console.log({ e });
         }
       }}
@@ -72,8 +86,8 @@ export default function GoogleLoginButton({
       ) : (
         <>
           <div className="hidden md:flex gap-2 items-center justify-center ">
-            <Image src={GoogleIcon} alt="" className="size-6" />
-            <span className="">{tSignIn("SignInWithGoogle")}</span>
+            <Image src={GoogleIcon} alt="" className="size-5" />
+            <span className="text-sm">{tSignIn("SignInWithGoogle")}</span>
             <LogInIcon className="size-5" />
           </div>
           <div className="flex md:hidden gap-1 items-center justify-center ">

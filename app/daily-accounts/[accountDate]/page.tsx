@@ -1,11 +1,22 @@
 // app/daily-account/page.tsx
-import DailyPage from "@/components/custom/daily-page/daily-page";
-import { DailyFormValues } from "@/schema/dailay-page.schema";
-import { getDailyAccountItem } from "../actions";
+import { DailyFormValues } from "@/schema/daily-page.schema";
+import { getDailyAccountItem } from "../read-actions";
 import DailyAccountHeader from "../daily-account-header";
 import { clsx } from "clsx";
 import { DailyAccountDayNavigator } from "@/components/custom/daily-account-day-navigator";
 import { DailyAccount } from "@/types/daily-account";
+import { getReadings } from "../readings-actions";
+import dynamic from "next/dynamic";
+import { deriveMode } from "@/lib/daily-accounts/mode";
+
+const DailyPage = dynamic(
+  () => import("@/components/custom/daily-page/daily-page"),
+  {
+    loading: () => (
+      <div className="w-full min-h-[60vh] animate-pulse rounded-md border bg-muted/20" />
+    ),
+  },
+);
 
 type Props = {
   params: Promise<{
@@ -18,6 +29,7 @@ type Props = {
 
 const DailyAccountPage = async ({ params, searchParams }: Props) => {
   const { accountDate: docId } = await params;
+  const { mode: modeParam } = await searchParams;
 
   let initialData: DailyFormValues | undefined;
   let dailyItemData: DailyAccount | undefined;
@@ -26,29 +38,29 @@ const DailyAccountPage = async ({ params, searchParams }: Props) => {
   if (docId) {
     const { data } = await getDailyAccountItem(docId);
     if (data) {
-      // if you later want explicit edit mode via query, you can use searchParams.mode
-      const { mode: modeParam } = await searchParams;
-      mode = modeParam === "edit" ? "edit" : "view";
-      initialData = data;
+      mode = deriveMode(data.status, modeParam);
+      initialData = data as unknown as DailyFormValues;
       dailyItemData = data;
     }
   }
 
+  const readings = await getReadings(docId);
+
   return (
-    <div className="flex flex-col justify-center items-center w-full mt-28 md:mt-18 mb-20 md:mb-16 gap-2 max-w-7xl mx-auto">
+    <div className="flex flex-col justify-center items-center w-full gap-1">
       <DailyAccountHeader />
       <DailyAccountDayNavigator docId={docId} />
       <div
         className={clsx(
-          "flex w-full overflow-auto max-h-[calc(100vh-14rem-5rem)] no-scrollbar rounded-md",
-          mode === "view" ? "p-0 shadow-md" : "p-2"
+          "flex w-full overflow-auto max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-13rem)] no-scrollbar p-0.5 md:p-2 border-0",
         )}
       >
         <DailyPage
+          docId={docId}
           mode={mode}
           initialData={initialData}
           dailyItemData={dailyItemData}
-          docId={docId}
+          readings={readings}
         />
       </div>
     </div>

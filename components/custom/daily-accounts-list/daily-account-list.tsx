@@ -3,18 +3,21 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
+  PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { usePaginatedFirestore } from "@/hooks/usePaginatedFirestore";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 import { DAILY_ACCOUNTS_LIST_PAGE_SIZE } from "@/lib/utils";
 import { DailyAccount } from "@/types/daily-account";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { DailyAccountCard } from "./daily-account-card";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { DailyAccountCardSkeleton } from "./daily-account-loader";
 import { LoaderCircleIcon } from "lucide-react";
 import { FilterOperator, FirestoreFilter } from "@/types/filters";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 export default function DailyAccountsList({
   searchParamsValues,
@@ -31,11 +34,9 @@ export default function DailyAccountsList({
   };
 }) {
   const tCommon = useTranslations("Common");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textSmCls = isHi ? "text-sm! lg:text-base!" : "";
+  const { textSmCls } = useLocaleTypography();
 
-  const router = useRouter();
+  const { replace } = useSafeRouter();
   const searchParams = useSearchParams();
   const hasFiltersApplied = searchParams.has("filtersApplied");
   const previousFiltersRef = useRef<string>("");
@@ -53,7 +54,7 @@ export default function DailyAccountsList({
 
   const fromDate = searchParamsValues.fromDate;
   const toDate = searchParamsValues.toDate;
-  const sortField = searchParamsValues.sortField || "created"; // Default sort
+  const sortField = searchParamsValues.sortField || "id"; // Default sort by account date
   const sortDir = searchParamsValues.sortDir || "desc"; // Default direction
 
   // 🔥 BUILD FIRESTORE FILTERS ARRAY
@@ -62,18 +63,18 @@ export default function DailyAccountsList({
     ...(fromDate
       ? [
           {
-            field: "created",
+            field: "id",
             operator: ">=" as FilterOperator,
-            value: new Date(fromDate + "T00:00:00Z"),
+            value: fromDate,
           },
         ]
       : []),
     ...(toDate
       ? [
           {
-            field: "created",
+            field: "id",
             operator: "<=" as FilterOperator,
-            value: new Date(toDate + "T23:59:59.999Z"), // End of day
+            value: toDate,
           },
         ]
       : []),
@@ -130,15 +131,6 @@ export default function DailyAccountsList({
       filters: firestoreFilters, // 🔥 All URL filters
     });
 
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-
-  // after loading becomes false
-  useEffect(() => {
-    if (!loading) {
-      setHasLoadedOnce(true);
-    }
-  }, [loading]);
-
   // ⏮ Reset to page 1 if filters change
   useEffect(() => {
     if (previousFiltersRef.current !== filterKey) {
@@ -146,15 +138,15 @@ export default function DailyAccountsList({
 
       const sp = new URLSearchParams(searchParams.toString());
       sp.set("page", "1");
-      router.replace(`/daily-accounts?${sp.toString()}`);
+      replace(`/daily-accounts?${sp.toString()}`);
       resetPagination();
     }
-  }, [filterKey, resetPagination, router, searchParams]);
+  }, [filterKey, replace, resetPagination, searchParams]);
 
   const handlePageChange = (page: number) => {
     const sp = new URLSearchParams(searchParams.toString());
     sp.set("page", `${page}`);
-    router.replace(`/daily-accounts?${sp.toString()}`);
+    replace(`/daily-accounts?${sp.toString()}`);
     loadPage(page);
   };
 
@@ -162,11 +154,11 @@ export default function DailyAccountsList({
   const end = Math.min(currentPage * DAILY_ACCOUNTS_LIST_PAGE_SIZE, totalItems);
   const totalPages = Math.max(
     Math.ceil(totalItems / DAILY_ACCOUNTS_LIST_PAGE_SIZE),
-    1
+    1,
   );
 
   // Loading state
-  if (loading || !hasLoadedOnce) {
+  if (loading) {
     return (
       <div className="flex h-full w-full flex-1 flex-col gap-2">
         <div className="w-full flex justify-center text-muted-foreground items-center gap-3 animate-pulse">
@@ -181,7 +173,7 @@ export default function DailyAccountsList({
   }
 
   // Empty state
-  if (!loading && hasLoadedOnce && data.length === 0) {
+  if (!loading && data.length === 0) {
     return (
       <div className="flex h-full min-h-120 w-full flex-1 items-center justify-center">
         <p className="text-muted-foreground">
@@ -195,15 +187,15 @@ export default function DailyAccountsList({
 
   // Main content
   return (
-    <div className="relative mx-auto flex flex-col w-full max-w-7xl overflow-auto no-scrollbar rounded-md">
+    <div className="relative mx-auto flex flex-col w-full max-w-4xl overflow-auto no-scrollbar rounded-md">
       <p
         className={`text-muted-foreground text-center text-xs py-1 ${textSmCls}`}
       >
         {tCommon("ShowingResults", { currentPage, start, end, totalItems })}
       </p>
 
-      <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-140 max-h-135 overflow-auto no-scrollbar pb-2 md:pb-0">
-        <div className="flex w-full flex-col p-2 gap-3 lg:gap-4">
+      <div className="flex h-full w-full flex-1 flex-col justify-between gap-2 lg:min-h-140 overflow-auto no-scrollbar pb-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 max-h-[calc(100vh-220px)] overflow-auto no-scrollbar rounded-md pb-1">
           {data.map((dailyAccount: DailyAccount, index: number) => (
             <DailyAccountCard
               key={dailyAccount.id || index}
@@ -220,6 +212,14 @@ export default function DailyAccountsList({
                 <PaginationItem>
                   <PaginationPrevious
                     onClick={() => handlePageChange(currentPage - 1)}
+                  />
+                </PaginationItem>
+              )}
+
+              {currentPage < totalPages && (
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => handlePageChange(currentPage + 1)}
                   />
                 </PaginationItem>
               )}

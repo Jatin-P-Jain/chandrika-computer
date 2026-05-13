@@ -1,78 +1,90 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlarmClock, CalendarDays } from "lucide-react";
+import { CalendarDays, Clock, Hourglass } from "lucide-react";
 import { useLocale } from "next-intl";
 import clsx from "clsx";
-import { Skeleton } from "../ui/skeleton";
 
 export function DateTimeDisplay() {
   const locale = useLocale();
-  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const updateTime = () => setNow(new Date());
+    updateTime();
 
-  const [now, setNow] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
+    const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const date = now.toLocaleDateString(locale, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const day = now.toLocaleDateString(locale, {
-    weekday: "long",
-  });
+  const date = now
+    ? now.toLocaleDateString(locale, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "";
+  const day = now
+    ? now.toLocaleDateString(locale, {
+        weekday: "long",
+      })
+    : "";
 
-  const time = now.toLocaleTimeString(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  const timeParts = now
+    ? new Intl.DateTimeFormat(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).formatToParts(now)
+    : null;
+
+  const hour = timeParts?.find((part) => part.type === "hour")?.value ?? "--";
+  const minute =
+    timeParts?.find((part) => part.type === "minute")?.value ?? "--";
+  const dayPeriod =
+    timeParts?.find((part) => part.type === "dayPeriod")?.value ?? "";
+  const isColonVisible = now ? now.getSeconds() % 2 === 0 : true;
 
   return (
     <div
       className={clsx(
-        "fixed flex w-full items-center justify-between text-muted-foreground dark:text-white/80 top-18 px-4 md:px-8 py-2 text-sm md:text-base font-medium shadow-md dark:shadow-primary/10 bg-muted z-30",
-        locale === "hi" && "font-semibold"
+        "fixed flex w-full items-center justify-between text-muted-foreground dark:text-white/80 top-14 md:top-16 px-4 md:px-8 py-1 text-sm md:text-base font-medium shadow-md dark:shadow-primary/10 bg-muted z-30",
+        locale === "hi" && "font-semibold",
       )}
     >
       <span className="flex justify-center items-center gap-1 md:gap-2">
-        <CalendarDays size={20} />
-        {mounted ? (
-          <>
-            <span className={clsx("text-xs md:text-sm")}>{day},</span>{" "}
-            <span
-              className={clsx(
-                "text-sm md:text-base",
-                locale === "hi" && "text-base! md:text-lg!"
-              )}
-            >
-              {date}
-            </span>
-          </>
-        ) : (
-          <Skeleton className="h-4 w-30 md:h-5 md:w-50 bg-muted-foreground/30" />
-        )}
+        <CalendarDays size={14} />
+        <>
+          <span className={clsx("text-xs md:text-sm")}>{day},</span>{" "}
+          <span
+            className={clsx(
+              "text-sm md:text-base",
+              locale === "hi" && "text-base! md:text-lg!",
+            )}
+          >
+            {date}
+          </span>
+        </>
       </span>
       <span
         className={clsx(
           "flex justify-center items-center gap-1 md:gap-2 text-sm md:text-base",
-          locale === "hi" && "text-base! md:text-lg!"
+          locale === "hi" && "text-base! md:text-lg!",
         )}
       >
-        <AlarmClock size={20} />
-        {mounted ? (
-          time
-        ) : (
-          <Skeleton className="h-4 w-20 md:h-5 md:w-30 bg-muted-foreground/30" />
-        )}
+        <Clock size={14} />
+        <span className="flex items-center gap-1">
+          {hour}
+          <span
+            className={clsx(
+              "inline-block w-[0.4ch] text-center text-sm",
+              !isColonVisible && "opacity-0",
+            )}
+          >
+            :
+          </span>
+          {minute}
+          {dayPeriod ? <span className="">{dayPeriod}</span> : null}
+        </span>
       </span>
     </div>
   );

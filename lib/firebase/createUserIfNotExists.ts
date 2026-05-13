@@ -8,7 +8,6 @@ export const createUserIfNotExists = async (user: UserData) => {
   if (!user || !user.uid) return;
   try {
     const userRef = fireStore.collection("users").doc(user.uid);
-    console.log("user ref", userRef);
     const userSnapshot = await userRef.get();
 
     if (!userSnapshot.exists) {

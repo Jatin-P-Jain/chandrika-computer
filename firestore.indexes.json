@@ -4,173 +4,272 @@
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "created", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        {
+          "fieldPath": "createdBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "created", "order": "ASCENDING" },
-        { "fieldPath": "__name__", "order": "ASCENDING" }
+        {
+          "fieldPath": "createdBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updated",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "updated", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        {
+          "fieldPath": "createdBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "totalEarnings",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "updated", "order": "ASCENDING" },
-        { "fieldPath": "__name__", "order": "ASCENDING" }
+        {
+          "fieldPath": "createdBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "totalSpends",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "totalEarnings", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        {
+          "fieldPath": "createdBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "totalCashCollected",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "totalEarnings", "order": "ASCENDING" },
-        { "fieldPath": "__name__", "order": "ASCENDING" }
+        {
+          "fieldPath": "updatedBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "totalSpends", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        {
+          "fieldPath": "updatedBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updated",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "totalSpends", "order": "ASCENDING" },
-        { "fieldPath": "__name__", "order": "ASCENDING" }
+        {
+          "fieldPath": "createdBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "totalCashCollected", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "totalEarnings",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "totalCashCollected", "order": "ASCENDING" },
-        { "fieldPath": "__name__", "order": "ASCENDING" }
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "totalCashCollected",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "createdBy.uid", "order": "ASCENDING" },
-        { "fieldPath": "created", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        {
+          "fieldPath": "allTags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "createdBy.uid", "order": "ASCENDING" },
-        { "fieldPath": "updated", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        {
+          "fieldPath": "allTags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "createdBy.uid", "order": "ASCENDING" },
-        { "fieldPath": "totalEarnings", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        {
+          "fieldPath": "allTags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "updatedBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "daily-accounts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "createdBy.uid", "order": "ASCENDING" },
-        { "fieldPath": "totalSpends", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "daily-accounts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "createdBy.uid", "order": "ASCENDING" },
-        { "fieldPath": "totalCashCollected", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-
-    {
-      "collectionGroup": "daily-accounts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "updatedBy.uid", "order": "ASCENDING" },
-        { "fieldPath": "created", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "daily-accounts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "updatedBy.uid", "order": "ASCENDING" },
-        { "fieldPath": "updated", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "daily-accounts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "createdBy.uid", "order": "ASCENDING" },
-        { "fieldPath": "updatedBy.uid", "order": "ASCENDING" },
-        { "fieldPath": "created", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-
-    {
-      "collectionGroup": "daily-accounts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "created", "order": "DESCENDING" },
-        { "fieldPath": "totalEarnings", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "daily-accounts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "created", "order": "DESCENDING" },
-        { "fieldPath": "totalCashCollected", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
+        {
+          "fieldPath": "createdBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedBy.uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "allTags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
       ]
     }
   ],

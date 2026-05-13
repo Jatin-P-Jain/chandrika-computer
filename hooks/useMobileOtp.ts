@@ -1,5 +1,6 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { FirebaseError } from "firebase/app";
 import {
   ConfirmationResult,
   linkWithCredential,
@@ -18,7 +19,7 @@ export function useMobileOtp({
   appVerifier,
   currentUser,
 }: {
-  onSuccess?: (() => void) | undefined;
+  onSuccess?: (() => void | Promise<void>) | undefined;
   appVerifier: RecaptchaVerifier | null;
   currentUser: User | null;
 }) {
@@ -30,7 +31,7 @@ export function useMobileOtp({
   const [sendingOtp, setSendingOtp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(
-    null,
+    null
   );
 
   const resetOtp = () => {
@@ -49,7 +50,7 @@ export function useMobileOtp({
       setSendingOtp(true);
       const confirmation = await auth?.handleSendOTP(
         mobileFormatted,
-        appVerifier,
+        appVerifier
       );
       setConfirmation(confirmation || null);
       setMobileNumber(mobile);
@@ -81,7 +82,7 @@ export function useMobileOtp({
       // 👇 Create credential directly - DON'T call auth.verifyOTP()
       const credential = PhoneAuthProvider.credential(
         confirmation.verificationId,
-        otp,
+        otp
       );
 
       if (!currentUser) {
@@ -105,8 +106,8 @@ export function useMobileOtp({
         console.log("✅ Phone linked to Google account:", currentUser.uid);
         console.log("✅ Updated phone number:", currentUser.phoneNumber);
       } catch (linkError: unknown) {
-        if (linkError instanceof Error) {
-          const errorCode = (linkError as any).code;
+        if (linkError instanceof FirebaseError) {
+          const errorCode = linkError.code;
 
           if (errorCode === "auth/provider-already-linked") {
             console.log("✅ Phone already linked to this Google account");
@@ -129,7 +130,7 @@ export function useMobileOtp({
         }
       }
 
-      onSuccess?.();
+      await onSuccess?.();
       toast.success(tToast("MobileVerified"), {
         description: tToast("MobileVerifiedDesc"),
       });

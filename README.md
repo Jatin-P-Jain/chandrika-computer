@@ -2,6 +2,16 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+## Auth Allowlist
+
+Google sign-in is restricted by an email allowlist. Set this environment variable in your local `.env` and deployment environment:
+
+`NEXT_PUBLIC_ALLOWED_GOOGLE_EMAILS=email1@example.com,email2@example.com`
+
+You can also use `NEXT_PUBLIC_ALLOWED_EMAILS` as a fallback name.
+
+Only emails listed here can complete Google login.
+
 First, run the development server:
 
 ```bash

@@ -3,11 +3,11 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next";
 
 type Props = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = params;
+  const { locale } = await params;
 
   const tCommon = await getTranslations({
     locale,
@@ -31,9 +31,5 @@ export default async function Home({
 }) {
   const { sessionExpired } = await searchParams;
 
-  return (
-    <div className="flex justify-center items-center w-full mt-30 mb-26">
-      <HomePage sessionExpired={sessionExpired} />
-    </div>
-  );
+  return <HomePage sessionExpired={sessionExpired} />;
 }

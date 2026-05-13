@@ -6,8 +6,6 @@ export const saveFcmToken = async (
   token: string,
   metadata: { os: string; browser: string; platform: string }
 ) => {
-  console.log({ uid, token, metadata });
-
   try {
     if (!uid || !token) return;
     const ref = doc(firestore, "users", uid, "fcmTokens", token);

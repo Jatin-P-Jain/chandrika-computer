@@ -1,0 +1,347 @@
+import { DateDisplay } from "@/components/custom/date-display";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { formatINR } from "@/lib/utils";
+import type { StampReadingRow, Denomination } from "@/types/readings";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
+import React from "react";
+import clsx from "clsx";
+import { CalendarFold } from "lucide-react";
+
+const DENOMS: Denomination[] = [50, 100, 500, 1000];
+
+export function StampReadingsResponsive({
+  data,
+  showReadings = false,
+}: {
+  data: StampReadingRow[];
+  showReadings: boolean;
+}) {
+  const tCommon = useTranslations("Common");
+  const tReadings = useTranslations("Readings");
+
+  const { textHeadingCls, textPageHeadCls, textBodyCls } =
+    useLocaleTypography();
+
+  return (
+    <div className="space-y-4 w-full">
+      {/* Desktop / tablet */}
+      <div className="hidden md:flex rounded-md border w-full">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted">
+              <TableHead className={`font-semibold ${textBodyCls}`}>
+                {tCommon("Date")}
+              </TableHead>
+              <TableHead className={`font-semibold ${textBodyCls}`}>
+                {tCommon("Particulars")}
+              </TableHead>
+              {DENOMS.map((d) => (
+                <TableHead
+                  key={d}
+                  className={`text-right font-semibold ${textBodyCls}`}
+                >
+                  <span className="border-2 px-2 rounded-md">₹{d}</span>
+                </TableHead>
+              ))}
+              <TableHead className={`text-right font-semibold ${textBodyCls}`}>
+                {tCommon("Total")}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody className="">
+            {data.map((r, index) => {
+              const diffs = DENOMS.map((d) => r.parts[d]?.difference ?? 0);
+              const totalStampCount = diffs.reduce((a, b) => a + b, 0);
+
+              const stockAddedByDenom = DENOMS.map(
+                (d) => r.parts[d]?.stockAdded ?? 0,
+              );
+              const totalStockAdded = stockAddedByDenom.reduce(
+                (a, b) => a + b,
+                0,
+              );
+              const hasStockAdded = totalStockAdded > 0;
+
+              const amounts = DENOMS.map((d) => r.parts[d]?.amount ?? 0);
+              const total = r.totalAmount ?? amounts.reduce((a, b) => a + b, 0);
+
+              const prevTotalReading = DENOMS.reduce(
+                (acc, d) => acc + (r.parts[d]?.prevReading ?? 0),
+                0,
+              );
+              const todayTotalReading = DENOMS.reduce(
+                (acc, d) => acc + (r.parts[d]?.todayReading ?? 0),
+                0,
+              );
+
+              const dateRowSpan =
+                (showReadings ? 4 : 2) + (hasStockAdded ? 1 : 0);
+              const dividerColSpan = DENOMS.length + 3; // Date + Particulars + denoms + Total
+
+              return (
+                <React.Fragment key={r.date}>
+                  {/* Row 1: Previous Day readings (optional) */}
+                  {showReadings && (
+                    <TableRow>
+                      <TableCell
+                        className="border-r align-middle w-[15%]"
+                        rowSpan={dateRowSpan}
+                      >
+                        <DateDisplay
+                          value={r.date}
+                          type="docId"
+                          className={`text-primary font-semibold flex flex-col justify-center items-center ${textBodyCls}`}
+                        />
+                      </TableCell>
+                      <TableCell
+                        className={`text-muted-foreground w-0 ${textBodyCls}`}
+                      >
+                        {tReadings("YesterdayReading")}
+                      </TableCell>
+                      {DENOMS.map((d) => (
+                        <TableCell
+                          key={d}
+                          className={`text-right tabular-nums text-muted-foreground ${textBodyCls}`}
+                        >
+                          {r.parts[d]?.prevReading ?? 0}
+                        </TableCell>
+                      ))}
+                      <TableCell
+                        className={`text-right tabular-nums text-muted-foreground ${textBodyCls}`}
+                      >
+                        {prevTotalReading}
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {/* Row 2: Today readings (optional) */}
+                  {showReadings && (
+                    <TableRow>
+                      <TableCell
+                        className={`text-muted-foreground ${textBodyCls}`}
+                      >
+                        {tReadings("TodayReading")}
+                      </TableCell>
+                      {DENOMS.map((d) => (
+                        <TableCell
+                          key={d}
+                          className={`text-right tabular-nums text-muted-foreground ${textBodyCls}`}
+                        >
+                          {r.parts[d]?.todayReading ?? 0}
+                        </TableCell>
+                      ))}
+                      <TableCell
+                        className={`text-right tabular-nums text-muted-foreground ${textBodyCls}`}
+                      >
+                        {todayTotalReading}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {hasStockAdded && (
+                    <TableRow>
+                      {!showReadings && (
+                        <TableCell
+                          className={`border-r align-middle w-[15%] ${textBodyCls}`}
+                          rowSpan={dateRowSpan}
+                        >
+                          <DateDisplay
+                            value={r.date}
+                            type="docId"
+                            className={`text-primary font-semibold flex flex-col justify-center items-center ${textBodyCls}`}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell className={`text-green-700 ${textBodyCls}`}>
+                        {tReadings("StockAdded")}
+                      </TableCell>
+                      {DENOMS.map((d) => {
+                        const val = r.parts[d]?.stockAdded ?? 0;
+                        return (
+                          <TableCell
+                            key={d}
+                            className={`text-right tabular-nums text-green-700 font-semibold ${textBodyCls}`}
+                          >
+                            {val > 0 ? `+${val}` : "-"}
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell
+                        className={`text-right tabular-nums text-green-700 font-semibold ${textBodyCls}`}
+                      >
+                        +{totalStockAdded}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {/* Row 3: Stamp Count */}
+                  <TableRow>
+                    {!showReadings && !hasStockAdded && (
+                      <TableCell
+                        className={`border-r align-middle w-[15%] ${textBodyCls}`}
+                        rowSpan={dateRowSpan}
+                      >
+                        <DateDisplay
+                          value={r.date}
+                          type="docId"
+                          className={`text-primary font-semibold flex flex-col justify-center items-center ${textBodyCls}`}
+                        />
+                      </TableCell>
+                    )}
+                    <TableCell
+                      className={`text-muted-foreground ${textBodyCls}`}
+                    >
+                      {tReadings("StampCount")}
+                    </TableCell>
+                    {DENOMS.map((d) => (
+                      <TableCell
+                        key={d}
+                        className={`text-right tabular-nums text-muted-foreground ${textBodyCls}`}
+                      >
+                        {r.parts[d]?.difference ?? 0}
+                      </TableCell>
+                    ))}
+                    <TableCell
+                      className={`text-right font-semibold tabular-nums text-muted-foreground ${textBodyCls}`}
+                    >
+                      {totalStampCount}
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Row 4: Stamp Value */}
+                  <TableRow>
+                    <TableCell className={`${textBodyCls}`}>
+                      {tReadings("StampAmount")}
+                    </TableCell>
+                    {DENOMS.map((d) => (
+                      <TableCell
+                        key={d}
+                        className={`text-right tabular-nums font-semibold ${textBodyCls}`}
+                      >
+                        {formatINR(r.parts[d]?.amount ?? 0.0, true, false)}
+                      </TableCell>
+                    ))}
+                    <TableCell
+                      className={`text-right font-semibold tabular-nums ${textBodyCls}`}
+                    >
+                      {formatINR(total, true, false)}
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Divider */}
+                  {index < data.length - 1 && (
+                    <TableRow className="">
+                      <TableCell colSpan={dividerColSpan} className="p-1">
+                        {/* <Separator className="" /> */}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile */}
+      <div className="md:hidden space-y-3">
+        {data.map((r) => (
+          <div
+            key={r.date}
+            className="rounded-md border p-2 flex flex-col gap-2 border-primary/50 shadow-md"
+          >
+            <div className="flex items-center gap-2 w-full">
+              <div
+                className={` font-semibold flex flex-1 min-w-0 items-center gap-1 ${textPageHeadCls}`}
+              >
+                <CalendarFold className="size-5 text-primary" />
+                <DateDisplay
+                  value={r.date}
+                  type="docId"
+                  className={`text-base flex-1 min-w-0 text-primary font-semibold flex items-center gap-1 ${textPageHeadCls}`}
+                />
+              </div>
+              <div
+                className={`flex shrink-0 text-sm text-right whitespace-nowrap gap-1 items-center ${textBodyCls}`}
+              >
+                {tCommon("Total")}:{" "}
+                <span
+                  className={clsx("font-semibold text-primary text-base", textHeadingCls)}
+                >
+                  {formatINR(r.totalAmount)}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {DENOMS.map((d) => (
+                <div key={d} className="rounded-md bg-muted p-1 shadow-sm">
+                  <div className={`font-semibold text-sm ${textBodyCls}`}>₹{d}</div>
+                  {showReadings && (
+                    <>
+                      <div
+                        className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
+                      >
+                        <span className="text-sm">
+                          {tReadings("YesterdayReading")}:
+                        </span>{" "}
+                        {r.parts[d]?.prevReading ?? 0}
+                      </div>
+                      <div
+                        className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
+                      >
+                        <span className="text-sm">
+                          {tReadings("TodayReading")}:
+                        </span>{" "}
+                        {r.parts[d]?.todayReading ?? 0}
+                      </div>
+                    </>
+                  )}
+                  <div
+                    className={`text-muted-foreground justify-between flex items-center ${textBodyCls}`}
+                  >
+                    {tReadings("StampCount")}:
+                    <span className={clsx("font-medium", textPageHeadCls)}>
+                      {r.parts[d]?.difference ?? 0}
+                    </span>
+                  </div>
+
+                  <div
+                    className={`justify-between flex items-center ${textBodyCls}`}
+                  >
+                    {tReadings("StampAmount")}:
+                    <span
+                      className={clsx(
+                        "font-semibold text-primary text-sm",
+                        textPageHeadCls,
+                      )}
+                    >
+                      {formatINR(r.parts[d]?.amount ?? 0, true, false)}
+                    </span>
+                  </div>
+                  {(r.parts[d]?.stockAdded ?? 0) > 0 && (
+                    <div
+                      className={`text-green-700 justify-between flex items-center font-medium ${textBodyCls}`}
+                    >
+                      <span className="text-sm">
+                        {tReadings("StockAdded")}:
+                      </span>{" "}
+                      +{r.parts[d]?.stockAdded ?? 0}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

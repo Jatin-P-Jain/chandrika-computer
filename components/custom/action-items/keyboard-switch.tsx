@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useTransition } from "react";
 import { useTranslations } from "next-intl";
 
 import { Switch } from "@/components/ui/switch";
 import { useKeyboard } from "@/context/keyboard-context";
+import { useSafeRouter } from "@/hooks/useSafeRouter";
 
 const COOKIE_NAME = "CHANDRIKA_COMPUTER_KEYBOARD";
 
@@ -18,13 +18,14 @@ function getCookie(name: string) {
 function setCookie(name: string, value: string) {
   // cookie for entire site
   document.cookie = `${name}=${encodeURIComponent(
-    value
+    value,
   )}; Path=/; Max-Age=31536000; SameSite=Lax`;
 }
 
 export function KeyboardSwitch({ labelClassName }: { labelClassName: string }) {
   const tCommon = useTranslations("Common");
-  const router = useRouter();
+  const { refresh } = useSafeRouter();
+  const [isPending, startTransition] = useTransition();
 
   const { isHindiActive, setIsHindiActive } = useKeyboard();
 
@@ -48,13 +49,13 @@ export function KeyboardSwitch({ labelClassName }: { labelClassName: string }) {
 
     setIsHindiActive(defaultIsHindi);
     setCookie(COOKIE_NAME, defaultIsHindi ? "hi" : "en");
-    router.refresh();
-  }, [router, setIsHindiActive]);
+    startTransition(() => refresh());
+  }, [refresh, setIsHindiActive]);
 
   const onToggle = (checked: boolean) => {
     setIsHindiActive(checked);
     setCookie(COOKIE_NAME, checked ? "hi" : "en");
-    router.refresh();
+    startTransition(() => refresh());
   };
 
   return (
@@ -66,6 +67,7 @@ export function KeyboardSwitch({ labelClassName }: { labelClassName: string }) {
         checked={isHindiActive}
         onCheckedChange={onToggle}
         aria-label={tCommon("HindiKeyboard")}
+        disabled={isPending}
       />
     </div>
   );

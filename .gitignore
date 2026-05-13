@@ -43,3 +43,4 @@ serviceAccount*.json
 
 firebase-messaging-sw.js
 /public/firebase-messaging-sw.js
+.env*.local

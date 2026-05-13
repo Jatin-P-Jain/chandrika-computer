@@ -2,20 +2,20 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   loginWithEmailAndPass,
-  loginWithGoogle,
+  loginWithGoogle as loginWithGoogleAuth,
   logoutUser,
   sendOTP,
   verifyOTP,
+  GOOGLE_EMAIL_DENIED_ERROR_CODE,
+  GoogleEmailNotAllowedError,
+  isGoogleEmailAllowlisted,
 } from "@/lib/auth/firebase-auth";
 import { auth, firestore } from "@/firebase/client"; // 👈 Add adminAuth
 import { ConfirmationResult, RecaptchaVerifier, User } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { mapDbUserToClientUser } from "@/lib/firebase/mapDBUserToClient";
 import useMonitorInactivity from "@/hooks/useMonitorInactivity";
-import { getDeviceMetadata } from "@/lib/utils";
-import { getMessaging, getToken } from "firebase/messaging";
 import { UserData } from "@/types/user";
-import { saveFcmToken } from "@/lib/firebase/saveFcmToken";
 import { removeToken } from "./actions";
 import { createUserIfNotExists } from "@/lib/firebase/createUserIfNotExists";
 
@@ -51,6 +51,8 @@ type AuthContextType = {
     confirmationResult: ConfirmationResult,
   ) => Promise<User | undefined>;
   startPhoneVerificationFlow: () => void;
+  accessDenied: boolean;
+  clearAccessDenied: () => void;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -59,6 +61,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authState, setAuthState] = useState<AuthStatus>({ status: "loading" });
   const [inactivityLimit, setInactivityLimit] = useState<number>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+
+  const isDeniedError = (error: unknown) => {
+    if (error instanceof GoogleEmailNotAllowedError) return true;
+    if (typeof error === "object" && error !== null && "code" in error) {
+      return error.code === GOOGLE_EMAIL_DENIED_ERROR_CODE;
+    }
+    return false;
+  };
 
   const getUserToken = async () => {
     const { currentUser } =
@@ -66,7 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (!currentUser) throw new Error("No current user for verification");
 
-    return currentUser.getIdToken();
+    return currentUser.getIdToken(true);
   };
 
   const startPhoneVerificationFlow = () => {
@@ -107,7 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // 👇 Update Firestore ONLY if phone wasn't verified before
       if (!phoneVerified) {
         const idTokenResult = await currentUser.getIdTokenResult(true);
-        const claims = idTokenResult.claims as any;
+        const claims = idTokenResult.claims;
         const phoneNumber = currentUser.phoneNumber
           ? currentUser.phoneNumber.slice(3)
           : null;
@@ -147,34 +158,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           currentUser,
         });
 
-        // Refresh FCM token
-        await refreshAndSaveFcmToken();
-
-        window.location.href = "/"; // Redirect to home
+        // Refresh FCM token in background to avoid blocking login transition.
+        void (async () => {
+          const { refreshAndSaveFcmToken } =
+            await import("@/lib/firebase/refreshAndSaveFcmToken");
+          await refreshAndSaveFcmToken(currentUser.uid);
+        })();
       } else {
         throw new Error("User document not found after update");
       }
     } catch (e) {
       console.error("completePhoneVerification failed", e);
       await logoutUser();
-    }
-  };
-
-  const refreshAndSaveFcmToken = async () => {
-    if (authState.status !== "ready") return;
-    const { currentUser } = authState;
-
-    try {
-      const messaging = getMessaging();
-      const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY!;
-      const token = await getToken(messaging, { vapidKey });
-      if (!token) return;
-
-      const metadata = getDeviceMetadata();
-      await saveFcmToken(currentUser.uid, token, metadata);
-      console.log("✅ FCM token refreshed & saved:", token);
-    } catch (error) {
-      console.error("Failed to refresh and save FCM token", error);
     }
   };
 
@@ -186,10 +181,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
+      if (!isGoogleEmailAllowlisted(user.email)) {
+        setAccessDenied(true);
+        setAuthState({ status: "no-user" });
+        await logoutUser();
+        return;
+      }
+
+      setAccessDenied(false);
+
       try {
         // Claims only for role/admin, and don't force refresh on load
         const idTokenResult = await user.getIdTokenResult(); // [web:125]
-        const claims = idTokenResult.claims as any;
+        const claims = idTokenResult.claims;
 
         // Ensure user doc exists
         const safeUser: UserData = {
@@ -197,7 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email: user.email ?? null,
           phoneNumber: user.phoneNumber?.slice(3) ?? null,
           displayName: user.displayName ?? null,
-          role: claims.admin ? "admin" : null,
+          role: claims.admin ? "admin" : "user",
           photoUrl: user.photoURL,
         };
         await createUserIfNotExists(safeUser);
@@ -239,6 +243,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         setInactivityLimit(limit);
       } catch (e) {
+        if (isDeniedError(e)) {
+          setAccessDenied(true);
+          setAuthState({ status: "no-user" });
+          await logoutUser();
+          return;
+        }
         console.error("Auth state check failed", e);
         setAuthState({ status: "first-time-setup", currentUser: user });
       }
@@ -263,6 +273,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logout: async () => {
           setIsLoggingOut(true);
           try {
+            setAccessDenied(false);
             await logoutUser();
             window.location.href = "/";
           } catch (err) {
@@ -270,13 +281,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setIsLoggingOut(false);
           }
         },
-        loginWithGoogle,
+        loginWithGoogle: async () => {
+          setAccessDenied(false);
+          try {
+            return await loginWithGoogleAuth();
+          } catch (error) {
+            if (isDeniedError(error)) {
+              setAccessDenied(true);
+            }
+            throw error;
+          }
+        },
         loginWithEmailAndPassword: ({ email, password }) =>
           loginWithEmailAndPass(email, password),
         handleSendOTP: (mobile, appVerifier) => sendOTP(mobile, appVerifier),
         verifyOTP: (otp, confirmationResult) =>
           verifyOTP(otp, confirmationResult),
         startPhoneVerificationFlow,
+        accessDenied,
+        clearAccessDenied: () => setAccessDenied(false),
       }}
     >
       {children}

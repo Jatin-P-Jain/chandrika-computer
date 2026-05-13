@@ -2,7 +2,9 @@
 "use client";
 
 import clsx from "clsx";
-import { useLocale, useTranslations } from "next-intl";
+import * as React from "react";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import {
@@ -10,14 +12,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import type { DailyFormValues } from "@/schema/dailay-page.schema";
+import type { DailyFormValues } from "@/schema/daily-page.schema";
 import { LineItemRow } from "./line-item-row";
 import { SectionTotalBar } from "./section-total-bar";
 import { formatINR } from "@/lib/utils";
-import { ListPlus } from "lucide-react";
 import { ReadOnlyLineItem } from "./read-line-item-row";
-
+import { AddLineItemButton } from "./add-line-item-button";
 
 export function FieldArraySection({
   readOnly,
@@ -29,25 +29,40 @@ export function FieldArraySection({
   totalBarClassName,
   showNet,
   netForDay,
+  onPersist,
 }: {
   readOnly: boolean;
   value: "earnings.otherIncomes" | "businessExpenses" | "dailySpends";
   title: string;
   addButtonText: string;
-  totalLabel: string;
-  totalValue: React.ReactNode;
+  totalLabel?: string;
+  totalValue?: React.ReactNode;
   totalBarClassName?: string;
   showNet?: boolean;
   netForDay?: number;
+  onPersist?: () => void | Promise<void>;
 }) {
   const tDailyAccount = useTranslations("DailyAccount");
   const { control } = useFormContext<DailyFormValues>();
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHeadCls = clsx(isHi && "text-lg font-[inherit]");
-  const textBodyCls = clsx(isHi && "text-base! font-[inherit]");
+  const { textSubheadingCls, textBodyCls } = useLocaleTypography();
 
   const fa = useFieldArray({ control, name: value });
+  const [newItemIdx, setNewItemIdx] = React.useState<number | null>(null);
+  const otherFixedExpenses = useWatch({
+    control: control, // or "control" if you already have it
+    name: value,
+  });
+
+  const last =
+    Array.isArray(otherFixedExpenses) && otherFixedExpenses.length
+      ? otherFixedExpenses[otherFixedExpenses.length - 1]
+      : undefined;
+
+  const disableAdd =
+    readOnly ||
+    (last
+      ? !(String(last.label ?? "").trim().length > 0 && Number(last.amount) > 0)
+      : false);
 
   return (
     <AccordionItem
@@ -56,8 +71,8 @@ export function FieldArraySection({
     >
       <AccordionTrigger
         className={clsx(
-          "py-2 text-base font-semibold text-primary justify-center lg:border-b items-center",
-          textHeadCls
+          "p-2 text-base font-semibold text-primary justify-between lg:border-b items-center pb-0",
+          textSubheadingCls,
         )}
       >
         {title}
@@ -71,7 +86,12 @@ export function FieldArraySection({
                 {tDailyAccount("NetIncome")}
               </div>
             </div>
-            <div className={clsx("text-base font-semibold", textHeadCls)}>
+            <div
+              className={clsx(
+                "text-base tabular-nums font-semibold",
+                textSubheadingCls,
+              )}
+            >
               {formatINR(netForDay || 0)}
             </div>
           </div>
@@ -82,9 +102,8 @@ export function FieldArraySection({
             readOnly ? (
               <ReadOnlyLineItem
                 key={f.id}
-                control={control}
                 namePrefix={`${value}.${idx}`}
-                textHeadCls={textHeadCls}
+                textHeadCls={textSubheadingCls}
                 textBodyCls={textBodyCls}
               />
             ) : (
@@ -92,23 +111,27 @@ export function FieldArraySection({
                 key={f.id}
                 namePrefix={`${value}.${idx}`}
                 onRemove={() => fa.remove(idx)}
+                onPersist={onPersist}
+                initialEditing={idx === newItemIdx}
               />
-            )
+            ),
           )}
         </div>
 
         <div className="flex items-center justify-between">
           {!readOnly && (
-            <Button
-              type="button"
-              size={"sm"}
-              variant="outline"
-              onClick={() => fa.append({ label: "", amount: 0, tags: [] } as any)}
-              className="w-full flex justify-center items-center gap-2 shadow-md"
-            >
-              {addButtonText}
-              <ListPlus />
-            </Button>
+            <AddLineItemButton
+              onAdd={() => {
+                const nextIdx = fa.fields.length;
+                setNewItemIdx(nextIdx);
+                fa.append(
+                  { label: "", amount: 0, tags: [] },
+                  { shouldFocus: false },
+                );
+              }}
+              buttonText={addButtonText}
+              disabled={disableAdd}
+            />
           )}
         </div>
       </AccordionContent>
@@ -117,7 +140,7 @@ export function FieldArraySection({
         className={clsx("mt-auto", totalBarClassName)}
         label={<span className={textBodyCls}>{totalLabel}</span>}
         value={totalValue}
-        valueClassName={textHeadCls}
+        valueClassName={textSubheadingCls}
       />
     </AccordionItem>
   );

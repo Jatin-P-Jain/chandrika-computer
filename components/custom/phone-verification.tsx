@@ -10,19 +10,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  CheckCircle,
   Loader2,
   Loader2Icon,
   Redo2Icon,
   Send,
   SendHorizonalIcon,
+  Smartphone,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMobileOtp } from "@/hooks/useMobileOtp";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import OTPInput from "./otp-input";
 import { User } from "firebase/auth";
-import MobileFriendlyIcon from "@mui/icons-material/MobileFriendly";
 import { formatTime } from "@/lib/utils";
 import { toast } from "sonner";
 import clsx from "clsx";
@@ -46,14 +47,10 @@ export function PhoneVerification({
   onVerified: () => void;
   currentUser: User | null;
 }) {
-  // 👈 ONLY show for phone verification states
-  if (
-    !authStateStatus ||
-    (authStateStatus !== "first-time-setup" &&
-      authStateStatus !== "phone-verification-required")
-  ) {
-    return null;
-  }
+  const shouldShow =
+    !!authStateStatus &&
+    (authStateStatus === "first-time-setup" ||
+      authStateStatus === "phone-verification-required");
 
   const locale = useLocale();
   const tToast = useTranslations("Toast");
@@ -62,13 +59,11 @@ export function PhoneVerification({
   // const showPhoneInput = authStateStatus === "first-time-setup";
   // const phoneVerification = authStateStatus === "phone-verification-required";
 
- 
-
   // 👇 Use ref to persist phone number across state switches
   const phoneNumberRef = useRef<string>("");
 
   const [phoneAuthState, setPhoneAuthState] = useState<PhoneAuthState>({
-    phoneNumber: "",
+    phoneNumber: currentUser?.phoneNumber ?? "",
     otp: "",
     error: "",
   });
@@ -83,14 +78,16 @@ export function PhoneVerification({
   const [otpEpoch, setOtpEpoch] = useState(0);
 
   const recaptchaVerifier = useRecaptcha();
-  const { isVerifying, otpSent, sendingOtp, sendOtp, verifyOtp, resetOtp } =
-    useMobileOtp({
+  const { isVerifying, otpSent, sendingOtp, sendOtp, verifyOtp } = useMobileOtp(
+    {
       onSuccess: onVerified,
       appVerifier: recaptchaVerifier,
-      currentUser: currentUser!,
-    });
+      currentUser,
+    },
+  );
+  const autoVerifyOtpRef = useRef<string>("");
 
-   const showPhoneInput = authStateStatus === "first-time-setup" && !otpSent;
+  const showPhoneInput = authStateStatus === "first-time-setup" && !otpSent;
   const phoneVerification =
     authStateStatus === "phone-verification-required" ||
     (authStateStatus === "first-time-setup" && otpSent);
@@ -116,21 +113,6 @@ export function PhoneVerification({
     }
   }, [authStateStatus, currentUser?.phoneNumber]);
 
-  // 👇 Initialize phone number for returning users
-  useEffect(() => {
-    if (
-      phoneVerification &&
-      currentUser?.phoneNumber &&
-      !phoneAuthState.phoneNumber
-    ) {
-      setPhoneAuthState((s) => ({
-        ...s,
-        phoneNumber: currentUser.phoneNumber!,
-      }));
-      phoneNumberRef.current = currentUser.phoneNumber!;
-    }
-  }, [phoneVerification, currentUser?.phoneNumber]);
-
   // 👇 Expiry timer
   useEffect(() => {
     if (!otpSent) return;
@@ -149,9 +131,7 @@ export function PhoneVerification({
 
   // 👇 Resend timer
   useEffect(() => {
-    if (!otpSent) return;
-    setTimer(30);
-    setCanResend(false);
+    if (!otpSent || canResend) return;
 
     const interval = setInterval(() => {
       setTimer((prev) => {
@@ -165,20 +145,31 @@ export function PhoneVerification({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [otpSent, otpEpoch]);
+  }, [otpSent, otpEpoch, canResend]);
 
   const handleSendOTP = async () => {
     if (!phoneAuthState.phoneNumber) {
       toast.error(tToast("PleaseEnterPhoneNumber"));
       return;
     }
+    setTimer(30);
+    setCanResend(false);
     await sendOtp(phoneAuthState.phoneNumber);
     setOtpEpoch((x) => x + 1);
   };
 
-  const handleVerifyOTP = async () => {
+  const handleVerifyOTP = useCallback(async () => {
     await verifyOtp(phoneAuthState.otp);
-  };
+  }, [phoneAuthState.otp, verifyOtp]);
+
+  useEffect(() => {
+    if (!otpSent || isVerifying || expiryTimer === 0) return;
+    const otp = phoneAuthState.otp.trim();
+    if (otp.length !== 6) return;
+    if (autoVerifyOtpRef.current === otp) return;
+    autoVerifyOtpRef.current = otp;
+    void handleVerifyOTP();
+  }, [otpSent, isVerifying, expiryTimer, phoneAuthState.otp, handleVerifyOTP]);
 
   const handleResend = async () => {
     if (hasResentOnce || sendingOtp) return;
@@ -189,6 +180,8 @@ export function PhoneVerification({
       setHasResentOnce(true);
       toast.success(tToast("OtpResentSuccessfully"));
       setExpiryTimer(300);
+      setTimer(30);
+      setCanResend(false);
       setOtpEpoch((x) => x + 1);
       // Clear OTP input on resend
       setPhoneAuthState((s) => ({ ...s, otp: "" }));
@@ -199,12 +192,16 @@ export function PhoneVerification({
     }
   };
 
+  if (!shouldShow) {
+    return null;
+  }
+
   return (
     <section className="flex items-center justify-center">
-      <Card className="w-full">
+      <Card className="w-full gap-2 p-3 px-0">
         <CardHeader className="flex flex-col items-center text-center gap-1">
           <div>
-            <MobileFriendlyIcon className="size-8! md:size-10! text-primary" />
+            <Smartphone className="size-8 md:size-10 text-primary" />
           </div>
           <CardTitle className="text-lg md:text-2xl text-primary">
             {tMobileNumber("Verification")}
@@ -300,6 +297,7 @@ export function PhoneVerification({
                       <OTPInput
                         length={6}
                         value={phoneAuthState.otp}
+                        disabled={isVerifying}
                         onChange={(value) =>
                           setPhoneAuthState({ ...phoneAuthState, otp: value })
                         }
@@ -331,6 +329,7 @@ export function PhoneVerification({
                           className="text-primary w-full"
                           onClick={handleResend}
                           disabled={
+                            isVerifying ||
                             resendStatus === "done" ||
                             resendStatus === "sending"
                           }
@@ -365,7 +364,7 @@ export function PhoneVerification({
                         {isVerifying ? (
                           <Loader2Icon className="size-4 animate-spin" />
                         ) : (
-                          <SendHorizonalIcon className="ml-2 size-4!" />
+                          <CheckCircle className="ml-2 size-4!" />
                         )}
                       </div>
                     </Button>

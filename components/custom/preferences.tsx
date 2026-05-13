@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -12,15 +11,13 @@ import {
 import { Settings2 } from "lucide-react";
 import { ThemeModeToggle } from "./action-items/theme-mode-button";
 import { LocaleToggle } from "./action-items/locale-toggle";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { KeyboardSwitch } from "./action-items/keyboard-switch";
-import clsx from "clsx";
 
 export function Preferences() {
   const tCommon = useTranslations("Common");
-  const locale = useLocale();
-  const isHi = locale === "hi";
-  const textHiCls = clsx(isHi && "text-base! font-medium");
+  const { textLabelCls } = useLocaleTypography();
 
   return (
     <DropdownMenu>
@@ -41,25 +38,16 @@ export function Preferences() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          className="flex items-center justify-between hover:bg-transparent!"
-          onSelect={(e) => e.preventDefault()}
-        >
-          <KeyboardSwitch labelClassName={textHiCls} />
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="flex items-center justify-between hover:bg-transparent!"
-          onSelect={(e) => e.preventDefault()}
-        >
-          <ThemeModeToggle labelClassName={textHiCls} />
-        </DropdownMenuItem>
+        <div className="px-2 py-1.5">
+          <KeyboardSwitch labelClassName={textLabelCls} />
+        </div>
+        <div className="px-2 py-1.5">
+          <ThemeModeToggle labelClassName={textLabelCls} />
+        </div>
 
-        <DropdownMenuItem
-          className="flex items-center justify-between hover:bg-transparent!"
-          onSelect={(e) => e.preventDefault()}
-        >
-          <LocaleToggle labelClassName={textHiCls} />
-        </DropdownMenuItem>
+        <div className="px-2 py-1.5">
+          <LocaleToggle labelClassName={textLabelCls} />
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

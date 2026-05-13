@@ -3,7 +3,7 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { enUS, hi } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -11,8 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useLocale } from "use-intl";
-import clsx from "clsx";
+import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
 type DaySelectorProps = {
   value?: Date;
@@ -39,17 +38,18 @@ function addDaysSafe(date: Date, days: number) {
 export function DayNavigator({
   value,
   onChange,
-  className,
   disabled,
   minDate,
   maxDate = new Date(),
 }: DaySelectorProps) {
-  const locale = useLocale();
-  const isHi = locale === "hi";
+  const { locale, textSubheadingCls } = useLocaleTypography();
 
   const [internalDate, setInternalDate] = React.useState<Date>(
-    () => value ?? new Date()
+    () => value ?? new Date(),
   );
+
+  // NEW
+  const [isPending, startTransition] = React.useTransition();
 
   // Keep internal state in sync when used as a controlled component.
   React.useEffect(() => {
@@ -60,16 +60,21 @@ export function DayNavigator({
 
   const setSelected = (next: Date) => {
     const clamped = clampDate(next, minDate, maxDate);
-    if (!value) setInternalDate(clamped);
-    onChange?.(clamped);
+
+    startTransition(() => {
+      if (!value) setInternalDate(clamped);
+      onChange?.(clamped);
+    });
   };
 
   const prevDisabled =
     !!disabled ||
+    isPending ||
     (minDate ? addDaysSafe(selected, -1).getTime() < minDate.getTime() : false);
 
   const nextDisabled =
     !!disabled ||
+    isPending ||
     (maxDate ? addDaysSafe(selected, 1).getTime() > maxDate.getTime() : false);
 
   return (
@@ -87,43 +92,57 @@ export function DayNavigator({
           <ChevronLeft className="size-6 text-primary" />
         </Button>
       </div>
+
       <div className="flex w-full">
         <Popover>
           <PopoverTrigger asChild className="">
             <Button
               type="button"
               variant="outline"
-              disabled={disabled}
-              className={clsx(
-                "justify-center w-full font-semibold text-primary md:text-base",
-                isHi && "md:text-lg"
-              )}
+              disabled={disabled || isPending}
+              className={`justify-center w-full font-semibold text-primary text-base ${textSubheadingCls}`}
               aria-label="Pick a date"
             >
-              {format(selected, "EEEE, dd MMMM yyyy", {
-                locale: { en: enUS, hi: hi }[locale] || enUS,
-              })}
+              {isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  {format(selected, "EEEE, dd MMMM yyyy", {
+                    locale: { en: enUS, hi: hi }[locale] || enUS,
+                  })}
+                </span>
+              ) : (
+                format(selected, "EEEE, dd MMMM yyyy", {
+                  locale: { en: enUS, hi: hi }[locale] || enUS,
+                })
+              )}
             </Button>
           </PopoverTrigger>
 
           <PopoverContent className="w-auto p-0" align="center">
+            {isPending ? (
+              <div className="flex items-center justify-center w-full h-full fixed inset-0 bg-background/80 z-10">
+                <Loader2 className="size-6 animate-spin text-primary" />
+              </div>
+            ) : null}
             <Calendar
               mode="single"
+              locale={{ en: enUS, hi: hi }[locale] || enUS}
               selected={selected}
               onSelect={(d) => {
                 if (d) setSelected(d);
               }}
-              // Optional bounds
               disabled={(date) => {
                 if (minDate && date < minDate) return true;
                 if (maxDate && date > maxDate) return true;
                 return false;
               }}
               endMonth={maxDate}
+              className="text-base!"
             />
           </PopoverContent>
         </Popover>
       </div>
+
       <div className="flex">
         <Button
           type="button"
