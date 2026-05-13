@@ -873,7 +873,16 @@ export default function DailyReadingsDialog({
         return;
       }
 
-      const token = await authState.currentUser.getIdToken();
+      // Force-refresh token so latest custom claims are available on every device.
+      // Without this, one device can keep a stale token (missing admin claim)
+      // and server actions fail with a generic production RSC error.
+      const tokenResult = await authState.currentUser.getIdTokenResult(true);
+      if (!tokenResult.claims.admin) {
+        toast.error("You are not authorized to save readings.");
+        return;
+      }
+
+      const token = tokenResult.token;
       const auditTimestamp = new Date().toISOString();
       const auditKind: "saved" | "updated" = readingsFound
         ? "updated"
@@ -926,6 +935,14 @@ export default function DailyReadingsDialog({
         }),
       ]);
 
+      if (!photoRes.success) {
+        throw new Error(photoRes.error || "Unable to save photocopy reading");
+      }
+
+      if (!stampRes.success) {
+        throw new Error(stampRes.error || "Unable to save stamp reading");
+      }
+
       toast.success("Saved photocopy & stamp");
       onSaved?.({ photocopy: photoRes.data, stamp: stampRes.data });
 
@@ -966,8 +983,17 @@ export default function DailyReadingsDialog({
 
       closeDialog();
     } catch (e) {
+      console.error("[Readings] Save failed", e);
+
+      const message = e instanceof Error ? e.message : "Unknown error";
+      const isMaskedProdServerError = message.includes(
+        "Server Components render",
+      );
+
       toast.error("Save failed", {
-        description: e instanceof Error ? e.message : "Unknown error",
+        description: isMaskedProdServerError
+          ? "Session or authorization issue. Please refresh and login again."
+          : message,
       });
     } finally {
       setSaving(false);

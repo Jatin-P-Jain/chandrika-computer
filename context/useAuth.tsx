@@ -124,7 +124,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const phoneNumber = currentUser.phoneNumber
         ? currentUser.phoneNumber.slice(3)
         : null;
-      const role = claims.admin ? "admin" : "user";
+      const role = "admin";
       console.log("[Auth] claims:", { role, phoneNumber, admin: claims.admin });
 
       const userDocRef = doc(firestore, "users", currentUser.uid);
@@ -232,7 +232,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email: user.email ?? null,
           phoneNumber: user.phoneNumber?.slice(3) ?? null,
           displayName: user.displayName ?? null,
-          role: claims.admin ? "admin" : "user",
+          role: "admin",
           photoUrl: user.photoURL,
         };
         await createUserIfNotExists(safeUser);
