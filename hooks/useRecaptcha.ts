@@ -2,6 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { RecaptchaVerifier } from "firebase/auth";
 import { auth } from "@/firebase/client";
 
+const RECAPTCHA_CONTAINER_ID = "recaptcha-container-global";
+
+const ensureRecaptchaContainer = (): string => {
+  let container = document.getElementById(RECAPTCHA_CONTAINER_ID);
+  if (!container) {
+    container = document.createElement("div");
+    container.id = RECAPTCHA_CONTAINER_ID;
+    container.style.display = "none";
+    document.body.appendChild(container);
+  }
+  return RECAPTCHA_CONTAINER_ID;
+};
+
 export function useRecaptcha() {
   const [verifier, setVerifier] = useState<RecaptchaVerifier | null>(null);
   const initialized = useRef(false);
@@ -16,50 +29,27 @@ export function useRecaptcha() {
     }
 
     initialized.current = true;
-    let attempts = 0;
-    const maxAttempts = 100;
+    try {
+      const containerId = ensureRecaptchaContainer();
+      const verifierInstance = new RecaptchaVerifier(auth, containerId, {
+        size: "invisible",
+        callback: () => {},
+      });
 
-    const interval = setInterval(() => {
-      attempts += 1;
-      const container = document.getElementById("recaptcha-container");
-      if (!container) {
-        if (attempts >= maxAttempts) {
-          clearInterval(interval);
+      verifierInstance
+        .render()
+        .then(() => {
+          setVerifier(verifierInstance);
+          window.recaptchaVerifier = verifierInstance;
+        })
+        .catch((e) => {
           initialized.current = false;
-          console.warn("reCAPTCHA container not found in time");
-        }
-        return;
-      }
-
-      clearInterval(interval);
-
-      try {
-        const verifierInstance = new RecaptchaVerifier(
-          auth,
-          "recaptcha-container",
-          {
-            size: "invisible",
-            callback: () => {},
-          }
-        );
-
-        verifierInstance
-          .render()
-          .then(() => {
-            setVerifier(verifierInstance);
-            window.recaptchaVerifier = verifierInstance;
-          })
-          .catch((e) => {
-            initialized.current = false;
-            console.error("Failed to render reCAPTCHA", e);
-          });
-      } catch (e) {
-        initialized.current = false;
-        console.error("Failed to initialize reCAPTCHA", e);
-      }
-    }, 100); // poll until container is in DOM
-
-    return () => clearInterval(interval);
+          console.error("Failed to render reCAPTCHA", e);
+        });
+    } catch (e) {
+      initialized.current = false;
+      console.error("Failed to initialize reCAPTCHA", e);
+    }
   }, []);
 
   return verifier;

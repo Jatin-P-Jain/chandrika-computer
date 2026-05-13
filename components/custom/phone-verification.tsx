@@ -206,7 +206,6 @@ export function PhoneVerification({
 
   return (
     <section className="flex items-center justify-center">
-      <div id="recaptcha-container" className="hidden" />
       <Card className="w-full gap-2 p-3 px-0">
         <CardHeader className="flex flex-col items-center text-center gap-1">
           <div>
