@@ -478,65 +478,78 @@ export async function savePhotocopyReading(opts: {
   auditTimestamp: string;
   auditKind: "saved" | "updated";
 }) {
-  await requireAdminAccess(opts.user, opts.authtoken);
+  try {
+    await requireAdminAccess(opts.user, opts.authtoken);
 
-  const done = startFirestoreMetric({
-    source: "server",
-    operation: "savePhotocopyReading",
-    collection: "photocopyReadings",
-  });
+    const done = startFirestoreMetric({
+      source: "server",
+      operation: "savePhotocopyReading",
+      collection: "photocopyReadings",
+    });
 
-  const rate = 2;
+    const rate = 2;
 
-  const difference = clamp0(opts.todayReading - opts.prevReading);
-  const actualAmount = clamp0(difference * rate);
-  const roundedAmount = opts.useRoundedAmount
-    ? clamp0(opts.roundedAmount ?? actualAmount)
-    : null;
-  const amount = roundedAmount ?? actualAmount;
+    const difference = clamp0(opts.todayReading - opts.prevReading);
+    const actualAmount = clamp0(difference * rate);
+    const roundedAmount = opts.useRoundedAmount
+      ? clamp0(opts.roundedAmount ?? actualAmount)
+      : null;
+    const amount = roundedAmount ?? actualAmount;
 
-  const ref = fireStore.collection("photocopyReadings").doc(opts.todayDateYmd);
+    const ref = fireStore
+      .collection("photocopyReadings")
+      .doc(opts.todayDateYmd);
 
-  const payload: PhotocopyReadingDoc = {
-    date: opts.todayDateYmd,
-    todayReading: nn(opts.todayReading),
-    prevReading: nn(opts.prevReading),
-    prevReadingWasManual: Boolean(opts.prevReadingWasManual),
-    difference,
-    rate,
-    amount,
-    actualAmount,
-    // Do not persist rounded value separately; amount is the source of truth.
-    roundedAmount: null,
-    isRounded: roundedAmount !== null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+    const payload: PhotocopyReadingDoc = {
+      date: opts.todayDateYmd,
+      todayReading: nn(opts.todayReading),
+      prevReading: nn(opts.prevReading),
+      prevReadingWasManual: Boolean(opts.prevReadingWasManual),
+      difference,
+      rate,
+      amount,
+      actualAmount,
+      // Do not persist rounded value separately; amount is the source of truth.
+      roundedAmount: null,
+      isRounded: roundedAmount !== null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-  // Ensure any legacy roundedAmount value is removed from stored document.
-  await ref.set(
-    {
-      ...payload,
-      roundedAmount: FieldValue.delete(),
-    },
-    { merge: true },
-  );
+    // Ensure any legacy roundedAmount value is removed from stored document.
+    await ref.set(
+      {
+        ...payload,
+        roundedAmount: FieldValue.delete(),
+      },
+      { merge: true },
+    );
 
-  await syncDailyAccountFromReadings({
-    docId: opts.todayDateYmd,
-    fsAmount: amount,
-    user: opts.user,
-    auditTimestamp: opts.auditTimestamp,
-    auditKind: opts.auditKind,
-  });
+    await syncDailyAccountFromReadings({
+      docId: opts.todayDateYmd,
+      fsAmount: amount,
+      user: opts.user,
+      auditTimestamp: opts.auditTimestamp,
+      auditKind: opts.auditKind,
+    });
 
-  done({
-    success: true,
-    docsWritten: 1,
-    details: { todayDateYmd: opts.todayDateYmd },
-  });
+    done({
+      success: true,
+      docsWritten: 1,
+      details: { todayDateYmd: opts.todayDateYmd },
+    });
 
-  return { success: true as const, data: payload };
+    return { success: true as const, data: payload };
+  } catch (error) {
+    console.error("savePhotocopyReading failed", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to save photocopy reading",
+    };
+  }
 }
 
 export const getStampReadings = async (
@@ -600,58 +613,67 @@ export async function saveStampReading(opts: {
   auditTimestamp: string;
   auditKind: "saved" | "updated";
 }) {
-  await requireAdminAccess(opts.user, opts.authtoken);
+  try {
+    await requireAdminAccess(opts.user, opts.authtoken);
 
-  const done = startFirestoreMetric({
-    source: "server",
-    operation: "saveStampReading",
-    collection: "stampReadings",
-  });
+    const done = startFirestoreMetric({
+      source: "server",
+      operation: "saveStampReading",
+      collection: "stampReadings",
+    });
 
-  const parts = createEmptyStampParts();
+    const parts = createEmptyStampParts();
 
-  for (const d of DENOMS) {
-    const prevReading = nn(opts.prevPartsReadings[d] ?? 0);
-    const todayReading = nn(opts.partsTodayReadings[d] ?? 0);
-    const stockAdded = nn(opts.partsStockAdded?.[d] ?? 0);
-    const todaySoldBaseline = clamp0(todayReading - stockAdded);
-    // Keep server-side stamp sold logic consistent with review UI:
-    // if today's effective reading is 0, sold must remain 0.
-    const difference =
-      todaySoldBaseline > 0 ? clamp0(prevReading - todaySoldBaseline) : 0;
-    const amount = clamp0(difference * d);
+    for (const d of DENOMS) {
+      const prevReading = nn(opts.prevPartsReadings[d] ?? 0);
+      const todayReading = nn(opts.partsTodayReadings[d] ?? 0);
+      const stockAdded = nn(opts.partsStockAdded?.[d] ?? 0);
+      const todaySoldBaseline = clamp0(todayReading - stockAdded);
+      // Keep server-side stamp sold logic consistent with review UI:
+      // if today's effective reading is 0, sold must remain 0.
+      const difference =
+        todaySoldBaseline > 0 ? clamp0(prevReading - todaySoldBaseline) : 0;
+      const amount = clamp0(difference * d);
 
-    parts[d] = { todayReading, prevReading, stockAdded, difference, amount };
+      parts[d] = { todayReading, prevReading, stockAdded, difference, amount };
+    }
+
+    const totalAmount = DENOMS.reduce((acc, d) => acc + parts[d].amount, 0);
+
+    const ref = fireStore.collection("stampReadings").doc(opts.todayDateYmd);
+
+    const payload: StampReadingDoc = {
+      date: opts.todayDateYmd,
+      parts,
+      prevReadingWasManual: Boolean(opts.prevReadingWasManual),
+      totalAmount,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await ref.set(payload, { merge: true }); // upsert merge [web:49]
+
+    await syncDailyAccountFromReadings({
+      docId: opts.todayDateYmd,
+      sdAmount: totalAmount,
+      user: opts.user,
+      auditTimestamp: opts.auditTimestamp,
+      auditKind: opts.auditKind,
+    });
+
+    done({
+      success: true,
+      docsWritten: 1,
+      details: { todayDateYmd: opts.todayDateYmd },
+    });
+
+    return { success: true as const, data: payload };
+  } catch (error) {
+    console.error("saveStampReading failed", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error ? error.message : "Unable to save stamp reading",
+    };
   }
-
-  const totalAmount = DENOMS.reduce((acc, d) => acc + parts[d].amount, 0);
-
-  const ref = fireStore.collection("stampReadings").doc(opts.todayDateYmd);
-
-  const payload: StampReadingDoc = {
-    date: opts.todayDateYmd,
-    parts,
-    prevReadingWasManual: Boolean(opts.prevReadingWasManual),
-    totalAmount,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  await ref.set(payload, { merge: true }); // upsert merge [web:49]
-
-  await syncDailyAccountFromReadings({
-    docId: opts.todayDateYmd,
-    sdAmount: totalAmount,
-    user: opts.user,
-    auditTimestamp: opts.auditTimestamp,
-    auditKind: opts.auditKind,
-  });
-
-  done({
-    success: true,
-    docsWritten: 1,
-    details: { todayDateYmd: opts.todayDateYmd },
-  });
-
-  return { success: true as const, data: payload };
 }

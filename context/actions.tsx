@@ -28,11 +28,6 @@ export const setToken = async (token: string, refreshToken: string) => {
   }
 };
 
-// 👈 ADMIN EMAILS for auto-role assignment
-const ADMIN_EMAILS = [
-  "jatinbittu13@gmail.com",
-  // Add your admin emails here
-];
 export const setUserClaims = async (token: string, phoneNumber: string) => {
   try {
     const verifiedToken = await auth.verifyIdToken(token);
@@ -40,15 +35,13 @@ export const setUserClaims = async (token: string, phoneNumber: string) => {
 
     const userRecord = await auth.getUser(verifiedToken.uid);
     const existingClaims = userRecord.customClaims ?? {};
-    const newClaims: Record<string, boolean> = { ...existingClaims };
-
-    // Admin logic
-    if (userRecord.email && ADMIN_EMAILS.includes(userRecord.email)) {
-      newClaims.admin = true;
-    }
-
-    newClaims.phoneVerified = true;
-    newClaims.firstLoginCompleted = true;
+    const newClaims: Record<string, boolean> = {
+      ...existingClaims,
+      // App policy: every allowlisted account is admin.
+      admin: true,
+      phoneVerified: true,
+      firstLoginCompleted: true,
+    };
 
     // Set custom claims (server-side required)
     await auth.setCustomUserClaims(userRecord.uid, {

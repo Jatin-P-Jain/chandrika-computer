@@ -1,14 +1,33 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Deny all access by default
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     // Users can read and write only their own profile doc
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Daily accounts are read by client-side list/detail queries.
+    // Writes happen through server actions (Admin SDK), so only read is needed here.
+    match /daily-accounts/{docId} {
+      allow read: if request.auth != null;
+    }
+
+    // Register pages also read these collections directly on client.
+    match /photocopyReadings/{docId} {
+      allow read: if request.auth != null;
+    }
+
+    match /stampReadings/{docId} {
+      allow read: if request.auth != null;
+    }
+
+    match /manualPreviousReadings/{docId} {
+      allow read: if request.auth != null;
+    }
+
+    // Deny all other access by default.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
