@@ -93,6 +93,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const completePhoneVerification = async () => {
+    console.log(
+      "[Auth] completePhoneVerification called. Current authState.status:",
+      authState.status,
+    );
     try {
       const { currentUser } =
         authState.status === "phone-verification-required" ||
@@ -100,10 +104,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           ? authState
           : { currentUser: null };
 
-      if (!currentUser) throw new Error("No current user for verification");
+      if (!currentUser) {
+        console.error(
+          "[Auth] completePhoneVerification: no currentUser in state",
+          authState.status,
+        );
+        throw new Error("No current user for verification");
+      }
+      console.log("[Auth] currentUser uid:", currentUser.uid);
 
-      // 👇 Reload to get the latest phone number
       await currentUser.reload();
+      console.log(
+        "[Auth] User reloaded. phoneNumber:",
+        currentUser.phoneNumber,
+      );
 
       const idTokenResult = await currentUser.getIdTokenResult(true);
       const claims = idTokenResult.claims;
@@ -111,9 +125,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         ? currentUser.phoneNumber.slice(3)
         : null;
       const role = claims.admin ? "admin" : "user";
-      const userDocRef = doc(firestore, "users", currentUser.uid);
+      console.log("[Auth] claims:", { role, phoneNumber, admin: claims.admin });
 
-      // Always upsert here so prod does not get stuck if profile doc was never created.
+      const userDocRef = doc(firestore, "users", currentUser.uid);
+      console.log("[Auth] Writing Firestore doc (upsert)...");
       await setDoc(
         userDocRef,
         {
@@ -129,51 +144,73 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         },
         { merge: true },
       );
+      console.log("[Auth] Firestore upsert OK");
 
-      console.log(
-        `✅ Phone verification complete: uid=${currentUser.uid}, phone=${phoneNumber}, role=${role}`,
-      );
-
-      // 👇 Set session storage flag for returning users
       const phoneVerifiedKey = `phone_verified:${currentUser.uid}`;
       sessionStorage.setItem(phoneVerifiedKey, "1");
+      console.log("[Auth] sessionStorage set:", phoneVerifiedKey);
 
-      // Fetch updated client user from Firestore
+      console.log("[Auth] Fetching updated user doc...");
       const updatedSnap = await getDoc(
         doc(firestore, "users", currentUser.uid),
       );
       if (updatedSnap.exists()) {
+        console.log("[Auth] Updated doc exists. Setting authState → ready");
         const clientUser = mapDbUserToClientUser(updatedSnap.data());
         setAuthState({
           status: "ready",
           clientUser,
           currentUser,
         });
+        console.log(
+          "[Auth] ✅ authState set to ready for uid:",
+          currentUser.uid,
+        );
 
-        // Refresh FCM token in background to avoid blocking login transition.
         void (async () => {
           const { refreshAndSaveFcmToken } =
             await import("@/lib/firebase/refreshAndSaveFcmToken");
           await refreshAndSaveFcmToken(currentUser.uid);
         })();
       } else {
+        console.error(
+          "[Auth] Updated doc does NOT exist after upsert — this should not happen",
+        );
         throw new Error("User document not found after phone verification");
       }
     } catch (e) {
-      console.error("completePhoneVerification failed", e);
+      console.error("[Auth] completePhoneVerification FAILED:", e);
       await logoutUser();
     }
   };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      console.log(
+        "[Auth] onAuthStateChanged fired. user:",
+        user
+          ? { uid: user.uid, email: user.email, phoneNumber: user.phoneNumber }
+          : null,
+      );
+
       if (!user) {
+        console.log("[Auth] No user → status: no-user");
         setAuthState({ status: "no-user" });
         await removeToken();
         return;
       }
 
-      if (!isGoogleEmailAllowlisted(user.email)) {
+      const allowed = isGoogleEmailAllowlisted(user.email);
+      console.log(
+        "[Auth] isGoogleEmailAllowlisted:",
+        allowed,
+        "for email:",
+        user.email,
+      );
+      if (!allowed) {
+        console.warn(
+          "[Auth] Email not allowlisted → logging out, setting accessDenied",
+        );
         setAccessDenied(true);
         setAuthState({ status: "no-user" });
         await logoutUser();
@@ -183,11 +220,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setAccessDenied(false);
 
       try {
-        // Claims only for role/admin, and don't force refresh on load
-        const idTokenResult = await user.getIdTokenResult(); // [web:125]
+        const idTokenResult = await user.getIdTokenResult();
         const claims = idTokenResult.claims;
+        console.log("[Auth] ID token claims:", {
+          admin: claims.admin,
+          phoneNumber: claims.phone_number,
+        });
 
-        // Ensure user doc exists
         const safeUser: UserData = {
           uid: user.uid,
           email: user.email ?? null,
@@ -197,36 +236,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           photoUrl: user.photoURL,
         };
         await createUserIfNotExists(safeUser);
+        console.log("[Auth] createUserIfNotExists done");
+
+        console.log("[Auth] createUserIfNotExists done");
 
         // Read Firestore profile for phoneVerified + client user
         const snap = await getDoc(doc(firestore, "users", user.uid));
+        console.log("[Auth] Firestore doc exists:", snap.exists());
 
         if (!snap.exists()) {
-          // if doc not found, treat as first-time (or create doc then first-time)
+          console.log("[Auth] Doc not found → status: first-time-setup");
           setAuthState({ status: "first-time-setup", currentUser: user });
           return;
         }
 
         const dbUser = snap.data();
         const phoneVerified = dbUser.phoneVerified === true;
+        console.log(
+          "[Auth] dbUser.phoneVerified:",
+          dbUser.phoneVerified,
+          "→ phoneVerified:",
+          phoneVerified,
+        );
 
         if (!phoneVerified) {
+          console.log("[Auth] phoneVerified=false → status: first-time-setup");
           setAuthState({ status: "first-time-setup", currentUser: user });
         } else {
           const phoneVerifiedKey = `phone_verified:${user.uid}`;
-          const otpOk = sessionStorage.getItem(phoneVerifiedKey) === "1"; // [web:226]
+          const otpOk = sessionStorage.getItem(phoneVerifiedKey) === "1";
+          console.log(
+            "[Auth] sessionStorage key:",
+            phoneVerifiedKey,
+            "→ otpOk:",
+            otpOk,
+          );
 
           if (!otpOk) {
+            console.log(
+              "[Auth] No sessionStorage flag → status: phone-verification-required",
+            );
             setAuthState({
               status: "phone-verification-required",
               currentUser: user,
             });
             return;
           }
+          console.log("[Auth] All checks passed → status: ready");
           const clientUser = mapDbUserToClientUser(dbUser);
           setAuthState({ status: "ready", clientUser, currentUser: user });
-          // optionally refresh token in background after verification only
-          // await user.getIdToken(true); // only if you truly need claims now [web:125]
         }
 
         const limit = parseInt(
@@ -236,12 +294,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setInactivityLimit(limit);
       } catch (e) {
         if (isDeniedError(e)) {
+          console.warn("[Auth] isDeniedError → logging out, accessDenied");
           setAccessDenied(true);
           setAuthState({ status: "no-user" });
           await logoutUser();
           return;
         }
-        console.error("Auth state check failed", e);
+        console.error("[Auth] onAuthStateChanged handler threw:", e);
         setAuthState({ status: "first-time-setup", currentUser: user });
       }
     });
