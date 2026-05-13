@@ -4,7 +4,6 @@
 import { fireStore } from "@/firebase/server";
 import type {
   Denomination,
-  ManualPreviousReadingsDoc,
   PhotocopyReadingDoc,
   StampReadingDoc,
   StampPartDoc,
@@ -34,17 +33,6 @@ function invalidateDailyAccountCaches(docId: string) {
   updateTag("daily-account-list");
   updateTag("daily-account-latest");
   updateTag(`daily-account:${docId}`);
-}
-
-function normalizeDenominationRecord(
-  values?: Partial<Record<Denomination, number>>,
-) {
-  return {
-    50: nn(values?.[50] ?? 0),
-    100: nn(values?.[100] ?? 0),
-    500: nn(values?.[500] ?? 0),
-    1000: nn(values?.[1000] ?? 0),
-  } as Record<Denomination, number>;
 }
 
 function createEmptyStampParts(): Record<Denomination, StampPartDoc> {
@@ -227,117 +215,6 @@ function clamp0(n: number) {
   return Math.max(0, nn(n));
 }
 
-export async function getManualPreviousReadings(opts: {
-  todayDateYmd: string;
-  user: UserData;
-  authtoken: string;
-}) {
-  await requireAdminAccess(opts.user, opts.authtoken);
-
-  const done = startFirestoreMetric({
-    source: "server",
-    operation: "getManualPreviousReadings",
-    collection: "manualPreviousReadings",
-  });
-
-  const docRef = fireStore
-    .collection("manualPreviousReadings")
-    .doc(opts.todayDateYmd);
-  const snap = await docRef.get();
-
-  done({
-    success: true,
-    docsRead: snap.exists ? 1 : 0,
-    details: { todayDateYmd: opts.todayDateYmd },
-  });
-
-  if (!snap.exists) {
-    return { success: true as const, data: null };
-  }
-
-  const raw = snap.data();
-  if (!raw) {
-    return { success: true as const, data: null };
-  }
-
-  const parsed: ManualPreviousReadingsDoc = {
-    date: String(raw.date ?? opts.todayDateYmd),
-    photoPrev: nn(raw.photoPrev ?? 0),
-    stampPrev: normalizeDenominationRecord(raw.stampPrev),
-    isManual: Boolean(raw.isManual),
-    createdAt: toDate(raw.createdAt),
-    updatedAt: toDate(raw.updatedAt),
-  };
-
-  return { success: true as const, data: parsed };
-}
-
-export async function saveManualPreviousReadings(opts: {
-  todayDateYmd: string;
-  photoPrev: number;
-  stampPrev: Record<Denomination, number>;
-  user: UserData;
-  authtoken: string;
-}) {
-  await requireAdminAccess(opts.user, opts.authtoken);
-
-  const done = startFirestoreMetric({
-    source: "server",
-    operation: "saveManualPreviousReadings",
-    collection: "manualPreviousReadings",
-  });
-
-  const docRef = fireStore
-    .collection("manualPreviousReadings")
-    .doc(opts.todayDateYmd);
-
-  const payload: ManualPreviousReadingsDoc = {
-    date: opts.todayDateYmd,
-    photoPrev: nn(opts.photoPrev),
-    stampPrev: normalizeDenominationRecord(opts.stampPrev),
-    isManual: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  await docRef.set(payload, { merge: true });
-
-  done({
-    success: true,
-    docsWritten: 1,
-    details: { todayDateYmd: opts.todayDateYmd },
-  });
-
-  return { success: true as const, data: payload };
-}
-
-export async function clearManualPreviousReadings(opts: {
-  todayDateYmd: string;
-  user: UserData;
-  authtoken: string;
-}) {
-  await requireAdminAccess(opts.user, opts.authtoken);
-
-  const done = startFirestoreMetric({
-    source: "server",
-    operation: "clearManualPreviousReadings",
-    collection: "manualPreviousReadings",
-  });
-
-  await fireStore
-    .collection("manualPreviousReadings")
-    .doc(opts.todayDateYmd)
-    .delete();
-
-  done({
-    success: true,
-    docsWritten: 1,
-    details: { todayDateYmd: opts.todayDateYmd },
-  });
-
-  return { success: true as const };
-}
-
 export async function getReadings(todayDateYmd: string, deltaDays = 0) {
   const yesterday = addDaysYmd(todayDateYmd, deltaDays);
   const done = startFirestoreMetric({
@@ -370,7 +247,6 @@ export async function getReadings(todayDateYmd: string, deltaDays = 0) {
   const photocopy = photocopyRaw
     ? {
         ...photocopyRaw,
-        prevReadingWasManual: Boolean(photocopyRaw.prevReadingWasManual),
         actualAmount: nn(photocopyRaw.actualAmount ?? photocopyRaw.amount),
         roundedAmount:
           photocopyRaw.roundedAmount ??
@@ -440,7 +316,6 @@ export const getPhotocopyReadings = async (
       date: rawReading.date,
       todayReading: rawReading.todayReading,
       prevReading: rawReading.prevReading,
-      prevReadingWasManual: Boolean(rawReading.prevReadingWasManual),
       stockAdded: nn(rawReading.stockAdded ?? 0),
       difference: rawReading.difference,
       rate: rawReading.rate,
@@ -470,7 +345,6 @@ export async function savePhotocopyReading(opts: {
   todayDateYmd: string;
   todayReading: number;
   prevReading: number; // from yesterday
-  prevReadingWasManual?: boolean;
   useRoundedAmount?: boolean;
   roundedAmount?: number | null;
   user: UserData;
@@ -504,7 +378,6 @@ export async function savePhotocopyReading(opts: {
       date: opts.todayDateYmd,
       todayReading: nn(opts.todayReading),
       prevReading: nn(opts.prevReading),
-      prevReadingWasManual: Boolean(opts.prevReadingWasManual),
       difference,
       rate,
       amount,
@@ -586,7 +459,6 @@ export const getStampReadings = async (
     const reading: StampReadingDoc = {
       date: rawReading.date,
       parts: rawReading.parts,
-      prevReadingWasManual: Boolean(rawReading.prevReadingWasManual),
       totalAmount: rawReading.totalAmount,
       createdAt: toDate(rawReading.createdAt),
       updatedAt: toDate(rawReading.updatedAt),
@@ -606,7 +478,6 @@ export async function saveStampReading(opts: {
   todayDateYmd: string;
   partsTodayReadings: Record<Denomination, number>;
   prevPartsReadings: Record<Denomination, number>; // from yesterday
-  prevReadingWasManual?: boolean;
   partsStockAdded?: Record<Denomination, number>; // stock added today
   user: UserData;
   authtoken: string;
@@ -645,7 +516,6 @@ export async function saveStampReading(opts: {
     const payload: StampReadingDoc = {
       date: opts.todayDateYmd,
       parts,
-      prevReadingWasManual: Boolean(opts.prevReadingWasManual),
       totalAmount,
       createdAt: new Date(),
       updatedAt: new Date(),
