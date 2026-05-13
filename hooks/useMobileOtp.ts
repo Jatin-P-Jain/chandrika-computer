@@ -121,39 +121,25 @@ export function useMobileOtp({
         );
         console.log("[OTP] isPhoneLinked:", isPhoneLinked);
 
-        try {
+        if (isPhoneLinked) {
+          // Returning user — phone already linked, use reauth to actually validate the OTP.
+          // linkWithCredential would skip OTP validation and immediately throw
+          // auth/provider-already-linked, making any OTP appear as success.
           console.log("[OTP] Attempting reauthenticateWithCredential...");
           await reauthenticateWithCredential(currentUser, credential);
           console.log("[OTP] reauthenticateWithCredential SUCCESS");
-          await currentUser.reload();
-          console.log(
-            "[OTP] User reloaded after reauth. phoneNumber:",
-            currentUser.phoneNumber
-          );
-        } catch (reauthError: unknown) {
-          if (
-            reauthError instanceof FirebaseError &&
-            reauthError.code === "auth/no-such-provider"
-          ) {
-            console.log(
-              "[OTP] auth/no-such-provider → phone not linked yet, falling back to linkWithCredential"
-            );
-            await linkWithCredential(currentUser, credential);
-            console.log("[OTP] linkWithCredential SUCCESS");
-            await currentUser.reload();
-            console.log(
-              "[OTP] User reloaded after link. phoneNumber:",
-              currentUser.phoneNumber
-            );
-          } else {
-            // Wrong OTP, expired OTP, or any other real error — surface it.
-            console.error(
-              "[OTP] reauthenticateWithCredential FAILED:",
-              reauthError
-            );
-            throw reauthError;
-          }
+        } else {
+          // First-time user — phone not linked yet, link it (also validates OTP).
+          console.log("[OTP] Phone not linked → linkWithCredential...");
+          await linkWithCredential(currentUser, credential);
+          console.log("[OTP] linkWithCredential SUCCESS");
         }
+
+        await currentUser.reload();
+        console.log(
+          "[OTP] User reloaded. phoneNumber:",
+          currentUser.phoneNumber
+        );
 
         console.log("[OTP] Refreshing token for session...");
         const token = await currentUser.getIdToken(true);
