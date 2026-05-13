@@ -45,7 +45,7 @@ type AuthContextType = {
   handleSendOTP: (
     mobile: string,
     appVerifier: RecaptchaVerifier,
-  ) => Promise<ConfirmationResult | null>;
+  ) => Promise<ConfirmationResult>;
   verifyOTP: (
     otp: string,
     confirmationResult: ConfirmationResult,
@@ -135,7 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           uid: currentUser.uid,
           email: currentUser.email ?? null,
           displayName: currentUser.displayName ?? null,
-          photoURL: currentUser.photoURL ?? null,
+          photoUrl: currentUser.photoURL ?? null,
           phoneNumber,
           role,
           phoneVerified: true,
@@ -236,8 +236,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           photoUrl: user.photoURL,
         };
         await createUserIfNotExists(safeUser);
-        console.log("[Auth] createUserIfNotExists done");
-
         console.log("[Auth] createUserIfNotExists done");
 
         // Read Firestore profile for phoneVerified + client user

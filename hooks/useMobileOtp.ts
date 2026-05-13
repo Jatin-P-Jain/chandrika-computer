@@ -44,16 +44,17 @@ export function useMobileOtp({
     const mobileFormatted = mobile.startsWith("+") ? mobile.slice(3) : mobile;
 
     try {
-      if (!appVerifier) {
+      const verifier = appVerifier ?? window.recaptchaVerifier ?? null;
+      if (!verifier) {
         toast.error("Recaptcha not ready. Please try again in a moment.");
-        return;
+        return false;
       }
       setSendingOtp(true);
-      const confirmation = await auth?.handleSendOTP(
+      const confirmationResult = await auth.handleSendOTP(
         mobileFormatted,
-        appVerifier
+        verifier
       );
-      setConfirmation(confirmation || null);
+      setConfirmation(confirmationResult);
       setMobileNumber(mobile);
       setOtpSent(true);
       // if (
@@ -67,9 +68,13 @@ export function useMobileOtp({
           description: tToast("OTPSentDesc"),
         });
       }
+      return true;
     } catch (e) {
-      console.error(e);
-      toast.error("Failed to send OTP");
+      console.error("[OTP] sendOtp failed:", e);
+      setConfirmation(null);
+      setOtpSent(false);
+      handleFirebaseAuthError(e, tToast);
+      return false;
     } finally {
       setSendingOtp(false);
     }
@@ -86,7 +91,11 @@ export function useMobileOtp({
 
     try {
       setIsVerifying(true);
-      if (!confirmation) throw new Error("No confirmation result");
+      if (!confirmation) {
+        toast.error(tToast("SessionExpired"));
+        console.warn("[OTP] verifyOtp aborted: missing confirmation session");
+        return;
+      }
 
       const credential = PhoneAuthProvider.credential(
         confirmation.verificationId,

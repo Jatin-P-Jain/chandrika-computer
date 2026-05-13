@@ -152,9 +152,12 @@ export function PhoneVerification({
       toast.error(tToast("PleaseEnterPhoneNumber"));
       return;
     }
+    const sent = await sendOtp(phoneAuthState.phoneNumber);
+    if (!sent) return;
+
     setTimer(30);
     setCanResend(false);
-    await sendOtp(phoneAuthState.phoneNumber);
+    setExpiryTimer(300);
     setOtpEpoch((x) => x + 1);
   };
 
@@ -175,7 +178,12 @@ export function PhoneVerification({
     if (hasResentOnce || sendingOtp) return;
     try {
       setResendStatus("sending");
-      await sendOtp(phoneAuthState.phoneNumber, true);
+      const sent = await sendOtp(phoneAuthState.phoneNumber, true);
+      if (!sent) {
+        setResendStatus("idle");
+        return;
+      }
+
       setResendStatus("done");
       setHasResentOnce(true);
       toast.success(tToast("OtpResentSuccessfully"));
@@ -198,6 +206,7 @@ export function PhoneVerification({
 
   return (
     <section className="flex items-center justify-center">
+      <div id="recaptcha-container" className="hidden" />
       <Card className="w-full gap-2 p-3 px-0">
         <CardHeader className="flex flex-col items-center text-center gap-1">
           <div>
@@ -242,12 +251,18 @@ export function PhoneVerification({
               <Button
                 onClick={handleSendOTP}
                 className="md:w-1/4"
-                disabled={sendingOtp || !phoneAuthState.phoneNumber}
+                disabled={
+                  sendingOtp ||
+                  !phoneAuthState.phoneNumber ||
+                  !recaptchaVerifier
+                }
               >
                 <div className="flex items-center gap-2">
-                  {sendingOtp
-                    ? tMobileNumber("SendingOTP")
-                    : tMobileNumber("SendOTP")}
+                  {!recaptchaVerifier
+                    ? "Preparing security check..."
+                    : sendingOtp
+                      ? tMobileNumber("SendingOTP")
+                      : tMobileNumber("SendOTP")}
                   {sendingOtp ? (
                     <Loader2Icon className="size-4 animate-spin" />
                   ) : (
@@ -371,11 +386,17 @@ export function PhoneVerification({
                   </div>
                 </div>
               ) : (
-                <Button onClick={handleSendOTP} className="w-full">
+                <Button
+                  onClick={handleSendOTP}
+                  className="w-full"
+                  disabled={sendingOtp || !recaptchaVerifier}
+                >
                   <div className="flex items-center gap-2">
-                    {sendingOtp
-                      ? tMobileNumber("SendingOTP")
-                      : tMobileNumber("SendOTP")}
+                    {!recaptchaVerifier
+                      ? "Preparing security check..."
+                      : sendingOtp
+                        ? tMobileNumber("SendingOTP")
+                        : tMobileNumber("SendOTP")}
                     {sendingOtp ? (
                       <Loader2Icon className="size-4 animate-spin" />
                     ) : (

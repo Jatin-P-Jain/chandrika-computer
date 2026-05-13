@@ -8,11 +8,28 @@ export function useRecaptcha() {
 
   useEffect(() => {
     if (initialized.current || typeof window === "undefined") return;
+
+    if (window.recaptchaVerifier) {
+      setVerifier(window.recaptchaVerifier);
+      initialized.current = true;
+      return;
+    }
+
     initialized.current = true;
+    let attempts = 0;
+    const maxAttempts = 100;
 
     const interval = setInterval(() => {
+      attempts += 1;
       const container = document.getElementById("recaptcha-container");
-      if (!container) return;
+      if (!container) {
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          initialized.current = false;
+          console.warn("reCAPTCHA container not found in time");
+        }
+        return;
+      }
 
       clearInterval(interval);
 
@@ -23,17 +40,26 @@ export function useRecaptcha() {
           {
             size: "invisible",
             callback: () => {},
-          },
+          }
         );
 
-        verifierInstance.render().then(() => {
-          setVerifier(verifierInstance);
-          window.recaptchaVerifier = verifierInstance; // Optional global backup
-        });
+        verifierInstance
+          .render()
+          .then(() => {
+            setVerifier(verifierInstance);
+            window.recaptchaVerifier = verifierInstance;
+          })
+          .catch((e) => {
+            initialized.current = false;
+            console.error("Failed to render reCAPTCHA", e);
+          });
       } catch (e) {
+        initialized.current = false;
         console.error("Failed to initialize reCAPTCHA", e);
       }
     }, 100); // poll until container is in DOM
+
+    return () => clearInterval(interval);
   }, []);
 
   return verifier;
