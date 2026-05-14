@@ -12,12 +12,17 @@ import {
 } from "@/lib/auth/firebase-auth";
 import { auth, firestore } from "@/firebase/client"; // 👈 Add adminAuth
 import { ConfirmationResult, RecaptchaVerifier, User } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { mapDbUserToClientUser } from "@/lib/firebase/mapDBUserToClient";
 import useMonitorInactivity from "@/hooks/useMonitorInactivity";
 import { UserData } from "@/types/user";
 import { removeToken } from "./actions";
 import { createUserIfNotExists } from "@/lib/firebase/createUserIfNotExists";
+import {
+  getOrCreateDeviceId,
+  isDeviceTrustedLocally,
+  markDeviceTrustedLocally,
+} from "@/lib/auth/trusted-device";
 
 type AuthStatus =
   | { status: "loading" }
@@ -146,9 +151,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
       console.log("[Auth] Firestore upsert OK");
 
-      const phoneVerifiedKey = `phone_verified:${currentUser.uid}`;
-      sessionStorage.setItem(phoneVerifiedKey, "1");
-      console.log("[Auth] sessionStorage set:", phoneVerifiedKey);
+      const deviceId = getOrCreateDeviceId();
+      if (deviceId) {
+        const nowIso = new Date().toISOString();
+        const trustedDeviceEntry = {
+          phoneVerifiedAt: nowIso,
+          lastVerifiedAt: nowIso,
+          userAgent:
+            typeof navigator !== "undefined" ? navigator.userAgent : null,
+        };
+
+        await updateDoc(userDocRef, {
+          [`trustedDevices.${deviceId}`]: trustedDeviceEntry,
+          updatedAt: nowIso,
+        });
+        markDeviceTrustedLocally(currentUser.uid, deviceId);
+      }
 
       console.log("[Auth] Fetching updated user doc...");
       const updatedSnap = await getDoc(
@@ -261,18 +279,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log("[Auth] phoneVerified=false → status: first-time-setup");
           setAuthState({ status: "first-time-setup", currentUser: user });
         } else {
-          const phoneVerifiedKey = `phone_verified:${user.uid}`;
-          const otpOk = sessionStorage.getItem(phoneVerifiedKey) === "1";
-          console.log(
-            "[Auth] sessionStorage key:",
-            phoneVerifiedKey,
-            "→ otpOk:",
-            otpOk,
+          const deviceId = getOrCreateDeviceId();
+          const trustedDevices =
+            typeof dbUser.trustedDevices === "object" && dbUser.trustedDevices
+              ? (dbUser.trustedDevices as Record<string, unknown>)
+              : {};
+
+          const trustedOnServer = Boolean(deviceId && trustedDevices[deviceId]);
+          const trustedLocally = Boolean(
+            deviceId && isDeviceTrustedLocally(user.uid, deviceId),
           );
 
-          if (!otpOk) {
+          console.log("[Auth] trusted device check:", {
+            deviceId,
+            trustedOnServer,
+            trustedLocally,
+          });
+
+          if (!trustedOnServer || !trustedLocally) {
             console.log(
-              "[Auth] No sessionStorage flag → status: phone-verification-required",
+              "[Auth] Device is not trusted → status: phone-verification-required",
             );
             setAuthState({
               status: "phone-verification-required",

@@ -30,6 +30,13 @@ const useMonitorInactivity = (
       // log("✅ Activity recorded");
     };
 
+    const ensureLastActivitySeeded = () => {
+      const existing = localStorage.getItem(LAST_ACTIVITY_KEY);
+      if (!existing) {
+        updateLastActivity();
+      }
+    };
+
     const checkInactivity = async () => {
       const last = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || "0");
       const now = Date.now();
@@ -54,8 +61,9 @@ const useMonitorInactivity = (
       }
     };
 
-    // Run once on mount to catch inactive session on reload/resume
-    updateLastActivity();
+    // Run once on mount to catch inactive session on reload/resume.
+    // Do not overwrite the previous timestamp before this first check.
+    ensureLastActivitySeeded();
     checkInactivity();
 
     // Watch activity events
