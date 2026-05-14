@@ -156,11 +156,6 @@ export function useMobileOtp({
         await setToken(token, currentUser.refreshToken);
         console.log("[OTP] Calling setUserClaims with mobile:", mobileNumber);
         await setUserClaims(token, mobileNumber);
-        sessionStorage.setItem(`phone_verified:${currentUser.uid}`, "1");
-        console.log(
-          "[OTP] ✅ sessionStorage set. Phone verified for:",
-          currentUser.uid
-        );
       } catch (linkError: unknown) {
         if (linkError instanceof FirebaseError) {
           const errorCode = linkError.code;

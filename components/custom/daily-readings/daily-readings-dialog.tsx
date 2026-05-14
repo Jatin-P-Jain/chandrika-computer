@@ -249,13 +249,6 @@ export default function DailyReadingsDialog({
   const [photoPrev, setPhotoPrev] = React.useState(0);
   const [stampPrev, setStampPrev] =
     React.useState<Record<Denomination, number>>(EMPTY_DENOM_RECORD);
-  const [prevReadingsManual, setPrevReadingsManual] = React.useState(
-    Boolean(
-      readings?.photocopy?.prevReadingWasManual ||
-      readings?.stamp?.prevReadingWasManual,
-    ),
-  );
-
   // NEW: when readings are already saved, user must confirm+save only if they changed something
   const [hasEdits, setHasEdits] = React.useState(false);
 
@@ -470,13 +463,6 @@ export default function DailyReadingsDialog({
     } else if (localPreviousBaselineDraft?.stampPrev) {
       setStampPrev(localPreviousBaselineDraft.stampPrev);
     }
-    setPrevReadingsManual(
-      Boolean(
-        readings?.photocopy?.prevReadingWasManual ||
-        readings?.stamp?.prevReadingWasManual ||
-        localPreviousBaselineDraft?.prevReadingsManual,
-      ),
-    );
     setRoundOffPhotocopy(
       Boolean(
         readings?.photocopy?.isRounded ??
@@ -495,7 +481,6 @@ export default function DailyReadingsDialog({
     open,
     readings?.photocopy?.todayReading,
     readings?.photocopy?.prevReading,
-    readings?.photocopy?.prevReadingWasManual,
     readings?.photocopy?.roundedAmount,
     readings?.photocopy?.amount,
     readings?.photocopy?.isRounded,
@@ -504,7 +489,6 @@ export default function DailyReadingsDialog({
     localPreviousBaselineDraft,
     isPreviousBaselineHydrated,
     readings?.stamp?.parts,
-    readings?.stamp?.prevReadingWasManual,
     photoForm,
     stampForm,
     stockForm,
@@ -546,8 +530,6 @@ export default function DailyReadingsDialog({
           1000: prevParts?.[1000]?.todayReading,
         }),
       );
-      setPrevReadingsManual(false);
-
       const nextBaseline: LocalPreviousBaselineDraft = {
         photoPrev: res.photocopy?.todayReading ?? 0,
         stampPrev: normalizeDenomRecord({
@@ -576,7 +558,6 @@ export default function DailyReadingsDialog({
       setManualStampPrev(nextStampPrev);
       setPhotoPrev(nextPhotoPrev);
       setStampPrev(nextStampPrev);
-      setPrevReadingsManual(true);
       setMissingPreviousReadings(false);
       setResolvedLookbackDays(null);
 
@@ -659,7 +640,6 @@ export default function DailyReadingsDialog({
       if (localPreviousBaselineDraft) {
         setPhotoPrev(localPreviousBaselineDraft.photoPrev);
         setStampPrev(localPreviousBaselineDraft.stampPrev);
-        setPrevReadingsManual(localPreviousBaselineDraft.prevReadingsManual);
         setResolvedLookbackDays(
           localPreviousBaselineDraft.resolvedLookbackDays,
         );
@@ -894,7 +874,6 @@ export default function DailyReadingsDialog({
           todayDateYmd,
           todayReading: photoValues.todayReading,
           prevReading: photoPrev,
-          prevReadingWasManual: prevReadingsManual,
           useRoundedAmount: roundOffPhotocopy,
           roundedAmount: roundOffPhotocopy ? roundedPhotocopyAmount : null,
           user: authState.clientUser,
@@ -919,7 +898,6 @@ export default function DailyReadingsDialog({
               (includeStockAddition ? (stockValues?.s1000 ?? 0) : 0),
           },
           prevPartsReadings: stampPrev,
-          prevReadingWasManual: prevReadingsManual,
           partsStockAdded: includeStockAddition
             ? {
                 50: stockValues?.s50 ?? 0,

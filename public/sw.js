@@ -42,6 +42,20 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  const isDailyAccountRoute =
+    url.pathname === "/daily-accounts" ||
+    url.pathname.startsWith("/daily-accounts/");
+  const isDailyAccountDataEndpoint =
+    url.pathname.startsWith("/_next/data/") &&
+    url.pathname.includes("/daily-accounts");
+
+  // Never serve daily account pages/data from SW cache.
+  // These views are sensitive to stale financial readings.
+  if (isDailyAccountRoute || isDailyAccountDataEndpoint) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Network-first for page navigations keeps app data fresh.
   if (request.mode === "navigate") {
     event.respondWith(

@@ -4,7 +4,6 @@ export type PhotocopyReadingDoc = {
   date: string; // YYYY-MM-DD (also docId)
   todayReading: number;
   prevReading: number; // yesterday's todayReading
-  prevReadingWasManual?: boolean;
   stockAdded?: number;
   difference: number;
   rate: number; // currently 2
@@ -27,17 +26,7 @@ export type StampPartDoc = {
 export type StampReadingDoc = {
   date: string; // YYYY-MM-DD (also docId)
   parts: Record<Denomination, StampPartDoc>;
-  prevReadingWasManual?: boolean;
   totalAmount: number;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-};
-
-export type ManualPreviousReadingsDoc = {
-  date: string;
-  photoPrev: number;
-  stampPrev: Record<Denomination, number>;
-  isManual: boolean;
   createdAt: Date | null;
   updatedAt: Date | null;
 };
@@ -51,7 +40,6 @@ export type PhotocopyReadingRow = {
   date: string; // YYYY-MM-DD (also docId)
   todayReading: number;
   prevReading: number; // yesterday's todayReading
-  prevReadingWasManual?: boolean;
   stockAdded?: number;
   difference: number;
   rate: number;
