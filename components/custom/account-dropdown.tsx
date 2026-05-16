@@ -29,6 +29,8 @@ export function AccountDropdown({
   const locale = useLocale();
 
   const userReady = userStatus === "ready";
+  const userAuthenticated =
+    userStatus !== "no-user" && userStatus !== "loading";
   const guest = userStatus === "no-user";
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileImage = user?.photoUrl || "";
@@ -139,7 +141,7 @@ export function AccountDropdown({
             </div>
           </div>
           {/* Logout Section */}
-          {userReady && onLogout && (
+          {userAuthenticated && onLogout && (
             <>
               <DropdownMenuSeparator className="my-1" />
               <Button

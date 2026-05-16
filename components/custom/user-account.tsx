@@ -26,8 +26,12 @@ export function UserAccount() {
           <GoogleLoginButton variant="outline" />
         ) : userStatus === "loading" ? (
           <AccountDetailsSkeleton />
-        ) : userStatus === "ready" ? (
-          <AccountDropdown user={user} userStatus={userStatus} onLogout={logout} />
+        ) : userStatus === "ready" || isPhoneVerification ? (
+          <AccountDropdown
+            user={user}
+            userStatus={userStatus}
+            onLogout={logout}
+          />
         ) : null}
       </div>
       <SettingsDropdown />
