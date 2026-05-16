@@ -79,7 +79,7 @@ export function AccountLineItemRow({
       {/* VIEW MODE (single line) */}
       {!isEditing ? (
         <div className="flex flex-row items-center gap-2 justify-between">
-          <Badge variant={"secondary"} className="text-4xl! font-medium">
+          <Badge variant={"secondary"} className="text-base font-medium">
             {accountName || accountId || "—"}
           </Badge>
 
