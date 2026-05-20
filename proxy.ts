@@ -10,7 +10,7 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
+    pathname.startsWith(prefix)
   );
 
   if (!isProtected) {
@@ -22,7 +22,9 @@ export function proxy(request: NextRequest) {
   if (!token) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
-    url.searchParams.set("sessionExpired", "1");
+    // Missing auth cookie can happen on explicit logout too; avoid false
+    // "session expired" states and let client-side inactivity flow set it.
+    url.searchParams.delete("sessionExpired");
     return NextResponse.redirect(url);
   }
 
