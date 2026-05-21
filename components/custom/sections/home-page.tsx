@@ -72,7 +72,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
 
   useEffect(() => {
     if (sessionExpired !== "1") return;
-    if (authState.status !== "ready") return;
+    if (authState.status === "loading") return;
 
     replace("/", {
       scroll: false,
@@ -135,12 +135,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
             >
               {tCommon("DeniedAccess")}
             </span>
-            <span
-              className={clsx(
-                "text-xs md:text-sm",
-                textBodyCls,
-              )}
-            >
+            <span className={clsx("text-xs md:text-sm", textBodyCls)}>
               {tCommon("DeniedAccessDesc")}
             </span>
           </div>
