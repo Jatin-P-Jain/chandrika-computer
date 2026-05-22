@@ -58,7 +58,7 @@ export function GoogleOneTap() {
 
     window.google.accounts.id.initialize({
       client_id: clientId,
-      auto_select: true,
+      auto_select: false,
       cancel_on_tap_outside: false,
       context: "signin",
       callback: async ({ credential }) => {
