@@ -30,6 +30,8 @@ export const ServiceWorkerRegister = () => {
 
     let refreshing = false;
 
+    let registerTimeout: ReturnType<typeof setTimeout> | null = null;
+
     const registerSW = async () => {
       try {
         const registration = await navigator.serviceWorker.register("/sw.js", {
@@ -65,12 +67,29 @@ export const ServiceWorkerRegister = () => {
       }
     };
 
+    const scheduleRegister = () => {
+      registerTimeout = setTimeout(() => {
+        void registerSW();
+      }, 1200);
+    };
+
     if (document.readyState === "complete") {
-      registerSW();
+      scheduleRegister();
     } else {
-      window.addEventListener("load", registerSW);
-      return () => window.removeEventListener("load", registerSW);
+      window.addEventListener("load", scheduleRegister);
+      return () => {
+        window.removeEventListener("load", scheduleRegister);
+        if (registerTimeout) {
+          clearTimeout(registerTimeout);
+        }
+      };
     }
+
+    return () => {
+      if (registerTimeout) {
+        clearTimeout(registerTimeout);
+      }
+    };
   }, []);
 
   return null;

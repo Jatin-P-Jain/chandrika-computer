@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   loginWithEmailAndPass,
   loginWithGoogle as loginWithGoogleAuth,
+  loginWithGoogleIdToken,
   logoutUser,
   sendOTP,
   verifyOTP,
@@ -17,7 +18,6 @@ import { mapDbUserToClientUser } from "@/lib/firebase/mapDBUserToClient";
 import useMonitorInactivity from "@/hooks/useMonitorInactivity";
 import { UserData } from "@/types/user";
 import { removeToken } from "./actions";
-import { createUserIfNotExists } from "@/lib/firebase/createUserIfNotExists";
 import {
   getOrCreateDeviceId,
   isDeviceTrustedLocally,
@@ -43,6 +43,7 @@ type AuthContextType = {
   isLoggingOut: boolean;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<User | undefined>;
+  loginWithGoogleOneTap: (idToken: string) => Promise<User | undefined>;
   loginWithEmailAndPassword: (data: {
     email: string;
     password: string;
@@ -64,9 +65,10 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authState, setAuthState] = useState<AuthStatus>({ status: "loading" });
-  const [inactivityLimit, setInactivityLimit] = useState<number>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
+  const inactivityLimit =
+    Number(process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0") || undefined;
 
   const isDeniedError = (error: unknown) => {
     if (error instanceof GoogleEmailNotAllowedError) return true;
@@ -82,7 +84,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (!currentUser) throw new Error("No current user for verification");
 
-    return currentUser.getIdToken(true);
+    return currentUser.getIdToken();
   };
 
   const startPhoneVerificationFlow = () => {
@@ -124,13 +126,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         currentUser.phoneNumber,
       );
 
-      const idTokenResult = await currentUser.getIdTokenResult(true);
-      const claims = idTokenResult.claims;
       const phoneNumber = currentUser.phoneNumber
         ? currentUser.phoneNumber.slice(3)
         : null;
       const role = "admin";
-      console.log("[Auth] claims:", { role, phoneNumber, admin: claims.admin });
 
       const userDocRef = doc(firestore, "users", currentUser.uid);
       console.log("[Auth] Writing Firestore doc (upsert)...");
@@ -238,35 +237,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setAccessDenied(false);
 
       try {
-        const idTokenResult = await user.getIdTokenResult();
-        const claims = idTokenResult.claims;
-        console.log("[Auth] ID token claims:", {
-          admin: claims.admin,
-          phoneNumber: claims.phone_number,
-        });
+        const userDocRef = doc(firestore, "users", user.uid);
+        const snap = await getDoc(userDocRef);
 
-        const safeUser: UserData = {
-          uid: user.uid,
-          email: user.email ?? null,
-          phoneNumber: user.phoneNumber?.slice(3) ?? null,
-          displayName: user.displayName ?? null,
-          role: "admin",
-          photoUrl: user.photoURL,
-        };
-        await createUserIfNotExists(safeUser);
-        console.log("[Auth] createUserIfNotExists done");
-
-        // Read Firestore profile for phoneVerified + client user
-        const snap = await getDoc(doc(firestore, "users", user.uid));
-        console.log("[Auth] Firestore doc exists:", snap.exists());
-
-        if (!snap.exists()) {
-          console.log("[Auth] Doc not found → status: first-time-setup");
-          setAuthState({ status: "first-time-setup", currentUser: user });
-          return;
+        let dbUser = snap.exists() ? snap.data() : null;
+        if (!dbUser) {
+          const nowIso = new Date().toISOString();
+          dbUser = {
+            uid: user.uid,
+            email: user.email ?? null,
+            phoneNumber: user.phoneNumber?.slice(3) ?? null,
+            displayName: user.displayName ?? null,
+            role: "admin",
+            photoUrl: user.photoURL ?? null,
+            phoneVerified: false,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+          };
+          await setDoc(userDocRef, dbUser, { merge: true });
         }
 
-        const dbUser = snap.data();
         const phoneVerified = dbUser.phoneVerified === true;
         console.log(
           "[Auth] dbUser.phoneVerified:",
@@ -310,12 +300,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const clientUser = mapDbUserToClientUser(dbUser);
           setAuthState({ status: "ready", clientUser, currentUser: user });
         }
-
-        const limit = parseInt(
-          process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0",
-        );
-
-        setInactivityLimit(limit);
       } catch (e) {
         if (isDeniedError(e)) {
           console.warn("[Auth] isDeniedError → logging out, accessDenied");
@@ -360,6 +344,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setAccessDenied(false);
           try {
             return await loginWithGoogleAuth();
+          } catch (error) {
+            if (isDeniedError(error)) {
+              setAccessDenied(true);
+            }
+            throw error;
+          }
+        },
+        loginWithGoogleOneTap: async (idToken: string) => {
+          setAccessDenied(false);
+          try {
+            return await loginWithGoogleIdToken(idToken);
           } catch (error) {
             if (isDeniedError(error)) {
               setAccessDenied(true);

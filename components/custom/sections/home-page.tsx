@@ -21,6 +21,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/context/useAuth";
 import clsx from "clsx";
 import { PhoneVerification } from "../phone-verification";
+import { GoogleOneTap } from "../google-one-tap";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
@@ -83,6 +84,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
 
   return (
     <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-3 md:p-6 relative">
+      <GoogleOneTap />
       {sessionExpired && sessionExpiredPopupShown && (
         <div className="w-full relative flex justify-center items-center md:w-1/2 mx-auto p-3 text-sm text-yellow-700 bg-yellow-200 border border-yellow-200 rounded-md gap-2">
           <div className="flex flex-col gap-1">

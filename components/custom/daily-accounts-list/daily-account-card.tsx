@@ -1,7 +1,7 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { DailyAccount } from "@/types/daily-account";
 import { formatINR } from "@/lib/utils";
 import {
@@ -9,7 +9,6 @@ import {
   CalendarFold,
   ChevronsRight,
   CircleCheck,
-  CircleX,
   ClockPlus,
   Loader2,
 } from "lucide-react";
@@ -28,7 +27,8 @@ type DailyAccountCardProps = {
 export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   const tDailyAccount = useTranslations("DailyAccount");
   const tCommon = useTranslations("Common");
-  const { textHeadingCls, textBodyCls, textSmCls } = useLocaleTypography();
+  const { textHeadingCls, textPageHeadCls, textBodyCls, textSmCls } =
+    useLocaleTypography();
   const locale = useLocale();
   const {
     id,
@@ -129,55 +129,57 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
           <div className="flex flex-col w-full justify-between items-start">
             {/* Main content: financial summary for saved/edited, draft info otherwise */}
             {isPersistedAccount ? (
-              <div className="flex flex-col w-full px-2">
-                <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col w-full px-0">
+                <div className="flex items-center justify-between gap-4 px-2">
                   <span
                     className={`text-sm text-muted-foreground ${textBodyCls}`}
                   >
                     {tDailyAccount("TotalCashCollected")}:
                   </span>
                   <span
-                    className={`font-medium! tabular-nums text-primary ${textHeadingCls}`}
+                    className={`font-medium tracking-wide text-primary ${textPageHeadCls}`}
                   >
                     {formatINR(Number(totalCashCollected || 0))}
                   </span>
                 </div>
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 px-2">
                   <span
                     className={`text-sm text-muted-foreground ${textBodyCls}`}
                   >
                     {tDailyAccount("TotalExpenses")}:
                   </span>
                   <span
-                    className={`font-medium! tabular-nums text-red-700 ${textHeadingCls}`}
+                    className={`font-medium tracking-wide text-red-700 ${textPageHeadCls}`}
                   >
                     {formatINR(Number(totalSpends || 0))}
                   </span>
                 </div>
+                <div className="border px-2 rounded-md flex flex-col shadow-sm my-1">
+                  <div className="flex items-center justify-between rounded-md">
+                    <span
+                      className={`text-sm font-semibold text-muted-foreground ${textBodyCls}`}
+                    >
+                      {tDailyAccount("Income")}:
+                    </span>
+                    <span
+                      className={`font-semibold tracking-wide ${Number(earnings?.netIncome || 0) >= 0 ? " text-green-700" : "text-red-600"} ${textPageHeadCls}`}
+                    >
+                      {formatINR(Number(earnings?.netIncome || 0))}
+                    </span>
+                  </div>
 
-                <div className="flex items-center justify-between gap-4">
-                  <span
-                    className={`text-sm text-muted-foreground ${textBodyCls}`}
-                  >
-                    {tDailyAccount("TotalIncome")}:
-                  </span>
-                  <span
-                    className={`font-semibold tabular-nums text-primary  ${textHeadingCls}`}
-                  >
-                    {formatINR(Number(totalEarnings || 0))}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between border mt-1 py-1 rounded-md px-2">
-                  <span
-                    className={`text-sm font-semibold text-muted-foreground ${textBodyCls}`}
-                  >
-                    {tDailyAccount("Income")}:
-                  </span>
-                  <span
-                    className={`font-bold tabular-nums ${Number(earnings?.netIncome || 0) >= 0 ? " text-green-600" : "text-red-600"} ${textHeadingCls}`}
-                  >
-                    {formatINR(Number(earnings?.netIncome || 0))}
-                  </span>
+                  <div className="flex items-center justify-between gap-4">
+                    <span
+                      className={`text-sm font-semibold text-muted-foreground ${textBodyCls}`}
+                    >
+                      {tDailyAccount("TotalIncome")}:
+                    </span>
+                    <span
+                      className={`text-lg font-semibold tracking-wide text-green-800 text-shadow-accent text-shadow-2xs  ${textHeadingCls}`}
+                    >
+                      {formatINR(Number(totalEarnings || 0))}
+                    </span>
+                  </div>
                 </div>
               </div>
             ) : (
