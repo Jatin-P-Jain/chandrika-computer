@@ -7,8 +7,17 @@ import { cn } from "@/lib/utils"
 
 function Switch({
   className,
+  thumbClassName,
+  checkedThumbLabel,
+  uncheckedThumbLabel,
   ...props
-}: React.ComponentProps<typeof SwitchPrimitive.Root>) {
+}: React.ComponentProps<typeof SwitchPrimitive.Root> & {
+  thumbClassName?: string
+  checkedThumbLabel?: React.ReactNode
+  uncheckedThumbLabel?: React.ReactNode
+}) {
+  const thumbLabel = props.checked ? checkedThumbLabel : uncheckedThumbLabel
+
   return (
     <SwitchPrimitive.Root
       data-slot="switch"
@@ -21,9 +30,12 @@ function Switch({
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
         className={cn(
-          "bg-background dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-primary-foreground pointer-events-none block size-4 rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0"
+          "bg-background dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-primary-foreground pointer-events-none flex size-4 items-center justify-center rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0",
+          thumbClassName
         )}
-      />
+      >
+        {thumbLabel ? <span className=" font-bold leading-none">{thumbLabel}</span> : null}
+      </SwitchPrimitive.Thumb>
     </SwitchPrimitive.Root>
   )
 }

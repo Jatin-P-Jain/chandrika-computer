@@ -9,6 +9,7 @@ import {
   Loader2,
   LockKeyholeIcon,
   Newspaper,
+  Users,
   XIcon,
 } from "lucide-react";
 import {
@@ -34,6 +35,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const tDailyAccount = useTranslations("DailyAccount");
   const tStampRegister = useTranslations("StampRegister");
   const tPhotocopyRegister = useTranslations("PhotocopyRegister");
+  const tAttendanceRegister = useTranslations("AttendanceRegister");
   const tToast = useTranslations("Toast");
   const { textPageHeadCls, textBodyCls } = useLocaleTypography();
 
@@ -54,11 +56,19 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
     sessionExpired === "1",
   );
   const [pendingRoute, setPendingRoute] = useState<
-    "/daily-accounts" | "/stamp-register" | "/photocopy-register" | null
+    | "/daily-accounts"
+    | "/stamp-register"
+    | "/photocopy-register"
+    | "/attendace-register"
+    | null
   >(null);
 
   const navigateTo = (
-    path: "/daily-accounts" | "/stamp-register" | "/photocopy-register",
+    path:
+      | "/daily-accounts"
+      | "/stamp-register"
+      | "/photocopy-register"
+      | "/attendace-register",
   ) => {
     if (pendingRoute) return;
     if (authState.status !== "ready") {
@@ -321,6 +331,54 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                 </CardTitle>
                 <CardDescription className="">
                   {tPhotocopyRegister("Desc")}
+                </CardDescription>
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
+
+        <div
+          className="group block cursor-pointer"
+          onClick={() => navigateTo("/attendace-register")}
+        >
+          <Card
+            className={clsx(
+              "h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md",
+              pendingRoute === "/attendace-register" &&
+                "opacity-70 pointer-events-none",
+            )}
+          >
+            <CardHeader className="flex flex-row items-center gap-3">
+              <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
+                <span className="font-semibold">
+                  <Users className="size-8" />
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 md:gap-2 w-full">
+                <CardTitle
+                  className={clsx(
+                    "leading-6 flex items-start justify-between w-full text-lg",
+                  )}
+                >
+                  {tAttendanceRegister("Title")}
+                  {pendingRoute === "/attendace-register" ? (
+                    <div className="text-primary bg-primary/10 p-1 rounded-md">
+                      <Loader2 className="animate-spin size-5" />
+                    </div>
+                  ) : authState.status !== "ready" ? (
+                    isUserLoading ? (
+                      <div className="text-primary bg-primary/10 p-1 rounded-md">
+                        <Loader2 className="animate-spin size-5" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center p-1 bg-primary/10 rounded-md">
+                        <LockKeyholeIcon className="size-5 text-primary rounded-md" />
+                      </div>
+                    )
+                  ) : null}
+                </CardTitle>
+                <CardDescription className="">
+                  {tAttendanceRegister("Desc")}
                 </CardDescription>
               </div>
             </CardHeader>
