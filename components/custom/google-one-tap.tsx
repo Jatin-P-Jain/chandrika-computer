@@ -23,7 +23,13 @@ export function GoogleOneTap() {
   const { authState, accessDenied, loginWithGoogleOneTap } = useAuth();
   const [scriptReady, setScriptReady] = useState(false);
   const initializingRef = useRef(false);
+  const promptStartedRef = useRef(false);
   const warnedMissingClientIdRef = useRef(false);
+  const loginWithGoogleOneTapRef = useRef(loginWithGoogleOneTap);
+
+  useEffect(() => {
+    loginWithGoogleOneTapRef.current = loginWithGoogleOneTap;
+  }, [loginWithGoogleOneTap]);
 
   const clientId = useMemo(
     () => process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ?? "",
@@ -42,14 +48,16 @@ export function GoogleOneTap() {
     if (authState.status !== "no-user") return;
     if (accessDenied) return;
     if (initializingRef.current) return;
+    if (promptStartedRef.current) return;
 
     if (!window.google?.accounts?.id) return;
 
     initializingRef.current = true;
+    promptStartedRef.current = true;
 
     window.google.accounts.id.initialize({
       client_id: clientId,
-      auto_select: true,
+      auto_select: false,
       cancel_on_tap_outside: false,
       context: "signin",
       callback: async ({ credential }) => {
@@ -59,7 +67,7 @@ export function GoogleOneTap() {
         }
 
         try {
-          await loginWithGoogleOneTap(credential);
+          await loginWithGoogleOneTapRef.current(credential);
         } catch (error) {
           if (!isDeniedError(error)) {
             console.error("Google One Tap sign-in failed", error);
@@ -114,13 +122,13 @@ export function GoogleOneTap() {
       }
       initializingRef.current = false;
     };
-  }, [
-    accessDenied,
-    authState.status,
-    clientId,
-    loginWithGoogleOneTap,
-    scriptReady,
-  ]);
+  }, [accessDenied, authState.status, clientId, scriptReady]);
+
+  useEffect(() => {
+    if (authState.status !== "no-user") {
+      promptStartedRef.current = false;
+    }
+  }, [authState.status]);
 
   if (!clientId) return null;
 
