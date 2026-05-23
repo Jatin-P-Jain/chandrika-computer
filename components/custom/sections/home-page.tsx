@@ -9,7 +9,9 @@ import {
   Loader2,
   LockKeyholeIcon,
   Newspaper,
+  Users,
   XIcon,
+  CalendarHeart,
 } from "lucide-react";
 import {
   Card,
@@ -21,7 +23,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/context/useAuth";
 import clsx from "clsx";
 import { PhoneVerification } from "../phone-verification";
-import { useEffect, useState } from "react";
+import { GoogleOneTap } from "../google-one-tap";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
@@ -33,8 +36,9 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const tDailyAccount = useTranslations("DailyAccount");
   const tStampRegister = useTranslations("StampRegister");
   const tPhotocopyRegister = useTranslations("PhotocopyRegister");
+  const tAttendanceRegister = useTranslations("AttendanceRegister");
   const tToast = useTranslations("Toast");
-  const { textPageHeadCls, textBodyCls } = useLocaleTypography();
+  const { textPageHeadCls, textBodyCls, textSmCls } = useLocaleTypography();
 
   const auth = useAuth();
   const {
@@ -53,11 +57,34 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
     sessionExpired === "1",
   );
   const [pendingRoute, setPendingRoute] = useState<
-    "/daily-accounts" | "/stamp-register" | "/photocopy-register" | null
+    | "/daily-accounts"
+    | "/stamp-register"
+    | "/photocopy-register"
+    | "/attendace-register"
+    | null
   >(null);
 
+  const thisMonthHolidayDate = useMemo(() => {
+    const now = new Date();
+    const lastDateOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const daysFromSunday = lastDateOfMonth.getDay();
+    const lastSunday = new Date(lastDateOfMonth);
+    lastSunday.setDate(lastDateOfMonth.getDate() - daysFromSunday);
+
+    return new Intl.DateTimeFormat(locale, {
+      weekday: "long",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(lastSunday);
+  }, [locale]);
+
   const navigateTo = (
-    path: "/daily-accounts" | "/stamp-register" | "/photocopy-register",
+    path:
+      | "/daily-accounts"
+      | "/stamp-register"
+      | "/photocopy-register"
+      | "/attendace-register",
   ) => {
     if (pendingRoute) return;
     if (authState.status !== "ready") {
@@ -83,6 +110,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
 
   return (
     <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-3 md:p-6 relative">
+      <GoogleOneTap />
       {sessionExpired && sessionExpiredPopupShown && (
         <div className="w-full relative flex justify-center items-center md:w-1/2 mx-auto p-3 text-sm text-yellow-700 bg-yellow-200 border border-yellow-200 rounded-md gap-2">
           <div className="flex flex-col gap-1">
@@ -172,11 +200,29 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
         </div>
       )}
 
+      <p
+        className={clsx(
+          "px-2 text-xs font-medium text-primary/80 gap-2 flex items-center w-full justify-center",
+          textSmCls,
+        )}
+      >
+        <span className={clsx("flex items-center gap-2")}>
+          <CalendarHeart className="size-5 text-red-700" />{" "}
+          {tHomePage("MonthlyHolidayPrefix")}{" "}
+        </span>
+        <span
+          className={clsx("text-sm font-semibold text-red-700", textBodyCls)}
+        >
+          {thisMonthHolidayDate}
+        </span>
+        <span> {tHomePage("MonthlyHolidaySuffix")}</span>
+      </p>
+
       {isUserLoading && (
         <div className="flex justify-center items-center w-full h-full absolute z-10 bg-muted-foreground/30 top-0 left-0 rounded-md">
           <div className="flex flex-col gap-2 justify-center items-center bg-white dark:bg-black/90 p-2 rounded-md">
             <Loader2 className="animate-spin size-8 text-primary" />
-            <span className="text-primary font-bold">Please Wait...</span>
+            <span className="text-primary font-bold">{tCommon("Loading")}</span>
           </div>
         </div>
       )}
@@ -319,6 +365,54 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
                 </CardTitle>
                 <CardDescription className="">
                   {tPhotocopyRegister("Desc")}
+                </CardDescription>
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
+
+        <div
+          className="group block cursor-pointer"
+          onClick={() => navigateTo("/attendace-register")}
+        >
+          <Card
+            className={clsx(
+              "h-full cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-md",
+              pendingRoute === "/attendace-register" &&
+                "opacity-70 pointer-events-none",
+            )}
+          >
+            <CardHeader className="flex flex-row items-center gap-3">
+              <div className="flex p-4 size-12 md:size-16 items-center justify-center rounded-md bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
+                <span className="font-semibold">
+                  <Users className="size-8" />
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 md:gap-2 w-full">
+                <CardTitle
+                  className={clsx(
+                    "leading-6 flex items-start justify-between w-full text-lg",
+                  )}
+                >
+                  {tAttendanceRegister("Title")}
+                  {pendingRoute === "/attendace-register" ? (
+                    <div className="text-primary bg-primary/10 p-1 rounded-md">
+                      <Loader2 className="animate-spin size-5" />
+                    </div>
+                  ) : authState.status !== "ready" ? (
+                    isUserLoading ? (
+                      <div className="text-primary bg-primary/10 p-1 rounded-md">
+                        <Loader2 className="animate-spin size-5" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center p-1 bg-primary/10 rounded-md">
+                        <LockKeyholeIcon className="size-5 text-primary rounded-md" />
+                      </div>
+                    )
+                  ) : null}
+                </CardTitle>
+                <CardDescription className="">
+                  {tAttendanceRegister("Desc")}
                 </CardDescription>
               </div>
             </CardHeader>

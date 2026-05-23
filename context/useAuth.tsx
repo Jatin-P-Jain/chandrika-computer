@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   loginWithEmailAndPass,
   loginWithGoogle as loginWithGoogleAuth,
+  loginWithGoogleIdToken,
   logoutUser,
   sendOTP,
   verifyOTP,
@@ -17,12 +18,54 @@ import { mapDbUserToClientUser } from "@/lib/firebase/mapDBUserToClient";
 import useMonitorInactivity from "@/hooks/useMonitorInactivity";
 import { UserData } from "@/types/user";
 import { removeToken } from "./actions";
-import { createUserIfNotExists } from "@/lib/firebase/createUserIfNotExists";
 import {
   getOrCreateDeviceId,
   isDeviceTrustedLocally,
   markDeviceTrustedLocally,
 } from "@/lib/auth/trusted-device";
+
+const OTP_CYCLE_PREFIX = "otp_cycle_verified";
+
+function canUseStorage() {
+  return (
+    typeof window !== "undefined" && typeof window.localStorage !== "undefined"
+  );
+}
+
+function otpCycleKey(uid: string) {
+  return `${OTP_CYCLE_PREFIX}:${uid}`;
+}
+
+function isOtpVerifiedForCycle(uid: string) {
+  if (!canUseStorage()) return false;
+  return window.localStorage.getItem(otpCycleKey(uid)) === "1";
+}
+
+function markOtpVerifiedForCycle(uid: string) {
+  if (!canUseStorage()) return;
+  window.localStorage.setItem(otpCycleKey(uid), "1");
+}
+
+function clearOtpVerifiedForCycle(uid: string) {
+  if (!canUseStorage()) return;
+  window.localStorage.removeItem(otpCycleKey(uid));
+}
+
+function clearAllOtpCycleFlags() {
+  if (!canUseStorage()) return;
+
+  const keysToRemove: string[] = [];
+  for (let index = 0; index < window.localStorage.length; index += 1) {
+    const key = window.localStorage.key(index);
+    if (key && key.startsWith(`${OTP_CYCLE_PREFIX}:`)) {
+      keysToRemove.push(key);
+    }
+  }
+
+  for (const key of keysToRemove) {
+    window.localStorage.removeItem(key);
+  }
+}
 
 type AuthStatus =
   | { status: "loading" }
@@ -43,6 +86,7 @@ type AuthContextType = {
   isLoggingOut: boolean;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<User | undefined>;
+  loginWithGoogleOneTap: (idToken: string) => Promise<User | undefined>;
   loginWithEmailAndPassword: (data: {
     email: string;
     password: string;
@@ -64,9 +108,10 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authState, setAuthState] = useState<AuthStatus>({ status: "loading" });
-  const [inactivityLimit, setInactivityLimit] = useState<number>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
+  const inactivityLimit =
+    Number(process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0") || undefined;
 
   const isDeniedError = (error: unknown) => {
     if (error instanceof GoogleEmailNotAllowedError) return true;
@@ -76,13 +121,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return false;
   };
 
+  const isMobileDevice = () => {
+    if (typeof navigator === "undefined") return false;
+
+    if ("userAgentData" in navigator) {
+      const uaData = navigator.userAgentData as { mobile?: boolean };
+      if (typeof uaData.mobile === "boolean") return uaData.mobile;
+    }
+
+    const ua = navigator.userAgent.toLowerCase();
+    return /android|iphone|ipad|ipod|mobile|iemobile|opera mini/.test(ua);
+  };
+
   const getUserToken = async () => {
     const { currentUser } =
       authState.status === "ready" ? authState : { currentUser: null };
 
     if (!currentUser) throw new Error("No current user for verification");
 
-    return currentUser.getIdToken(true);
+    return currentUser.getIdToken();
   };
 
   const startPhoneVerificationFlow = () => {
@@ -124,13 +181,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         currentUser.phoneNumber,
       );
 
-      const idTokenResult = await currentUser.getIdTokenResult(true);
-      const claims = idTokenResult.claims;
       const phoneNumber = currentUser.phoneNumber
         ? currentUser.phoneNumber.slice(3)
         : null;
       const role = "admin";
-      console.log("[Auth] claims:", { role, phoneNumber, admin: claims.admin });
 
       const userDocRef = doc(firestore, "users", currentUser.uid);
       console.log("[Auth] Writing Firestore doc (upsert)...");
@@ -175,6 +229,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (updatedSnap.exists()) {
         console.log("[Auth] Updated doc exists. Setting authState → ready");
         const clientUser = mapDbUserToClientUser(updatedSnap.data());
+        markOtpVerifiedForCycle(currentUser.uid);
         setAuthState({
           status: "ready",
           clientUser,
@@ -213,6 +268,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!user) {
         console.log("[Auth] No user → status: no-user");
+        clearAllOtpCycleFlags();
         setAuthState({ status: "no-user" });
         await removeToken();
         return;
@@ -238,35 +294,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setAccessDenied(false);
 
       try {
-        const idTokenResult = await user.getIdTokenResult();
-        const claims = idTokenResult.claims;
-        console.log("[Auth] ID token claims:", {
-          admin: claims.admin,
-          phoneNumber: claims.phone_number,
-        });
+        const userDocRef = doc(firestore, "users", user.uid);
+        const snap = await getDoc(userDocRef);
 
-        const safeUser: UserData = {
-          uid: user.uid,
-          email: user.email ?? null,
-          phoneNumber: user.phoneNumber?.slice(3) ?? null,
-          displayName: user.displayName ?? null,
-          role: "admin",
-          photoUrl: user.photoURL,
-        };
-        await createUserIfNotExists(safeUser);
-        console.log("[Auth] createUserIfNotExists done");
-
-        // Read Firestore profile for phoneVerified + client user
-        const snap = await getDoc(doc(firestore, "users", user.uid));
-        console.log("[Auth] Firestore doc exists:", snap.exists());
-
-        if (!snap.exists()) {
-          console.log("[Auth] Doc not found → status: first-time-setup");
-          setAuthState({ status: "first-time-setup", currentUser: user });
-          return;
+        let dbUser = snap.exists() ? snap.data() : null;
+        if (!dbUser) {
+          const nowIso = new Date().toISOString();
+          dbUser = {
+            uid: user.uid,
+            email: user.email ?? null,
+            phoneNumber: user.phoneNumber?.slice(3) ?? null,
+            displayName: user.displayName ?? null,
+            role: "admin",
+            photoUrl: user.photoURL ?? null,
+            phoneVerified: false,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+          };
+          await setDoc(userDocRef, dbUser, { merge: true });
         }
 
-        const dbUser = snap.data();
         const phoneVerified = dbUser.phoneVerified === true;
         console.log(
           "[Auth] dbUser.phoneVerified:",
@@ -279,26 +326,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log("[Auth] phoneVerified=false → status: first-time-setup");
           setAuthState({ status: "first-time-setup", currentUser: user });
         } else {
-          const deviceId = getOrCreateDeviceId();
-          const trustedDevices =
-            typeof dbUser.trustedDevices === "object" && dbUser.trustedDevices
-              ? (dbUser.trustedDevices as Record<string, unknown>)
-              : {};
+          const mobileDevice = isMobileDevice();
 
-          const trustedOnServer = Boolean(deviceId && trustedDevices[deviceId]);
-          const trustedLocally = Boolean(
-            deviceId && isDeviceTrustedLocally(user.uid, deviceId),
-          );
+          if (mobileDevice) {
+            const deviceId = getOrCreateDeviceId();
+            const trustedDevices =
+              typeof dbUser.trustedDevices === "object" && dbUser.trustedDevices
+                ? (dbUser.trustedDevices as Record<string, unknown>)
+                : {};
+            const trustedOnServer = Boolean(
+              deviceId && trustedDevices[deviceId],
+            );
+            const trustedLocally = Boolean(
+              deviceId && isDeviceTrustedLocally(user.uid, deviceId),
+            );
 
-          console.log("[Auth] trusted device check:", {
-            deviceId,
-            trustedOnServer,
-            trustedLocally,
-          });
+            console.log("[Auth] mobile trusted-device check:", {
+              uid: user.uid,
+              deviceId,
+              trustedOnServer,
+              trustedLocally,
+            });
 
-          if (!trustedOnServer || !trustedLocally) {
+            if (trustedOnServer && trustedLocally) {
+              console.log("[Auth] trusted mobile device → status: ready");
+              const clientUser = mapDbUserToClientUser(dbUser);
+              setAuthState({ status: "ready", clientUser, currentUser: user });
+              return;
+            }
+
             console.log(
-              "[Auth] Device is not trusted → status: phone-verification-required",
+              "[Auth] untrusted mobile device → status: phone-verification-required",
             );
             setAuthState({
               status: "phone-verification-required",
@@ -306,16 +364,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
             return;
           }
-          console.log("[Auth] All checks passed → status: ready");
-          const clientUser = mapDbUserToClientUser(dbUser);
-          setAuthState({ status: "ready", clientUser, currentUser: user });
+
+          const otpVerifiedForCycle = isOtpVerifiedForCycle(user.uid);
+
+          console.log("[Auth] desktop OTP cycle check:", {
+            uid: user.uid,
+            otpVerifiedForCycle,
+          });
+
+          if (otpVerifiedForCycle) {
+            console.log(
+              "[Auth] desktop OTP already verified in this login cycle → status: ready",
+            );
+            const clientUser = mapDbUserToClientUser(dbUser);
+            setAuthState({ status: "ready", clientUser, currentUser: user });
+            return;
+          }
+
+          console.log(
+            "[Auth] desktop OTP required for this login cycle → status: phone-verification-required",
+          );
+          setAuthState({
+            status: "phone-verification-required",
+            currentUser: user,
+          });
         }
-
-        const limit = parseInt(
-          process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0",
-        );
-
-        setInactivityLimit(limit);
       } catch (e) {
         if (isDeniedError(e)) {
           console.warn("[Auth] isDeniedError → logging out, accessDenied");
@@ -349,6 +422,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setIsLoggingOut(true);
           try {
             setAccessDenied(false);
+            const currentUid =
+              authState.status === "ready" ||
+              authState.status === "first-time-setup" ||
+              authState.status === "phone-verification-required"
+                ? authState.currentUser.uid
+                : null;
+
+            if (currentUid) {
+              clearOtpVerifiedForCycle(currentUid);
+            }
             await logoutUser();
             window.location.href = "/";
           } catch (err) {
@@ -360,6 +443,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setAccessDenied(false);
           try {
             return await loginWithGoogleAuth();
+          } catch (error) {
+            if (isDeniedError(error)) {
+              setAccessDenied(true);
+            }
+            throw error;
+          }
+        },
+        loginWithGoogleOneTap: async (idToken: string) => {
+          setAccessDenied(false);
+          try {
+            return await loginWithGoogleIdToken(idToken);
           } catch (error) {
             if (isDeniedError(error)) {
               setAccessDenied(true);

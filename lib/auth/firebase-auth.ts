@@ -2,6 +2,7 @@ import {
   GoogleAuthProvider,
   RecaptchaVerifier,
   signInWithEmailAndPassword,
+  signInWithCredential,
   signInWithPhoneNumber,
   signInWithPopup,
   ConfirmationResult,
@@ -50,7 +51,25 @@ export const loginWithGoogle = async (): Promise<User | undefined> => {
     throw new GoogleEmailNotAllowedError(user.email);
   }
 
-  const token = await user.getIdToken(true);
+  const token = await user.getIdToken();
+  await setToken(token, user.refreshToken);
+  return user;
+};
+
+export const loginWithGoogleIdToken = async (
+  idToken: string
+): Promise<User | undefined> => {
+  const credential = GoogleAuthProvider.credential(idToken);
+  const result = await signInWithCredential(auth, credential);
+  const user = result.user;
+
+  if (!isGoogleEmailAllowlisted(user.email)) {
+    await auth.signOut();
+    await removeToken();
+    throw new GoogleEmailNotAllowedError(user.email);
+  }
+
+  const token = await user.getIdToken();
   await setToken(token, user.refreshToken);
   return user;
 };
@@ -61,7 +80,7 @@ export const loginWithEmailAndPass = async (
 ): Promise<User | undefined> => {
   const result = await signInWithEmailAndPassword(auth, email, password);
   const user = result.user;
-  const token = await user.getIdToken(true);
+  const token = await user.getIdToken();
   await setToken(token, user.refreshToken);
   return user;
 };
@@ -82,7 +101,7 @@ export const verifyOTP = async (
     if (result) {
       // console.log("OTP verification successful", result);
       const user = result.user;
-      const token = await user.getIdToken(true);
+      const token = await user.getIdToken();
       await setToken(token, user.refreshToken);
       return user;
     } else {

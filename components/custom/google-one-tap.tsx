@@ -1,0 +1,146 @@
+"use client";
+
+import Script from "next/script";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/context/useAuth";
+import {
+  GOOGLE_EMAIL_DENIED_ERROR_CODE,
+  GoogleEmailNotAllowedError,
+} from "@/lib/auth/firebase-auth";
+import { markOneTapAsFinished } from "@/hooks/useOneTapReady";
+
+const GOOGLE_GSI_SRC = "https://accounts.google.com/gsi/client";
+
+function isDeniedError(error: unknown) {
+  if (error instanceof GoogleEmailNotAllowedError) return true;
+  if (typeof error === "object" && error !== null && "code" in error) {
+    return error.code === GOOGLE_EMAIL_DENIED_ERROR_CODE;
+  }
+  return false;
+}
+
+export function GoogleOneTap() {
+  const { authState, accessDenied, loginWithGoogleOneTap } = useAuth();
+  const [scriptReady, setScriptReady] = useState(false);
+  const initializingRef = useRef(false);
+  const promptStartedRef = useRef(false);
+  const warnedMissingClientIdRef = useRef(false);
+  const loginWithGoogleOneTapRef = useRef(loginWithGoogleOneTap);
+
+  useEffect(() => {
+    loginWithGoogleOneTapRef.current = loginWithGoogleOneTap;
+  }, [loginWithGoogleOneTap]);
+
+  const clientId = useMemo(
+    () => process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ?? "",
+    [],
+  );
+
+  useEffect(() => {
+    if (!clientId && !warnedMissingClientIdRef.current) {
+      warnedMissingClientIdRef.current = true;
+      console.warn(
+        "Google One Tap disabled: NEXT_PUBLIC_GOOGLE_CLIENT_ID is missing",
+      );
+    }
+
+    if (!scriptReady || !clientId) return;
+    if (authState.status !== "no-user") return;
+    if (accessDenied) return;
+    if (initializingRef.current) return;
+    if (promptStartedRef.current) return;
+
+    if (!window.google?.accounts?.id) return;
+
+    initializingRef.current = true;
+    promptStartedRef.current = true;
+
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      auto_select: false,
+      cancel_on_tap_outside: false,
+      context: "signin",
+      callback: async ({ credential }) => {
+        if (!credential) {
+          markOneTapAsFinished();
+          return;
+        }
+
+        try {
+          await loginWithGoogleOneTapRef.current(credential);
+        } catch (error) {
+          if (!isDeniedError(error)) {
+            console.error("Google One Tap sign-in failed", error);
+          }
+        } finally {
+          markOneTapAsFinished();
+        }
+      },
+    });
+
+    console.log("Google One Tap: prompting...");
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isDisplayed()) {
+        console.log("Google One Tap displayed");
+      }
+
+      if (notification.isNotDisplayed()) {
+        console.warn(
+          "Google One Tap not displayed:",
+          notification.getNotDisplayedReason(),
+        );
+      }
+
+      if (notification.isSkippedMoment()) {
+        console.warn(
+          "Google One Tap skipped:",
+          notification.getSkippedReason(),
+        );
+      }
+
+      if (notification.isDismissedMoment()) {
+        console.warn(
+          "Google One Tap dismissed:",
+          notification.getDismissedReason(),
+        );
+      }
+
+      if (
+        notification.isNotDisplayed() ||
+        notification.isSkippedMoment() ||
+        notification.isDismissedMoment()
+      ) {
+        markOneTapAsFinished();
+      }
+    });
+
+    return () => {
+      try {
+        window.google.accounts.id.cancel();
+      } catch {
+        // Ignore when script is partially available during fast route transitions.
+      }
+      initializingRef.current = false;
+    };
+  }, [accessDenied, authState.status, clientId, scriptReady]);
+
+  useEffect(() => {
+    if (authState.status !== "no-user") {
+      promptStartedRef.current = false;
+    }
+  }, [authState.status]);
+
+  if (!clientId) return null;
+
+  return (
+    <Script
+      src={GOOGLE_GSI_SRC}
+      strategy="afterInteractive"
+      onLoad={() => setScriptReady(true)}
+      onError={() => {
+        setScriptReady(false);
+        console.error("Failed to load Google One Tap script");
+      }}
+    />
+  );
+}

@@ -8,6 +8,10 @@ Google sign-in is restricted by an email allowlist. Set this environment variabl
 
 `NEXT_PUBLIC_ALLOWED_GOOGLE_EMAILS=email1@example.com,email2@example.com`
 
+Google One Tap also requires your Google OAuth Web client id:
+
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID=xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com`
+
 You can also use `NEXT_PUBLIC_ALLOWED_EMAILS` as a fallback name.
 
 Only emails listed here can complete Google login.

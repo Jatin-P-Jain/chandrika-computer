@@ -27,7 +27,7 @@ declare global {
               getSkippedReason(): string;
               isDismissedMoment(): boolean;
               getDismissedReason(): string;
-            }) => void,
+            }) => void
           ) => void;
 
           cancel: () => void;
@@ -43,7 +43,7 @@ declare global {
               logo_alignment?: "left" | "center";
               width?: string;
               locale?: string;
-            },
+            }
           ) => void;
         };
       };
