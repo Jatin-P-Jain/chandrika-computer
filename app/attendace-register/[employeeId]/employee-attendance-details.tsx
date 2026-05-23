@@ -1,11 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  CalendarClock,
-  ChevronLeft,
-  UserCircle2,
-} from "lucide-react";
+import { CalendarClock, ChevronLeft, UserCircle2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -122,7 +118,9 @@ export function EmployeeAttendanceDetails({
           </h2>
           <div className="w-full">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className={clsx("w-full font-medium", textBodyCls)}>
+              <SelectTrigger
+                className={clsx("w-full font-medium", textBodyCls)}
+              >
                 <SelectValue
                   placeholder={tAttendance("SelectMonth")}
                   className=""
@@ -167,7 +165,9 @@ export function EmployeeAttendanceDetails({
                     <h3 className={`font-semibold ${textHeadingCls}`}>
                       {monthItem.monthLabel}
                     </h3>
-                    <span className={`text-sm font-medium text-primary ${textBodyCls}`}>
+                    <span
+                      className={`text-sm font-medium text-primary ${textBodyCls}`}
+                    >
                       {tAttendance("AbsentDaysCount", {
                         count: monthItem.absentDates.length,
                       })}
@@ -175,7 +175,11 @@ export function EmployeeAttendanceDetails({
                   </div>
 
                   <div className="flex flex-wrap gap-2 items-center">
-                    <span className={`text-sm text-muted-foreground font-medium ${textSmCls}`}>{tCommon("Date")}:</span>
+                    <span
+                      className={`text-sm text-muted-foreground font-medium ${textSmCls}`}
+                    >
+                      {tCommon("Date")}:
+                    </span>
                     {monthItem.absentDates.map((date) => (
                       <span
                         key={date}
