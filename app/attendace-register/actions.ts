@@ -277,6 +277,59 @@ export async function toggleEmployeeAbsent(opts: {
   }
 }
 
+export async function deleteAttendanceEmployee(opts: {
+  employeeId: string;
+  user: UserData;
+  authtoken: string;
+}) {
+  try {
+    const access = await ensureAdminAccess(opts.user, opts.authtoken);
+    if (!access.ok) {
+      return {
+        success: false as const,
+        error: access.message,
+      };
+    }
+
+    const done = startFirestoreMetric({
+      source: "server",
+      operation: "deleteAttendanceEmployee",
+      collection: EMPLOYEE_COLLECTION,
+    });
+
+    const ref = fireStore.collection(EMPLOYEE_COLLECTION).doc(opts.employeeId);
+    const snap = await ref.get();
+
+    if (!snap.exists) {
+      return { success: false as const, error: "Employee not found" };
+    }
+
+    await ref.delete();
+
+    done({
+      success: true,
+      docsRead: 1,
+      docsWritten: 1,
+      details: { employeeId: opts.employeeId },
+    });
+
+    revalidatePath("/attendace-register");
+    revalidatePath(`/attendace-register/${opts.employeeId}`);
+
+    return {
+      success: true as const,
+      data: {
+        employeeId: opts.employeeId,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Unable to delete employee",
+    };
+  }
+}
+
 export async function getEmployeeAttendanceDetail(
   employeeId: string,
 ): Promise<{ data: AttendanceEmployeeDetails | null }> {

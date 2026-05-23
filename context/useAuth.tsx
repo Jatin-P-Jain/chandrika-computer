@@ -20,7 +20,6 @@ import { UserData } from "@/types/user";
 import { removeToken } from "./actions";
 import {
   getOrCreateDeviceId,
-  isDeviceTrustedLocally,
   markDeviceTrustedLocally,
 } from "@/lib/auth/trusted-device";
 
@@ -269,36 +268,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log("[Auth] phoneVerified=false → status: first-time-setup");
           setAuthState({ status: "first-time-setup", currentUser: user });
         } else {
-          const deviceId = getOrCreateDeviceId();
-          const trustedDevices =
-            typeof dbUser.trustedDevices === "object" && dbUser.trustedDevices
-              ? (dbUser.trustedDevices as Record<string, unknown>)
-              : {};
-
-          const trustedOnServer = Boolean(deviceId && trustedDevices[deviceId]);
-          const trustedLocally = Boolean(
-            deviceId && isDeviceTrustedLocally(user.uid, deviceId),
+          console.log(
+            "[Auth] phoneVerified=true → status: phone-verification-required",
           );
-
-          console.log("[Auth] trusted device check:", {
-            deviceId,
-            trustedOnServer,
-            trustedLocally,
+          setAuthState({
+            status: "phone-verification-required",
+            currentUser: user,
           });
-
-          if (!trustedOnServer || !trustedLocally) {
-            console.log(
-              "[Auth] Device is not trusted → status: phone-verification-required",
-            );
-            setAuthState({
-              status: "phone-verification-required",
-              currentUser: user,
-            });
-            return;
-          }
-          console.log("[Auth] All checks passed → status: ready");
-          const clientUser = mapDbUserToClientUser(dbUser);
-          setAuthState({ status: "ready", clientUser, currentUser: user });
         }
       } catch (e) {
         if (isDeniedError(e)) {

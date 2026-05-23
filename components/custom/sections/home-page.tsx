@@ -11,6 +11,7 @@ import {
   Newspaper,
   Users,
   XIcon,
+  CalendarHeart,
 } from "lucide-react";
 import {
   Card,
@@ -23,7 +24,7 @@ import { useAuth } from "@/context/useAuth";
 import clsx from "clsx";
 import { PhoneVerification } from "../phone-verification";
 import { GoogleOneTap } from "../google-one-tap";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
@@ -37,7 +38,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   const tPhotocopyRegister = useTranslations("PhotocopyRegister");
   const tAttendanceRegister = useTranslations("AttendanceRegister");
   const tToast = useTranslations("Toast");
-  const { textPageHeadCls, textBodyCls } = useLocaleTypography();
+  const { textPageHeadCls, textBodyCls, textSmCls } = useLocaleTypography();
 
   const auth = useAuth();
   const {
@@ -62,6 +63,21 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
     | "/attendace-register"
     | null
   >(null);
+
+  const thisMonthHolidayDate = useMemo(() => {
+    const now = new Date();
+    const lastDateOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const daysFromSunday = lastDateOfMonth.getDay();
+    const lastSunday = new Date(lastDateOfMonth);
+    lastSunday.setDate(lastDateOfMonth.getDate() - daysFromSunday);
+
+    return new Intl.DateTimeFormat(locale, {
+      weekday: "long",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(lastSunday);
+  }, [locale]);
 
   const navigateTo = (
     path:
@@ -184,11 +200,29 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
         </div>
       )}
 
+      <p
+        className={clsx(
+          "px-2 text-xs font-medium text-primary/80 gap-2 flex items-center w-full justify-center",
+          textSmCls,
+        )}
+      >
+        <span className={clsx("flex items-center gap-2")}>
+          <CalendarHeart className="size-5 text-red-700" />{" "}
+          {tHomePage("MonthlyHolidayPrefix")}{" "}
+        </span>
+        <span
+          className={clsx("text-sm font-semibold text-red-700", textBodyCls)}
+        >
+          {thisMonthHolidayDate}
+        </span>
+        <span> {tHomePage("MonthlyHolidaySuffix")}</span>
+      </p>
+
       {isUserLoading && (
         <div className="flex justify-center items-center w-full h-full absolute z-10 bg-muted-foreground/30 top-0 left-0 rounded-md">
           <div className="flex flex-col gap-2 justify-center items-center bg-white dark:bg-black/90 p-2 rounded-md">
             <Loader2 className="animate-spin size-8 text-primary" />
-            <span className="text-primary font-bold">Please Wait...</span>
+            <span className="text-primary font-bold">{tCommon("Loading")}</span>
           </div>
         </div>
       )}

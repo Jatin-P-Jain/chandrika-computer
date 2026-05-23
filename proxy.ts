@@ -4,6 +4,7 @@ const PROTECTED_PREFIXES = [
   "/daily-accounts",
   "/photocopy-register",
   "/stamp-register",
+  "/attendace-register",
 ];
 
 export function proxy(request: NextRequest) {
@@ -36,5 +37,6 @@ export const config = {
     "/daily-accounts/:path*",
     "/photocopy-register/:path*",
     "/stamp-register/:path*",
+    "/attendace-register/:path*",
   ],
 };

@@ -6,6 +6,7 @@ import {
   CalendarDaysIcon,
   Calendars,
   Loader2,
+  Trash2,
   UserCircle2,
   UserPlus2,
   Users,
@@ -24,6 +25,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -33,7 +45,11 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/context/useAuth";
-import { createAttendanceEmployee, toggleEmployeeAbsent } from "./actions";
+import {
+  createAttendanceEmployee,
+  deleteAttendanceEmployee,
+  toggleEmployeeAbsent,
+} from "./actions";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
 import clsx from "clsx";
 
@@ -80,6 +96,9 @@ export function AttendanceRegisterClient({
   const [savingEmployeeId, setSavingEmployeeId] = React.useState<string | null>(
     null,
   );
+  const [deletingEmployeeId, setDeletingEmployeeId] = React.useState<
+    string | null
+  >(null);
   const [selectedDatesByEmployee, setSelectedDatesByEmployee] = React.useState<
     Record<string, string>
   >({});
@@ -223,6 +242,48 @@ export function AttendanceRegisterClient({
     }
   };
 
+  const onDeleteEmployee = async (employeeId: string) => {
+    if (deletingEmployeeId || savingEmployeeId) return;
+
+    if (authState.status !== "ready") {
+      toast.error(tAttendance("AuthenticationRequired"));
+      return;
+    }
+
+    try {
+      setDeletingEmployeeId(employeeId);
+      const token = await authState.currentUser.getIdToken();
+      const result = await deleteAttendanceEmployee({
+        employeeId,
+        user: authState.clientUser,
+        authtoken: token,
+      });
+
+      if (!result.success) {
+        toast.error(result.error || tAttendance("UnableToDeleteEmployee"));
+        return;
+      }
+
+      setEmployees((prev) =>
+        prev.filter((employee) => employee.id !== result.data.employeeId),
+      );
+      setSelectedDatesByEmployee((prev) => {
+        const next = { ...prev };
+        delete next[result.data.employeeId];
+        return next;
+      });
+      toast.success(tAttendance("EmployeeDeleted"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : tAttendance("UnableToDeleteEmployee"),
+      );
+    } finally {
+      setDeletingEmployeeId(null);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3 w-full">
       <div className="flex flex-wrap items-center justify-between gap-3 w-full">
@@ -324,15 +385,67 @@ export function AttendanceRegisterClient({
                       </p> */}
                     </div>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-primary"
-                      onClick={() => push(`/attendace-register/${employee.id}`)}
-                    >
-                      <Calendars className="size-4" />
-                      {tAttendance("Details")}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-primary"
+                        onClick={() =>
+                          push(`/attendace-register/${employee.id}`)
+                        }
+                      >
+                        <Calendars className="size-4" />
+                        {tAttendance("Details")}
+                      </Button>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive border-destructive/40"
+                            disabled={
+                              savingEmployeeId === employee.id ||
+                              deletingEmployeeId === employee.id
+                            }
+                          >
+                            {deletingEmployeeId === employee.id ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent size="sm">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              {tAttendance("DeleteConfirmTitle")}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription
+                              className={clsx("text-center", textBodyCls)}
+                            >
+                              {tAttendance("DeleteConfirmDesc", {
+                                name: employee.name,
+                              })}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel
+                              disabled={deletingEmployeeId === employee.id}
+                            >
+                              {tCommon("Cancel")}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-red-800"
+                              disabled={deletingEmployeeId === employee.id}
+                              onClick={() => onDeleteEmployee(employee.id)}
+                            >
+                              {tAttendance("Delete")}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
