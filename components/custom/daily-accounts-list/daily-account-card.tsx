@@ -85,8 +85,8 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
       )}
     >
       <CardContent className="flex items-start w-full p-1 flex-col">
-        <div className="flex flex-col gap-2 p-1 relative w-full">
-          <div className="flex items-center gap-1 justify-start w-full">
+        <div className="flex flex-col gap-1 p-1 relative w-full">
+          <div className="flex items-center justify-start w-full">
             <span
               className={`flex w-full justify-start gap-2  items-center font-semibold text-primary ${textHeadingCls}`}
             >

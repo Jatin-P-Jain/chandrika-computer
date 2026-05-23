@@ -10,22 +10,6 @@ import {
 import { markOneTapAsFinished } from "@/hooks/useOneTapReady";
 
 const GOOGLE_GSI_SRC = "https://accounts.google.com/gsi/client";
-const ONE_TAP_COOLDOWN_KEY = "google_one_tap_last_prompt_at";
-const ONE_TAP_COOLDOWN_MS = 2 * 60 * 1000;
-
-function wasPromptedRecently() {
-  if (typeof window === "undefined") return false;
-  const raw = window.sessionStorage.getItem(ONE_TAP_COOLDOWN_KEY);
-  if (!raw) return false;
-  const lastTs = Number(raw);
-  if (Number.isNaN(lastTs)) return false;
-  return Date.now() - lastTs < ONE_TAP_COOLDOWN_MS;
-}
-
-function markPromptAttempted() {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(ONE_TAP_COOLDOWN_KEY, String(Date.now()));
-}
 
 function isDeniedError(error: unknown) {
   if (error instanceof GoogleEmailNotAllowedError) return true;
@@ -39,6 +23,7 @@ export function GoogleOneTap() {
   const { authState, accessDenied, loginWithGoogleOneTap } = useAuth();
   const [scriptReady, setScriptReady] = useState(false);
   const initializingRef = useRef(false);
+  const warnedMissingClientIdRef = useRef(false);
 
   const clientId = useMemo(
     () => process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ?? "",
@@ -46,11 +31,17 @@ export function GoogleOneTap() {
   );
 
   useEffect(() => {
+    if (!clientId && !warnedMissingClientIdRef.current) {
+      warnedMissingClientIdRef.current = true;
+      console.warn(
+        "Google One Tap disabled: NEXT_PUBLIC_GOOGLE_CLIENT_ID is missing",
+      );
+    }
+
     if (!scriptReady || !clientId) return;
     if (authState.status !== "no-user") return;
     if (accessDenied) return;
     if (initializingRef.current) return;
-    if (wasPromptedRecently()) return;
 
     if (!window.google?.accounts?.id) return;
 
@@ -58,7 +49,7 @@ export function GoogleOneTap() {
 
     window.google.accounts.id.initialize({
       client_id: clientId,
-      auto_select: false,
+      auto_select: true,
       cancel_on_tap_outside: false,
       context: "signin",
       callback: async ({ credential }) => {
@@ -79,8 +70,33 @@ export function GoogleOneTap() {
       },
     });
 
-    markPromptAttempted();
+    console.log("Google One Tap: prompting...");
     window.google.accounts.id.prompt((notification) => {
+      if (notification.isDisplayed()) {
+        console.log("Google One Tap displayed");
+      }
+
+      if (notification.isNotDisplayed()) {
+        console.warn(
+          "Google One Tap not displayed:",
+          notification.getNotDisplayedReason(),
+        );
+      }
+
+      if (notification.isSkippedMoment()) {
+        console.warn(
+          "Google One Tap skipped:",
+          notification.getSkippedReason(),
+        );
+      }
+
+      if (notification.isDismissedMoment()) {
+        console.warn(
+          "Google One Tap dismissed:",
+          notification.getDismissedReason(),
+        );
+      }
+
       if (
         notification.isNotDisplayed() ||
         notification.isSkippedMoment() ||
