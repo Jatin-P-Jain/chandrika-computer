@@ -24,7 +24,7 @@ import { useAuth } from "@/context/useAuth";
 import clsx from "clsx";
 import { PhoneVerification } from "../phone-verification";
 import { GoogleOneTap } from "../google-one-tap";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 
@@ -46,16 +46,18 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
     completePhoneVerification,
     accessDenied,
     clearAccessDenied,
+    authDebugEntries,
+    clearAuthDebugEntries,
   } = auth;
+  const isDev = process.env.NODE_ENV === "development";
   const isUserLoading = authState.status === "loading";
   const isPhoneVerification =
     authState.status === "first-time-setup" ||
     authState.status === "phone-verification-required";
   const currentUser = isPhoneVerification ? authState.currentUser : null;
 
-  const [sessionExpiredPopupShown, setSessionExpiredPopupShown] = useState(
-    sessionExpired === "1",
-  );
+  const [sessionExpiredDismissed, setSessionExpiredDismissed] = useState(false);
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<
     | "/daily-accounts"
     | "/stamp-register"
@@ -63,6 +65,17 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
     | "/attendace-register"
     | null
   >(null);
+  const [diagnosticsPanelPosition, setDiagnosticsPanelPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [isDraggingDiagnostics, setIsDraggingDiagnostics] = useState(false);
+  const diagnosticsPanelRef = useRef<HTMLDivElement | null>(null);
+  const diagnosticsDragRef = useRef<{
+    pointerId: number;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
 
   const thisMonthHolidayDate = useMemo(() => {
     const now = new Date();
@@ -99,7 +112,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
 
   useEffect(() => {
     if (sessionExpired !== "1") return;
-    if (authState.status === "loading") return;
+    if (authState.status !== "ready") return;
 
     replace("/", {
       scroll: false,
@@ -108,10 +121,148 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
     });
   }, [authState.status, replace, sessionExpired]);
 
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => {
+        setShowLoadingOverlay(isUserLoading);
+      },
+      isUserLoading ? 250 : 0,
+    );
+
+    return () => window.clearTimeout(timeout);
+  }, [isUserLoading]);
+
+  useEffect(() => {
+    if (!isDev) return;
+
+    setDiagnosticsPanelPosition((current) => {
+      if (current) return current;
+
+      const panelWidth = diagnosticsPanelRef.current?.offsetWidth ?? 320;
+      return {
+        x: Math.max(8, window.innerWidth - panelWidth - 16),
+        y: 96,
+      };
+    });
+  }, [isDev]);
+
+  useEffect(() => {
+    if (!isDev || !diagnosticsPanelPosition) return;
+
+    const clampToViewport = () => {
+      const panelWidth = diagnosticsPanelRef.current?.offsetWidth ?? 320;
+      const panelHeight = diagnosticsPanelRef.current?.offsetHeight ?? 176;
+      setDiagnosticsPanelPosition((current) => {
+        if (!current) return current;
+
+        return {
+          x: Math.min(
+            Math.max(8, current.x),
+            Math.max(8, window.innerWidth - panelWidth - 8),
+          ),
+          y: Math.min(
+            Math.max(8, current.y),
+            Math.max(8, window.innerHeight - panelHeight - 8),
+          ),
+        };
+      });
+    };
+
+    window.addEventListener("resize", clampToViewport);
+    return () => window.removeEventListener("resize", clampToViewport);
+  }, [diagnosticsPanelPosition, isDev]);
+
+  useEffect(() => {
+    if (!isDraggingDiagnostics) return;
+
+    const onWindowPointerMove = (event: PointerEvent) => {
+      const dragState = diagnosticsDragRef.current;
+      if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+      if (event.pointerType === "touch") {
+        event.preventDefault();
+      }
+
+      const panelWidth = diagnosticsPanelRef.current?.offsetWidth ?? 320;
+      const panelHeight = diagnosticsPanelRef.current?.offsetHeight ?? 176;
+      const nextX = event.clientX - dragState.offsetX;
+      const nextY = event.clientY - dragState.offsetY;
+
+      setDiagnosticsPanelPosition({
+        x: Math.min(
+          Math.max(8, nextX),
+          Math.max(8, window.innerWidth - panelWidth - 8),
+        ),
+        y: Math.min(
+          Math.max(8, nextY),
+          Math.max(8, window.innerHeight - panelHeight - 8),
+        ),
+      });
+    };
+
+    const onWindowPointerEnd = (event: PointerEvent) => {
+      if (diagnosticsDragRef.current?.pointerId !== event.pointerId) return;
+
+      diagnosticsDragRef.current = null;
+      setIsDraggingDiagnostics(false);
+    };
+
+    window.addEventListener("pointermove", onWindowPointerMove, {
+      passive: false,
+    });
+    window.addEventListener("pointerup", onWindowPointerEnd);
+    window.addEventListener("pointercancel", onWindowPointerEnd);
+
+    return () => {
+      window.removeEventListener("pointermove", onWindowPointerMove);
+      window.removeEventListener("pointerup", onWindowPointerEnd);
+      window.removeEventListener("pointercancel", onWindowPointerEnd);
+    };
+  }, [isDraggingDiagnostics]);
+
+  const onDiagnosticsPointerDown = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (!event.isPrimary) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    const panel = diagnosticsPanelRef.current;
+    if (!panel) return;
+
+    const rect = panel.getBoundingClientRect();
+    diagnosticsDragRef.current = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+    };
+    setIsDraggingDiagnostics(true);
+    if (event.pointerType === "touch") {
+      event.preventDefault();
+    }
+    if (event.currentTarget.setPointerCapture) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+  };
+
+  const onDiagnosticsPointerEnd = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (diagnosticsDragRef.current?.pointerId !== event.pointerId) return;
+
+    diagnosticsDragRef.current = null;
+    setIsDraggingDiagnostics(false);
+    if (
+      event.currentTarget.hasPointerCapture &&
+      event.currentTarget.hasPointerCapture(event.pointerId)
+    ) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
   return (
     <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-3 md:p-6 relative">
       <GoogleOneTap />
-      {sessionExpired && sessionExpiredPopupShown && (
+      {sessionExpired === "1" && !sessionExpiredDismissed && (
         <div className="w-full relative flex justify-center items-center md:w-1/2 mx-auto p-3 text-sm text-yellow-700 bg-yellow-200 border border-yellow-200 rounded-md gap-2">
           <div className="flex flex-col gap-1">
             <span className="text-center flex gap-2 justify-center items-center font-medium">
@@ -127,7 +278,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
           <XIcon
             className="inline size-6 absolute -right-1 -top-1 cursor-pointer p-1 bg-white text-yellow-900 rounded-full border-yellow-300 border"
             onClick={() => {
-              setSessionExpiredPopupShown(false);
+              setSessionExpiredDismissed(true);
               if (sessionExpired === "1") {
                 replace("/", {
                   scroll: false,
@@ -174,7 +325,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
         </div>
       )}
 
-      {authState.status !== "ready" && (
+      {authState.status !== "ready" && !isPhoneVerification && (
         <div
           className={clsx(
             "flex justify-start items-center text-muted-foreground gap-2 text-base px-2",
@@ -218,7 +369,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
         <span> {tHomePage("MonthlyHolidaySuffix")}</span>
       </p>
 
-      {isUserLoading && (
+      {showLoadingOverlay && (
         <div className="flex justify-center items-center w-full h-full absolute z-10 bg-muted-foreground/30 top-0 left-0 rounded-md">
           <div className="flex flex-col gap-2 justify-center items-center bg-white dark:bg-black/90 p-2 rounded-md">
             <Loader2 className="animate-spin size-8 text-primary" />
@@ -420,6 +571,61 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
         </div>
       </div>
       <div id="recaptcha-container" className="hidden"></div>
+
+      {isDev ? (
+        <div
+          ref={diagnosticsPanelRef}
+          className={clsx(
+            "fixed top-24 right-4 z-50 w-80 rounded-lg border bg-background/95 p-2 shadow-lg backdrop-blur select-none touch-none",
+            isDraggingDiagnostics ? "cursor-grabbing" : "cursor-grab",
+          )}
+          style={
+            diagnosticsPanelPosition
+              ? {
+                  left: diagnosticsPanelPosition.x,
+                  top: diagnosticsPanelPosition.y,
+                  right: "auto",
+                }
+              : undefined
+          }
+          onPointerDown={onDiagnosticsPointerDown}
+          onPointerUp={onDiagnosticsPointerEnd}
+          onPointerCancel={onDiagnosticsPointerEnd}
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-muted-foreground">
+              Auth Diagnostics
+            </p>
+            <button
+              type="button"
+              className="text-xs text-primary underline underline-offset-2"
+              onClick={clearAuthDebugEntries}
+            >
+              Reset
+            </button>
+          </div>
+          <p className="mb-1 text-[11px] text-muted-foreground">
+            {`status: ${authState.status}`}
+          </p>
+
+          {authDebugEntries.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No auth diagnostics yet
+            </p>
+          ) : (
+            <div className="max-h-44 space-y-1 overflow-auto pr-1">
+              {authDebugEntries.map((entry) => (
+                <p key={entry.id} className="text-xs leading-snug">
+                  <span className="text-muted-foreground">
+                    {new Date(entry.timestamp).toLocaleTimeString()}:
+                  </span>{" "}
+                  <span>{entry.message}</span>
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

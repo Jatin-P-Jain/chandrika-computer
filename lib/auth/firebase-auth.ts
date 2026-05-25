@@ -4,7 +4,9 @@ import {
   signInWithEmailAndPassword,
   signInWithCredential,
   signInWithPhoneNumber,
+  signInWithRedirect,
   signInWithPopup,
+  getRedirectResult,
   ConfirmationResult,
   User,
 } from "firebase/auth";
@@ -39,12 +41,21 @@ export const isGoogleEmailAllowlisted = (email: string | null): boolean => {
   return ALLOWED_GOOGLE_EMAILS.has(email.trim().toLowerCase());
 };
 
-export const loginWithGoogle = async (): Promise<User | undefined> => {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-  const result = await signInWithPopup(auth, provider);
-  const user = result.user;
+function isMobileOrStandalone() {
+  if (typeof window === "undefined") return false;
 
+  const nav = navigator as Navigator & { standalone?: boolean };
+  const isStandaloneMode =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    nav.standalone === true;
+  const isMobileUA = /android|iphone|ipad|ipod|mobile/i.test(
+    navigator.userAgent
+  );
+
+  return isStandaloneMode || isMobileUA;
+}
+
+async function finalizeGoogleUser(user: User) {
   if (!isGoogleEmailAllowlisted(user.email)) {
     await auth.signOut();
     await removeToken();
@@ -54,6 +65,43 @@ export const loginWithGoogle = async (): Promise<User | undefined> => {
   const token = await user.getIdToken();
   await setToken(token, user.refreshToken);
   return user;
+}
+
+export const loginWithGoogle = async (): Promise<User | undefined> => {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+
+  if (isMobileOrStandalone()) {
+    await signInWithRedirect(auth, provider);
+    return undefined;
+  }
+
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return await finalizeGoogleUser(result.user);
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error.code === "auth/popup-blocked" ||
+        error.code === "auth/popup-closed-by-user" ||
+        error.code === "auth/cancelled-popup-request" ||
+        error.code === "auth/operation-not-supported-in-this-environment")
+    ) {
+      await signInWithRedirect(auth, provider);
+      return undefined;
+    }
+    throw error;
+  }
+};
+
+export const completeGoogleRedirectLogin = async (): Promise<
+  User | undefined
+> => {
+  const result = await getRedirectResult(auth);
+  if (!result?.user) return undefined;
+  return finalizeGoogleUser(result.user);
 };
 
 export const loginWithGoogleIdToken = async (
