@@ -49,7 +49,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
     authDebugEntries,
     clearAuthDebugEntries,
   } = auth;
-  const isDev = process.env.NODE_ENV === "development";
+  const isDev = process.env.NEXT_PUBLIC_AUTH_DIAGNOSTICS === "true";
   const isUserLoading = authState.status === "loading";
   const isPhoneVerification =
     authState.status === "first-time-setup" ||

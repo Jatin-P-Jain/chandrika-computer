@@ -33,7 +33,8 @@ import {
 
 const OTP_CYCLE_PREFIX = "otp_cycle_verified";
 const LAST_ACTIVITY_KEY = "lastActivity";
-const AUTH_DIAGNOSTICS_ENABLED = process.env.NODE_ENV === "development";
+const AUTH_DIAGNOSTICS_ENABLED =
+  process.env.NEXT_PUBLIC_AUTH_DIAGNOSTICS === "true";
 
 function canUseStorage() {
   return (
