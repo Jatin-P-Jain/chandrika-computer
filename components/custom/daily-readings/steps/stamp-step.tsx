@@ -90,10 +90,10 @@ export default function StampStep({
   };
 
   const tomorrowStartByDenom: Record<Denomination, number> = {
-    50: (useWatch({ control, name: "r50" }) ?? 0) + s50,
-    100: (useWatch({ control, name: "r100" }) ?? 0) + s100,
-    500: (useWatch({ control, name: "r500" }) ?? 0) + s500,
-    1000: (useWatch({ control, name: "r1000" }) ?? 0) + s1000,
+    50: useWatch({ control, name: "r50" }) ?? 0,
+    100: useWatch({ control, name: "r100" }) ?? 0,
+    500: useWatch({ control, name: "r500" }) ?? 0,
+    1000: useWatch({ control, name: "r1000" }) ?? 0,
   };
 
   return (
@@ -176,7 +176,9 @@ export default function StampStep({
                   )}
                 >
                   {tReadings("StampsSold")}:{" "}
-                  <span className={clsx("text-base font-semibold", textPageHeadCls)}>
+                  <span
+                    className={clsx("text-base font-semibold", textPageHeadCls)}
+                  >
                     {stampSold[denom]}
                   </span>
                 </div>

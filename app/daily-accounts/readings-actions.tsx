@@ -499,11 +499,9 @@ export async function saveStampReading(opts: {
       const prevReading = nn(opts.prevPartsReadings[d] ?? 0);
       const todayReading = nn(opts.partsTodayReadings[d] ?? 0);
       const stockAdded = nn(opts.partsStockAdded?.[d] ?? 0);
-      const todaySoldBaseline = clamp0(todayReading - stockAdded);
-      // Keep server-side stamp sold logic consistent with review UI:
-      // if today's effective reading is 0, sold must remain 0.
-      const difference =
-        todaySoldBaseline > 0 ? clamp0(prevReading - todaySoldBaseline) : 0;
+      // New rule: stock added today increases today's opening baseline.
+      const todayOpeningBaseline = clamp0(prevReading + stockAdded);
+      const difference = clamp0(todayOpeningBaseline - todayReading);
       const amount = clamp0(difference * d);
 
       parts[d] = { todayReading, prevReading, stockAdded, difference, amount };

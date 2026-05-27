@@ -87,10 +87,6 @@ function clamp0(n: number) {
   return Math.max(0, Number.isFinite(n) ? n : 0);
 }
 
-function toBaseTodayReading(todayReading: number, stockAdded: number) {
-  return clamp0(todayReading - stockAdded);
-}
-
 function useDebouncedNumber(value: number, delayMs: number) {
   const [debouncedValue, setDebouncedValue] = React.useState(value);
 
@@ -251,22 +247,10 @@ export default function DailyReadingsDialog({
   const stampForm = useForm<z.input<typeof stampReadingSchema>>({
     resolver: zodResolver(stampReadingSchema),
     defaultValues: {
-      r50: toBaseTodayReading(
-        readings?.stamp?.parts?.[50]?.todayReading ?? 0,
-        readings?.stamp?.parts?.[50]?.stockAdded ?? 0,
-      ),
-      r100: toBaseTodayReading(
-        readings?.stamp?.parts?.[100]?.todayReading ?? 0,
-        readings?.stamp?.parts?.[100]?.stockAdded ?? 0,
-      ),
-      r500: toBaseTodayReading(
-        readings?.stamp?.parts?.[500]?.todayReading ?? 0,
-        readings?.stamp?.parts?.[500]?.stockAdded ?? 0,
-      ),
-      r1000: toBaseTodayReading(
-        readings?.stamp?.parts?.[1000]?.todayReading ?? 0,
-        readings?.stamp?.parts?.[1000]?.stockAdded ?? 0,
-      ),
+      r50: clamp0(readings?.stamp?.parts?.[50]?.todayReading ?? 0),
+      r100: clamp0(readings?.stamp?.parts?.[100]?.todayReading ?? 0),
+      r500: clamp0(readings?.stamp?.parts?.[500]?.todayReading ?? 0),
+      r1000: clamp0(readings?.stamp?.parts?.[1000]?.todayReading ?? 0),
     },
     mode: "onChange",
   });
@@ -371,22 +355,10 @@ export default function DailyReadingsDialog({
 
     stampForm.reset(
       {
-        r50: toBaseTodayReading(
-          readings?.stamp?.parts?.[50]?.todayReading ?? 0,
-          readings?.stamp?.parts?.[50]?.stockAdded ?? 0,
-        ),
-        r100: toBaseTodayReading(
-          readings?.stamp?.parts?.[100]?.todayReading ?? 0,
-          readings?.stamp?.parts?.[100]?.stockAdded ?? 0,
-        ),
-        r500: toBaseTodayReading(
-          readings?.stamp?.parts?.[500]?.todayReading ?? 0,
-          readings?.stamp?.parts?.[500]?.stockAdded ?? 0,
-        ),
-        r1000: toBaseTodayReading(
-          readings?.stamp?.parts?.[1000]?.todayReading ?? 0,
-          readings?.stamp?.parts?.[1000]?.stockAdded ?? 0,
-        ),
+        r50: clamp0(readings?.stamp?.parts?.[50]?.todayReading ?? 0),
+        r100: clamp0(readings?.stamp?.parts?.[100]?.todayReading ?? 0),
+        r500: clamp0(readings?.stamp?.parts?.[500]?.todayReading ?? 0),
+        r1000: clamp0(readings?.stamp?.parts?.[1000]?.todayReading ?? 0),
       },
       { keepDirty: false },
     );
@@ -657,10 +629,10 @@ export default function DailyReadingsDialog({
   };
 
   const stampSold = {
-    50: debouncedR50 > 0 ? clamp0(stampPrev[50] - debouncedR50) : 0,
-    100: debouncedR100 > 0 ? clamp0(stampPrev[100] - debouncedR100) : 0,
-    500: debouncedR500 > 0 ? clamp0(stampPrev[500] - debouncedR500) : 0,
-    1000: debouncedR1000 > 0 ? clamp0(stampPrev[1000] - debouncedR1000) : 0,
+    50: clamp0(stampPrev[50] + s50 - debouncedR50),
+    100: clamp0(stampPrev[100] + s100 - debouncedR100),
+    500: clamp0(stampPrev[500] + s500 - debouncedR500),
+    1000: clamp0(stampPrev[1000] + s1000 - debouncedR1000),
   } as const;
 
   const stampAmounts = {
@@ -823,18 +795,10 @@ export default function DailyReadingsDialog({
         saveStampReading({
           todayDateYmd,
           partsTodayReadings: {
-            50:
-              stampValues.r50 +
-              (includeStockAddition ? (stockValues?.s50 ?? 0) : 0),
-            100:
-              stampValues.r100 +
-              (includeStockAddition ? (stockValues?.s100 ?? 0) : 0),
-            500:
-              stampValues.r500 +
-              (includeStockAddition ? (stockValues?.s500 ?? 0) : 0),
-            1000:
-              stampValues.r1000 +
-              (includeStockAddition ? (stockValues?.s1000 ?? 0) : 0),
+            50: stampValues.r50,
+            100: stampValues.r100,
+            500: stampValues.r500,
+            1000: stampValues.r1000,
           },
           prevPartsReadings: stampPrev,
           partsStockAdded: includeStockAddition
