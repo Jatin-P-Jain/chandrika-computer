@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  ArrowBigRightDash,
   CalendarDaysIcon,
   Calendars,
   IndianRupee,
@@ -15,7 +16,10 @@ import {
   Users,
 } from "lucide-react";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
-import type { AttendanceEmployeeListItem } from "@/types/attendance";
+import type {
+  AttendanceEmployeeListItem,
+  AttendanceSalaryAuditEntry,
+} from "@/types/attendance";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -106,6 +110,24 @@ function parseYmdToDate(ymd: string) {
   return new Date(year, month - 1, day);
 }
 
+function formatDateTime(date: Date, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function toDateOrNull(input: Date | string | null | undefined) {
+  if (!input) return null;
+  if (input instanceof Date) return input;
+
+  const next = new Date(input);
+  return Number.isNaN(next.getTime()) ? null : next;
+}
+
 const AVERAGE_SALARY_DAYS = 30;
 
 export function AttendanceRegisterClient({
@@ -122,6 +144,7 @@ export function AttendanceRegisterClient({
     id: string;
     name: string;
     currentSalary: number | null;
+    salaryAuditTrail: AttendanceSalaryAuditEntry[];
   } | null>(null);
   const [name, setName] = React.useState("");
   const [salaryInput, setSalaryInput] = React.useState(0);
@@ -204,7 +227,12 @@ export function AttendanceRegisterClient({
         setEmployees((prev) =>
           prev.map((emp) =>
             emp.id === editingEmployee.id
-              ? { ...emp, monthlySalary: result.data.monthlySalary }
+              ? {
+                  ...emp,
+                  monthlySalary: result.data.monthlySalary,
+                  lastSalaryUpdatedAt: result.data.lastSalaryUpdatedAt,
+                  salaryAuditTrail: result.data.salaryAuditTrail,
+                }
               : emp,
           ),
         );
@@ -441,7 +469,10 @@ export function AttendanceRegisterClient({
               {tAttendance("AddEmployee")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent
+            className="sm:max-w-md"
+            onOpenAutoFocus={(event) => event.preventDefault()}
+          >
             <DialogHeader>
               <DialogTitle>
                 {editingEmployee
@@ -474,13 +505,11 @@ export function AttendanceRegisterClient({
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="employee-salary" className={textSmCls}>
+                <Label
+                  htmlFor="employee-salary"
+                  className={clsx("text-muted-foreground", textSmCls)}
+                >
                   {tAttendance("Salary")}
-                  {!editingEmployee && (
-                    <span className="text-muted-foreground text-xs ml-1">
-                      ({tCommon("Optional")})
-                    </span>
-                  )}
                 </Label>
                 <AmountInput
                   inputId="employee-salary"
@@ -490,6 +519,125 @@ export function AttendanceRegisterClient({
                   readOnly={isAdding}
                 />
               </div>
+
+              {editingEmployee ? (
+                <div className="rounded-md border p-2 space-y-1">
+                  <h3
+                    className={clsx(
+                      "text-sm font-medium text-muted-foreground",
+                      textSmCls,
+                    )}
+                  >
+                    {tAttendance("SalaryHistory")}
+                  </h3>
+
+                  {editingEmployee.salaryAuditTrail.length === 0 ? (
+                    <p
+                      className={clsx(
+                        "text-sm text-muted-foreground",
+                        textSmCls,
+                      )}
+                    >
+                      {tAttendance("NoSalaryAuditYet")}
+                    </p>
+                  ) : (
+                    <div className="relative max-h-60 overflow-y-auto pr-1">
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-2.5 top-2 bottom-2 w-px bg-border"
+                      />
+                      <div className="space-y-1">
+                        {editingEmployee.salaryAuditTrail.map(
+                          (entry, index) => {
+                            const auditDate = toDateOrNull(entry.updatedAt);
+                            return (
+                              <div
+                                key={`${toDateOrNull(entry.updatedAt)?.toISOString() ?? "no-date"}-${index}`}
+                                className="relative pl-6"
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className="absolute left-1.5 top-1 size-3 rounded-full border border-background bg-primary"
+                                />
+                                <div className="rounded-md border p-1 px-2 flex flex-col gap-1">
+                                  <p
+                                    className={clsx(
+                                      "text-xs",
+                                      index === 0
+                                        ? "text-foreground font-medium"
+                                        : "text-muted-foreground",
+                                      textSmCls,
+                                    )}
+                                  >
+                                    {auditDate
+                                      ? formatDateTime(auditDate, locale)
+                                      : tCommon("Date")}
+                                  </p>
+                                  <p
+                                    className={clsx(
+                                      "text-xs text-muted-foreground",
+                                      textSmCls,
+                                    )}
+                                  >
+                                    {tAttendance("UpdatedBy")}:{" "}
+                                    <span
+                                      className={clsx(
+                                        "font-medium",
+                                        index === 0
+                                          ? "font-medium text-foreground"
+                                          : "text-muted-foreground",
+                                      )}
+                                    >
+                                      {entry.updatedBy.displayName ||
+                                        entry.updatedBy.email ||
+                                        "Unknown"}
+                                    </span>
+                                  </p>
+                                  <p
+                                    className={clsx(
+                                      "flex justify-between items-center text-sm",
+                                      textBodyCls,
+                                    )}
+                                  >
+                                    <span
+                                      className={clsx(
+                                        "text-sm",
+                                        textSmCls,
+                                        index === 0
+                                          ? " font-bold"
+                                          : "text-foreground font-medium",
+                                      )}
+                                    >
+                                      {entry.previousSalary
+                                        ? formatINR(entry.previousSalary)
+                                        : "-"}
+                                    </span>
+
+                                    <ArrowBigRightDash className="size-5 text-muted-foreground" />
+                                    <span
+                                      className={clsx(
+                                        "text-sm",
+                                        textSmCls,
+                                        index === 0
+                                          ? "text-green-700 font-bold"
+                                          : "text-foreground font-medium",
+                                      )}
+                                    >
+                                      {entry.newSalary
+                                        ? formatINR(entry.newSalary)
+                                        : "-"}
+                                    </span>
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          },
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
             <DialogFooter className="flex flex-row justify-end gap-2 sm:gap-2 [&>button]:shrink-0">
               <Button
@@ -709,6 +857,7 @@ export function AttendanceRegisterClient({
                                 id: employee.id,
                                 name: employee.name,
                                 currentSalary: employee.monthlySalary,
+                                salaryAuditTrail: employee.salaryAuditTrail,
                               });
                               setSalaryInput(employee.monthlySalary ?? 0);
                               setIsDialogOpen(true);
@@ -717,7 +866,7 @@ export function AttendanceRegisterClient({
                               "flex items-center gap-1 justify-start",
                             )}
                           >
-                            <span className="text-xl!">
+                            <span className="text-lg!">
                               {formatINR(employee.monthlySalary)}
                             </span>
                             <Pencil className=" size-5 bg-accent p-1 rounded-md text-muted-foreground" />
@@ -735,14 +884,14 @@ export function AttendanceRegisterClient({
                                   )}
                                 >
                                   {tAttendance("NetSalary")}:
-                                  <span className="text-xl! text-green-700">
+                                  <span className="font-semibold text-lg! text-green-700">
                                     {formatINR(salaryBreakup.netSalary)}
                                   </span>
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent
                                 align="end"
-                                className="w-[320px] space-y-2"
+                                className=" space-y-2"
                               >
                                 <p
                                   className={clsx(
@@ -849,6 +998,7 @@ export function AttendanceRegisterClient({
                             id: employee.id,
                             name: employee.name,
                             currentSalary: null,
+                            salaryAuditTrail: employee.salaryAuditTrail,
                           });
                           setSalaryInput(0);
                           setIsDialogOpen(true);

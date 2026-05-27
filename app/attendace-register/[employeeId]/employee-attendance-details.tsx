@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  ArrowBigRightDash,
   CalendarClock,
   ChevronLeft,
   IndianRupee,
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import type {
   AttendanceEmployeeDetails,
+  AttendanceSalaryAuditEntry,
   MonthWiseAbsence,
 } from "@/types/attendance";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
@@ -71,6 +73,24 @@ function formatWeekday(ymd: string, locale: string) {
   return new Intl.DateTimeFormat(locale, {
     weekday: "long",
   }).format(date);
+}
+
+function formatDateTime(date: Date, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function toDateOrNull(input: Date | string | null | undefined) {
+  if (!input) return null;
+  if (input instanceof Date) return input;
+
+  const next = new Date(input);
+  return Number.isNaN(next.getTime()) ? null : next;
 }
 
 function monthLabel(monthKey: string, locale: string) {
@@ -119,6 +139,9 @@ export function EmployeeAttendanceDetails({
   const [monthlySalary, setMonthlySalary] = React.useState<number | null>(
     employee.monthlySalary,
   );
+  const [salaryAuditTrail, setSalaryAuditTrail] = React.useState<
+    AttendanceSalaryAuditEntry[]
+  >(employee.salaryAuditTrail);
   const [isSalaryDialogOpen, setIsSalaryDialogOpen] = React.useState(false);
   const [salaryInput, setSalaryInput] = React.useState(
     employee.monthlySalary ?? 0,
@@ -161,6 +184,8 @@ export function EmployeeAttendanceDetails({
     [monthlySalary],
   );
 
+  const latestSalaryAuditEntry = salaryAuditTrail[0] ?? null;
+
   const openSalaryDialog = React.useCallback(() => {
     setSalaryInput(monthlySalary ?? 0);
     setIsSalaryDialogOpen(true);
@@ -191,6 +216,7 @@ export function EmployeeAttendanceDetails({
       }
 
       setMonthlySalary(result.data.monthlySalary);
+      setSalaryAuditTrail(result.data.salaryAuditTrail);
       setIsSalaryDialogOpen(false);
       toast.success(tAttendance("SalaryUpdated"));
     } catch (error) {
@@ -218,37 +244,56 @@ export function EmployeeAttendanceDetails({
       </div>
 
       <Card className="p-0 mb-4 mx-2">
-        <CardContent className="p-3 flex items-center justify-between gap-4">
-          <h1
-            className={`text-lg font-semibold flex items-center gap-2 ${textHeadingCls}`}
-          >
-            <UserCircle2 className="size-6" />
-            {employee.name}
-          </h1>
-          {monthlySalary ? (
-            <Button
-              variant="link"
-              onClick={openSalaryDialog}
-              className={clsx("flex items-center gap-1 px-3 py-1", textBodyCls)}
+        <CardContent className="p-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-4">
+            <h1
+              className={`text-lg font-semibold flex items-center gap-2 ${textHeadingCls}`}
             >
-              <span className="text-xl font-semibold text-primary">
-                {formatINR(monthlySalary)}
+              <UserCircle2 className="size-6" />
+              {employee.name}
+            </h1>
+            {monthlySalary ? (
+              <Button
+                variant="link"
+                onClick={openSalaryDialog}
+                className={clsx(
+                  "flex items-center gap-1 px-3 py-1",
+                  textBodyCls,
+                )}
+              >
+                <span className="text-xl font-semibold text-primary">
+                  {formatINR(monthlySalary)}
+                </span>
+                <Pencil className="size-4 text-muted-foreground" />
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={openSalaryDialog}
+                className={clsx(
+                  "flex items-center gap-2 text-sm text-primary",
+                  textBodyCls,
+                )}
+              >
+                <IndianRupee className="size-4" />
+                {tAttendance("AddSalary")}
+              </Button>
+            )}
+          </div>
+
+          {latestSalaryAuditEntry ? (
+            <p className={clsx("text-xs text-muted-foreground", textSmCls)}>
+              {tAttendance("LastSalaryUpdated")}:{" "}
+              <span className="text-foreground font-medium">
+                {toDateOrNull(latestSalaryAuditEntry.updatedAt)
+                  ? formatDateTime(
+                      toDateOrNull(latestSalaryAuditEntry.updatedAt) as Date,
+                      locale,
+                    )
+                  : "-"}
               </span>
-              <Pencil className="size-4 text-muted-foreground" />
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={openSalaryDialog}
-              className={clsx(
-                "flex items-center gap-2 text-sm text-primary",
-                textBodyCls,
-              )}
-            >
-              <IndianRupee className="size-4" />
-              {tAttendance("AddSalary")}
-            </Button>
-          )}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -262,7 +307,10 @@ export function EmployeeAttendanceDetails({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent
+          className="p-3! py-4!"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>
               {monthlySalary
@@ -278,7 +326,112 @@ export function EmployeeAttendanceDetails({
               onChange={setSalaryInput}
               placeholder={tAttendance("SalaryPlaceholder")}
               readOnly={isSavingSalary}
+              inputClassName={clsx("font-bold")}
             />
+
+            <div className="rounded-md border p-2 space-y-1">
+              <h3
+                className={clsx(
+                  "text-sm font-medium text-muted-foreground",
+                  textSmCls,
+                )}
+              >
+                {tAttendance("SalaryHistory")}
+              </h3>
+
+              {salaryAuditTrail.length === 0 ? (
+                <p className={clsx("text-sm text-muted-foreground", textSmCls)}>
+                  {tAttendance("NoSalaryAuditYet")}
+                </p>
+              ) : (
+                <div className="relative max-h-60 overflow-y-auto pr-1">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-2.5 top-2 bottom-2 w-px bg-border"
+                  />
+                  <div className="space-y-1">
+                    {salaryAuditTrail.map((entry, index) => {
+                      const auditDate = toDateOrNull(entry.updatedAt);
+                      return (
+                        <div
+                          key={`${toDateOrNull(entry.updatedAt)?.toISOString() ?? "no-date"}-${index}`}
+                          className="relative pl-6"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-1.5 top-1 size-3 rounded-full border border-background bg-primary"
+                          />
+                          <div className="rounded-md border p-1 px-2 flex flex-col gap-1">
+                            <p
+                              className={clsx(
+                                "text-xs",
+                                index === 0
+                                  ? "text-foreground font-medium"
+                                  : "text-muted-foreground",
+                                textSmCls,
+                              )}
+                            >
+                              {auditDate
+                                ? formatDateTime(auditDate, locale)
+                                : tCommon("Date")}
+                            </p>
+                            <p className={clsx("text-xs", textSmCls)}>
+                              {tAttendance("UpdatedBy")}:{" "}
+                              <span
+                                className={clsx(
+                                  index === 0
+                                    ? "font-medium text-foreground"
+                                    : "text-muted-foreground",
+                                )}
+                              >
+                                {entry.updatedBy.displayName ||
+                                  entry.updatedBy.email ||
+                                  "Unknown"}
+                              </span>
+                            </p>
+                            <p
+                              className={clsx(
+                                "flex justify-between items-center text-sm",
+                                textBodyCls,
+                              )}
+                            >
+                              <span
+                                className={clsx(
+                                  "text-sm",
+                                  textSmCls,
+                                  index === 0
+                                    ? " font-bold"
+                                    : "text-foreground font-medium",
+                                )}
+                              >
+                                {entry.previousSalary
+                                  ? formatINR(entry.previousSalary)
+                                  : "-"}
+                              </span>
+
+                              <ArrowBigRightDash className="size-5 text-muted-foreground" />
+                              <span
+                                className={clsx(
+                                  "text-sm",
+                                  textSmCls,
+                                  index === 0
+                                    ? "text-green-700 font-bold"
+                                    : "text-foreground font-medium",
+                                )}
+                              >
+                                {entry.newSalary
+                                  ? formatINR(entry.newSalary)
+                                  : "-"}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <DialogFooter className="flex flex-row justify-end gap-2 sm:gap-2 [&>button]:shrink-0">
@@ -418,10 +571,7 @@ export function EmployeeAttendanceDetails({
                             </span>
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent
-                          align="end"
-                          className="w-[320px] space-y-2"
-                        >
+                        <PopoverContent align="center" className=" space-y-2">
                           <p
                             className={clsx(
                               "text-xs font-semibold text-muted-foreground",

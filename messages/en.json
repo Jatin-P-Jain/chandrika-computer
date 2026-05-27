@@ -232,6 +232,13 @@
     "DaysUnit": "days",
     "Deduction": "Deduction",
     "NetSalary": "Net Salary",
+    "LastSalaryUpdated": "Last Salary Updated",
+    "SalaryAuditTrail": "Salary Audit Trail",
+    "SalaryHistory": "Salary History",
+    "NoSalaryAuditYet": "No salary updates yet",
+    "UpdatedBy": "Updated by",
+    "From": "From",
+    "To": "To",
     "BasedOnAbsentDays": "{count, plural, one {Based on # absent day} other {Based on # absent days}}"
   },
   "Readings": {
