@@ -3,7 +3,6 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   loginWithEmailAndPass,
   loginWithGoogle as loginWithGoogleAuth,
-  completeGoogleRedirectLogin,
   loginWithGoogleIdToken,
   logoutUser,
   sendOTP,
@@ -209,10 +208,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const completePhoneVerification = async () => {
-    console.log(
-      "[Auth] completePhoneVerification called. Current authState.status:",
-      authState.status,
-    );
     try {
       const currentUserFromState =
         authState.status === "phone-verification-required" ||
@@ -228,13 +223,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         );
         throw new Error("No current user for verification");
       }
-      console.log("[Auth] currentUser uid:", currentUser.uid);
 
       await currentUser.reload();
-      console.log(
-        "[Auth] User reloaded. phoneNumber:",
-        currentUser.phoneNumber,
-      );
 
       const phoneNumber = currentUser.phoneNumber
         ? currentUser.phoneNumber.slice(3)
@@ -242,7 +232,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const role = "admin";
 
       const userDocRef = doc(firestore, "users", currentUser.uid);
-      console.log("[Auth] Writing Firestore doc (upsert)...");
       await setDoc(
         userDocRef,
         {
@@ -258,7 +247,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         },
         { merge: true },
       );
-      console.log("[Auth] Firestore upsert OK");
 
       const deviceId = getOrCreateDeviceId();
       if (deviceId) {
@@ -277,12 +265,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         markDeviceTrustedLocally(currentUser.uid, deviceId);
       }
 
-      console.log("[Auth] Fetching updated user doc...");
       const updatedSnap = await getDoc(
         doc(firestore, "users", currentUser.uid),
       );
       if (updatedSnap.exists()) {
-        console.log("[Auth] Updated doc exists. Setting authState → ready");
         const clientUser = mapDbUserToClientUser(updatedSnap.data());
         markOtpVerifiedForCycle(currentUser.uid);
         setAuthState({
@@ -290,10 +276,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           clientUser,
           currentUser,
         });
-        console.log(
-          "[Auth] ✅ authState set to ready for uid:",
-          currentUser.uid,
-        );
 
         void (async () => {
           const { refreshAndSaveFcmToken } =
@@ -323,31 +305,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("[Auth] Failed to set session persistence", error);
       }
 
-      try {
-        await completeGoogleRedirectLogin();
-      } catch (error) {
-        if (isDeniedError(error)) {
-          setAccessDenied(true);
-        }
-        console.error("[Auth] Failed to complete Google redirect login", error);
-      }
-
       if (!isMounted) return;
 
       unsubscribe = auth.onAuthStateChanged(async (user) => {
-        console.log(
-          "[Auth] onAuthStateChanged fired. user:",
-          user
-            ? {
-                uid: user.uid,
-                email: user.email,
-                phoneNumber: user.phoneNumber,
-              }
-            : null,
-        );
-
         if (!user) {
-          console.log("[Auth] No user → status: no-user");
           pushAuthDebug("auth observer: no-user");
           clearAllOtpCycleFlags();
           clearLastActivity();
@@ -357,12 +318,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const allowed = isGoogleEmailAllowlisted(user.email);
-        console.log(
-          "[Auth] isGoogleEmailAllowlisted:",
-          allowed,
-          "for email:",
-          user.email,
-        );
         if (!allowed) {
           console.warn(
             "[Auth] Email not allowlisted → logging out, setting accessDenied",
@@ -397,17 +352,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
 
           const phoneVerified = dbUser.phoneVerified === true;
-          console.log(
-            "[Auth] dbUser.phoneVerified:",
-            dbUser.phoneVerified,
-            "→ phoneVerified:",
-            phoneVerified,
-          );
 
           if (!phoneVerified) {
-            console.log(
-              "[Auth] phoneVerified=false → status: first-time-setup",
-            );
             pushAuthDebug("decision: first-time-setup (phone not verified)");
             setAuthState({ status: "first-time-setup", currentUser: user });
           } else {
@@ -427,15 +373,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 deviceId && isDeviceTrustedLocally(user.uid, deviceId),
               );
 
-              console.log("[Auth] mobile trusted-device check:", {
-                uid: user.uid,
-                deviceId,
-                trustedOnServer,
-                trustedLocally,
-              });
-
               if (trustedOnServer && trustedLocally) {
-                console.log("[Auth] trusted mobile device → status: ready");
                 pushAuthDebug("decision: ready (mobile trusted device)");
                 const clientUser = mapDbUserToClientUser(dbUser);
                 setAuthState({
@@ -446,9 +384,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 return;
               }
 
-              console.log(
-                "[Auth] untrusted mobile device → status: phone-verification-required",
-              );
               setAuthState({
                 status: "phone-verification-required",
                 currentUser: user,
@@ -461,24 +396,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             const otpVerifiedForCycle = isOtpVerifiedForCycle(user.uid);
 
-            console.log("[Auth] desktop OTP cycle check:", {
-              uid: user.uid,
-              otpVerifiedForCycle,
-            });
-
             if (otpVerifiedForCycle) {
-              console.log(
-                "[Auth] desktop OTP already verified in this login cycle → status: ready",
-              );
               pushAuthDebug("decision: ready (desktop otp already verified)");
               const clientUser = mapDbUserToClientUser(dbUser);
               setAuthState({ status: "ready", clientUser, currentUser: user });
               return;
             }
 
-            console.log(
-              "[Auth] desktop OTP required for this login cycle → status: phone-verification-required",
-            );
             setAuthState({
               status: "phone-verification-required",
               currentUser: user,

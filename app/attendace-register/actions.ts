@@ -72,12 +72,25 @@ function normalizeEmployeeDoc(
   id: string,
   raw: Record<string, unknown>,
 ): AttendanceEmployeeDoc {
+  const absentReasonsRaw =
+    typeof raw.absentReasons === "object" && raw.absentReasons !== null
+      ? (raw.absentReasons as Record<string, unknown>)
+      : {};
+
+  const absentReasons: Record<string, string> = Object.fromEntries(
+    Object.entries(absentReasonsRaw).filter(
+      ([key, value]) => isYmd(key) && typeof value === "string",
+    ),
+  ) as Record<string, string>;
+
   return {
     id,
     name: typeof raw.name === "string" ? raw.name : "",
     absentDates: Array.isArray(raw.absentDates)
       ? raw.absentDates.filter((v): v is string => typeof v === "string")
       : [],
+    absentReasons,
+    monthlySalary: typeof raw.monthlySalary === "number" && raw.monthlySalary > 0 ? raw.monthlySalary : null,
     createdAt: toDate(raw.createdAt),
     updatedAt: toDate(raw.updatedAt),
   };
@@ -112,6 +125,8 @@ export async function getAttendanceEmployees(): Promise<{
       id: employee.id,
       name: employee.name,
       absentDates: employee.absentDates,
+      absentReasons: employee.absentReasons,
+      monthlySalary: employee.monthlySalary,
     } satisfies AttendanceEmployeeListItem;
   });
 
@@ -120,6 +135,7 @@ export async function getAttendanceEmployees(): Promise<{
 
 export async function createAttendanceEmployee(opts: {
   name: string;
+  monthlySalary?: number | null;
   user: UserData;
   authtoken: string;
 }) {
@@ -161,10 +177,17 @@ export async function createAttendanceEmployee(opts: {
     const id = normalizeEmployeeId(name);
     const now = new Date();
 
+    const salary =
+      typeof opts.monthlySalary === "number" && opts.monthlySalary > 0
+        ? opts.monthlySalary
+        : null;
+
     await fireStore.collection(EMPLOYEE_COLLECTION).doc(id).set({
       id,
       name,
       absentDates: [],
+      absentReasons: {},
+      monthlySalary: salary,
       createdAt: now,
       updatedAt: now,
     });
@@ -184,6 +207,8 @@ export async function createAttendanceEmployee(opts: {
         id,
         name,
         absentDates: [],
+        absentReasons: {},
+        monthlySalary: salary,
       } satisfies AttendanceEmployeeListItem,
     };
   } catch (error) {
@@ -194,9 +219,56 @@ export async function createAttendanceEmployee(opts: {
   }
 }
 
+export async function updateEmployeeSalary(opts: {
+  employeeId: string;
+  monthlySalary: number | null;
+  user: UserData;
+  authtoken: string;
+}) {
+  try {
+    const access = await ensureAdminAccess(opts.user, opts.authtoken);
+    if (!access.ok) {
+      return { success: false as const, error: access.message };
+    }
+
+    const done = startFirestoreMetric({
+      source: "server",
+      operation: "updateEmployeeSalary",
+      collection: EMPLOYEE_COLLECTION,
+    });
+
+    const ref = fireStore.collection(EMPLOYEE_COLLECTION).doc(opts.employeeId);
+    const snap = await ref.get();
+
+    if (!snap.exists) {
+      return { success: false as const, error: "Employee not found" };
+    }
+
+    const salary =
+      typeof opts.monthlySalary === "number" && opts.monthlySalary > 0
+        ? opts.monthlySalary
+        : null;
+
+    await ref.set({ monthlySalary: salary, updatedAt: new Date() }, { merge: true });
+
+    done({ success: true, docsRead: 1, docsWritten: 1, details: { employeeId: opts.employeeId } });
+
+    revalidatePath("/attendace-register");
+    revalidatePath(`/attendace-register/${opts.employeeId}`);
+
+    return { success: true as const, data: { monthlySalary: salary } };
+  } catch (error) {
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Unable to update salary",
+    };
+  }
+}
+
 export async function toggleEmployeeAbsent(opts: {
   employeeId: string;
   dateYmd: string;
+  reason?: string;
   user: UserData;
   authtoken: string;
 }) {
@@ -236,17 +308,30 @@ export async function toggleEmployeeAbsent(opts: {
 
     const set = new Set(employee.absentDates);
     const currentlyAbsent = set.has(opts.dateYmd);
+    const normalizedReason = opts.reason?.trim();
+
+    if (!currentlyAbsent && !normalizedReason) {
+      return {
+        success: false as const,
+        error: "Reason is required when marking absent",
+      };
+    }
+
+    const nextAbsentReasons = { ...employee.absentReasons };
 
     if (currentlyAbsent) {
       set.delete(opts.dateYmd);
+      delete nextAbsentReasons[opts.dateYmd];
     } else {
       set.add(opts.dateYmd);
+      nextAbsentReasons[opts.dateYmd] = normalizedReason as string;
     }
 
     const nextAbsentDates = Array.from(set).sort();
     await ref.set(
       {
         absentDates: nextAbsentDates,
+        absentReasons: nextAbsentReasons,
         updatedAt: new Date(),
       },
       { merge: true },
@@ -266,6 +351,7 @@ export async function toggleEmployeeAbsent(opts: {
       success: true as const,
       data: {
         absentDates: nextAbsentDates,
+        absentReasons: nextAbsentReasons,
       },
     };
   } catch (error) {
@@ -361,6 +447,8 @@ export async function getEmployeeAttendanceDetail(
       id: employee.id,
       name: employee.name,
       absentDates: employee.absentDates.sort(),
+      absentReasons: employee.absentReasons,
+      monthlySalary: employee.monthlySalary,
     },
   };
 }

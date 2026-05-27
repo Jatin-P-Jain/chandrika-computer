@@ -56,7 +56,11 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
     authState.status === "phone-verification-required";
   const currentUser = isPhoneVerification ? authState.currentUser : null;
 
-  const [sessionExpiredDismissed, setSessionExpiredDismissed] = useState(false);
+  const [showSessionExpiredBanner, setShowSessionExpiredBanner] = useState(
+    sessionExpired === "1",
+  );
+  const isSessionExpiredBannerVisible =
+    showSessionExpiredBanner && authState.status !== "ready";
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<
     | "/daily-accounts"
@@ -112,14 +116,13 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
 
   useEffect(() => {
     if (sessionExpired !== "1") return;
-    if (authState.status !== "ready") return;
 
     replace("/", {
       scroll: false,
       skipLock: true,
       allowDuringNav: true,
     });
-  }, [authState.status, replace, sessionExpired]);
+  }, [replace, sessionExpired]);
 
   useEffect(() => {
     const timeout = window.setTimeout(
@@ -262,7 +265,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
   return (
     <section className="flex w-full flex-col mx-auto rounded-xl bg-muted shadow-sm gap-4 no-scrollbar p-3 md:p-6 relative">
       <GoogleOneTap />
-      {sessionExpired === "1" && !sessionExpiredDismissed && (
+      {isSessionExpiredBannerVisible && (
         <div className="w-full relative flex justify-center items-center md:w-1/2 mx-auto p-3 text-sm text-yellow-700 bg-yellow-200 border border-yellow-200 rounded-md gap-2">
           <div className="flex flex-col gap-1">
             <span className="text-center flex gap-2 justify-center items-center font-medium">
@@ -278,14 +281,7 @@ export function HomePage({ sessionExpired }: { sessionExpired?: string }) {
           <XIcon
             className="inline size-6 absolute -right-1 -top-1 cursor-pointer p-1 bg-white text-yellow-900 rounded-full border-yellow-300 border"
             onClick={() => {
-              setSessionExpiredDismissed(true);
-              if (sessionExpired === "1") {
-                replace("/", {
-                  scroll: false,
-                  skipLock: true,
-                  allowDuringNav: true,
-                });
-              }
+              setShowSessionExpiredBanner(false);
             }}
           />
         </div>

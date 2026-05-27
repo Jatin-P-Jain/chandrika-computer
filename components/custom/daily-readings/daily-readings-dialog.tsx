@@ -58,7 +58,6 @@ import {
   normalizeDenomRecord,
   useLocalReadingsDraft,
   type LocalPhotocopyDraft,
-  type LocalPreviousBaselineDraft,
   type LocalReadingsFlags,
   type LocalStampDraft,
 } from "./hooks/use-local-readings-draft";
@@ -167,15 +166,11 @@ export default function DailyReadingsDialog({
     localPhotocopyDraft,
     localStampDraft,
     localReadingsFlags,
-    localPreviousBaselineDraft,
-    isPreviousBaselineHydrated,
     persistPhotocopyDraft,
     persistStampDraft,
     persistReadingsFlags,
-    persistPreviousBaseline,
     clearStepDrafts,
   } = useLocalReadingsDraft({
-    todayDateYmd,
     hasPhotocopyReading,
     hasStampReading,
     hasSavedReadings,
@@ -201,14 +196,8 @@ export default function DailyReadingsDialog({
       ? "review"
       : "stamp"
     : "photocopy";
-  const hasPersistedPreviousBaseline = Boolean(
-    localPreviousBaselineDraft || readings?.stamp?.parts,
-  );
   const shouldLoadPreviousReadings =
-    isPreviousBaselineHydrated &&
-    localReadingsFlags !== null &&
-    !isReadOnlyView &&
-    !hasPersistedPreviousBaseline;
+    localReadingsFlags !== null && !isReadOnlyView;
 
   const { isTabletUp } = useBreakpoints();
 
@@ -349,14 +338,13 @@ export default function DailyReadingsDialog({
   // reset step when dialog opens (optional but keeps UX clean)
   React.useEffect(() => {
     if (!open) return;
-    if (!isPreviousBaselineHydrated) return;
     if (isReadOnlyView) {
       setStep("review");
       return;
     }
 
     setStep(preferredEditableStep);
-  }, [open, isReadOnlyView, preferredEditableStep, isPreviousBaselineHydrated]);
+  }, [open, isReadOnlyView, preferredEditableStep]);
 
   // NEW: reset edit state when dialog opens/closes
   React.useEffect(() => {
@@ -448,11 +436,7 @@ export default function DailyReadingsDialog({
     } else {
       setIncludeStockAddition(false);
     }
-    setPhotoPrev(
-      readings?.photocopy?.prevReading ??
-        localPreviousBaselineDraft?.photoPrev ??
-        0,
-    );
+    setPhotoPrev(readings?.photocopy?.prevReading ?? 0);
     if (readings?.stamp?.parts) {
       setStampPrev({
         50: readings.stamp.parts?.[50]?.prevReading ?? 0,
@@ -460,8 +444,8 @@ export default function DailyReadingsDialog({
         500: readings.stamp.parts?.[500]?.prevReading ?? 0,
         1000: readings.stamp.parts?.[1000]?.prevReading ?? 0,
       });
-    } else if (localPreviousBaselineDraft?.stampPrev) {
-      setStampPrev(localPreviousBaselineDraft.stampPrev);
+    } else {
+      setStampPrev(EMPTY_DENOM_RECORD);
     }
     setRoundOffPhotocopy(
       Boolean(
@@ -486,8 +470,6 @@ export default function DailyReadingsDialog({
     readings?.photocopy?.isRounded,
     localPhotocopyDraft,
     localStampDraft,
-    localPreviousBaselineDraft,
-    isPreviousBaselineHydrated,
     readings?.stamp?.parts,
     photoForm,
     stampForm,
@@ -530,20 +512,8 @@ export default function DailyReadingsDialog({
           1000: prevParts?.[1000]?.todayReading,
         }),
       );
-      const nextBaseline: LocalPreviousBaselineDraft = {
-        photoPrev: res.photocopy?.todayReading ?? 0,
-        stampPrev: normalizeDenomRecord({
-          50: prevParts?.[50]?.todayReading,
-          100: prevParts?.[100]?.todayReading,
-          500: prevParts?.[500]?.todayReading,
-          1000: prevParts?.[1000]?.todayReading,
-        }),
-        prevReadingsManual: false,
-        resolvedLookbackDays: null,
-      };
-      persistPreviousBaseline(nextBaseline);
     },
-    [persistPreviousBaseline],
+    [],
   );
 
   const applyManualPreviousReadings = React.useCallback(
@@ -560,16 +530,8 @@ export default function DailyReadingsDialog({
       setStampPrev(nextStampPrev);
       setMissingPreviousReadings(false);
       setResolvedLookbackDays(null);
-
-      const nextBaseline: LocalPreviousBaselineDraft = {
-        photoPrev: nextPhotoPrev,
-        stampPrev: nextStampPrev,
-        prevReadingsManual: true,
-        resolvedLookbackDays: null,
-      };
-      persistPreviousBaseline(nextBaseline);
     },
-    [persistPreviousBaseline],
+    [],
   );
 
   const fetchPreviousByLookback = React.useCallback(
@@ -589,18 +551,6 @@ export default function DailyReadingsDialog({
         setShowPreviousReadingsResolver(false);
         setResolverOpenedFromEdit(false);
         setResolvedLookbackDays(normalizedDays);
-        const nextBaseline: LocalPreviousBaselineDraft = {
-          photoPrev: res.photocopy?.todayReading ?? 0,
-          stampPrev: normalizeDenomRecord({
-            50: res.stamp?.parts?.[50]?.todayReading,
-            100: res.stamp?.parts?.[100]?.todayReading,
-            500: res.stamp?.parts?.[500]?.todayReading,
-            1000: res.stamp?.parts?.[1000]?.todayReading,
-          }),
-          prevReadingsManual: false,
-          resolvedLookbackDays: normalizedDays,
-        };
-        persistPreviousBaseline(nextBaseline);
         return true;
       } catch (e) {
         toast.error(tReadings("FailedToLoadPreviousReadings"), {
@@ -611,7 +561,7 @@ export default function DailyReadingsDialog({
         setLoadingPrev(false);
       }
     },
-    [applyPreviousReadings, persistPreviousBaseline, tReadings, todayDateYmd],
+    [applyPreviousReadings, tReadings, todayDateYmd],
   );
 
   // Resolve previous readings when dialog opens.
@@ -637,16 +587,6 @@ export default function DailyReadingsDialog({
         readings?.photocopy?.roundedAmount ?? readings?.photocopy?.amount ?? 0,
       );
 
-      if (localPreviousBaselineDraft) {
-        setPhotoPrev(localPreviousBaselineDraft.photoPrev);
-        setStampPrev(localPreviousBaselineDraft.stampPrev);
-        setResolvedLookbackDays(
-          localPreviousBaselineDraft.resolvedLookbackDays,
-        );
-        setInitializingPrev(false);
-        return;
-      }
-
       setManualPhotoPrev(0);
       setManualStampPrev(EMPTY_DENOM_RECORD);
 
@@ -661,7 +601,6 @@ export default function DailyReadingsDialog({
     open,
     applyManualPreviousReadings,
     fetchPreviousByLookback,
-    localPreviousBaselineDraft,
     readings?.photocopy?.amount,
     readings?.photocopy?.isRounded,
     readings?.photocopy?.roundedAmount,
