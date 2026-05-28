@@ -6,7 +6,6 @@ import clsx from "clsx";
 import {
   ChevronLeft,
   ChevronRight,
-  Info,
   Loader2Icon,
   PlusCircle,
   XCircle,
@@ -89,11 +88,11 @@ export default function StampStep({
     1000: s1000,
   };
 
-  const tomorrowStartByDenom: Record<Denomination, number> = {
-    50: useWatch({ control, name: "r50" }) ?? 0,
-    100: useWatch({ control, name: "r100" }) ?? 0,
-    500: useWatch({ control, name: "r500" }) ?? 0,
-    1000: useWatch({ control, name: "r1000" }) ?? 0,
+  const newReadingByDenom: Record<Denomination, number> = {
+    50: stampPrev[50] + stockByDenom[50],
+    100: stampPrev[100] + stockByDenom[100],
+    500: stampPrev[500] + stockByDenom[500],
+    1000: stampPrev[1000] + stockByDenom[1000],
   };
 
   return (
@@ -132,7 +131,49 @@ export default function StampStep({
                     {stampPrev[denom]}
                   </span>
                 </div>
-
+                {includeStockAddition ? (
+                  <div className="flex items-center gap-2 justify-between text-green-800">
+                    <Label
+                      className={clsx(
+                        "text-sm w-full text-green-800",
+                        textBodyCls,
+                      )}
+                    >
+                      {tReadings("AddStock")} :
+                    </Label>
+                    <Controller
+                      control={stockControl}
+                      name={stockFieldName}
+                      render={({ field }) => (
+                        <ReadingInput
+                          value={(field.value as number) ?? 0}
+                          onChange={field.onChange}
+                          placeholder="0"
+                          inputClassName={clsx(
+                            "w-fit! text-right",
+                            textPageHeadCls,
+                          )}
+                        />
+                      )}
+                    />
+                  </div>
+                ) : null}
+                {includeStockAddition ? (
+                  <div
+                    className={clsx(
+                      "flex items-center justify-between gap-2 font-medium bg-accent rounded-md px-2 py-1",
+                      textSmCls,
+                    )}
+                  >
+                    <div className="flex items-center gap-1">
+                      {/* <Info className="size-4" /> */}
+                      {tReadings("NewReading")}
+                    </div>
+                    <span className={clsx("font-medium", textPageHeadCls)}>
+                      {newReadingByDenom[denom]}
+                    </span>
+                  </div>
+                ) : null}
                 {stockFieldError ? (
                   <p className="text-xs text-destructive">
                     {String(stockFieldError.message)}
@@ -198,45 +239,6 @@ export default function StampStep({
                     {formatINR(stampAmounts[denom])}
                   </span>
                 </div>
-                {includeStockAddition ? (
-                  <div className="flex items-center gap-2 justify-between text-green-800">
-                    <Label
-                      className={clsx(
-                        "text-sm w-full text-green-800",
-                        textBodyCls,
-                      )}
-                    >
-                      {tReadings("AddStock")} :
-                    </Label>
-                    <Controller
-                      control={stockControl}
-                      name={stockFieldName}
-                      render={({ field }) => (
-                        <ReadingInput
-                          value={(field.value as number) ?? 0}
-                          onChange={field.onChange}
-                          placeholder="0"
-                          inputClassName={clsx(
-                            "w-fit! text-right",
-                            textPageHeadCls,
-                          )}
-                        />
-                      )}
-                    />
-                  </div>
-                ) : null}
-                {stockByDenom[denom] > 0 ? (
-                  <div
-                    className={clsx(
-                      "flex items-center gap-2 text-sm text-fuchsia-800 font-medium",
-                      textSmCls,
-                    )}
-                  >
-                    <Info className="size-4" />
-                    {tReadings("TomorrowStartingReadingWillBe")}{" "}
-                    {tomorrowStartByDenom[denom]}
-                  </div>
-                ) : null}
               </div>
             );
           })}

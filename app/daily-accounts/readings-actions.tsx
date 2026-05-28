@@ -231,17 +231,45 @@ export async function getReadings(todayDateYmd: string, deltaDays = 0) {
     stampRef.get(),
   ]);
 
+  const [photoFallbackSnap, stampFallbackSnap] = await Promise.all([
+    photoSnap.exists
+      ? Promise.resolve(null)
+      : fireStore
+          .collection("photocopyReadings")
+          .where("date", "==", yesterday)
+          .limit(1)
+          .get(),
+    stampSnap.exists
+      ? Promise.resolve(null)
+      : fireStore
+          .collection("stampReadings")
+          .where("date", "==", yesterday)
+          .limit(1)
+          .get(),
+  ]);
+
+  const resolvedPhotoSnap =
+    photoSnap.exists || !photoFallbackSnap || photoFallbackSnap.empty
+      ? photoSnap
+      : photoFallbackSnap.docs[0];
+
+  const resolvedStampSnap =
+    stampSnap.exists || !stampFallbackSnap || stampFallbackSnap.empty
+      ? stampSnap
+      : stampFallbackSnap.docs[0];
+
   done({
     success: true,
-    docsRead: (photoSnap.exists ? 1 : 0) + (stampSnap.exists ? 1 : 0),
+    docsRead:
+      (resolvedPhotoSnap.exists ? 1 : 0) + (resolvedStampSnap.exists ? 1 : 0),
     details: { todayDateYmd, deltaDays },
   });
 
-  const photocopyRaw = photoSnap.exists
-    ? (photoSnap.data() as PhotocopyReadingDoc)
+  const photocopyRaw = resolvedPhotoSnap.exists
+    ? (resolvedPhotoSnap.data() as PhotocopyReadingDoc)
     : null;
-  const stampRaw = stampSnap.exists
-    ? (stampSnap.data() as StampReadingDoc)
+  const stampRaw = resolvedStampSnap.exists
+    ? (resolvedStampSnap.data() as StampReadingDoc)
     : null;
 
   const photocopy = photocopyRaw

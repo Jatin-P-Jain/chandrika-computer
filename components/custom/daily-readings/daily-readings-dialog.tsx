@@ -110,17 +110,8 @@ function hasUsablePreviousBaseline(res: {
   photocopy: PhotocopyReadingDoc | null;
   stamp: StampReadingDoc | null;
 }) {
-  if (!res.photocopy || !res.stamp) {
-    return false;
-  }
-
-  const photoReading = res.photocopy.todayReading ?? 0;
-  const stampReadings = Object.values(res.stamp.parts ?? {});
-
-  return (
-    photoReading > 0 ||
-    stampReadings.some((part) => (part?.todayReading ?? 0) > 0)
-  );
+  // Previous baseline is usable if either document exists, even when values are zero.
+  return Boolean(res.photocopy || res.stamp);
 }
 
 type Props = {
@@ -408,7 +399,9 @@ export default function DailyReadingsDialog({
     } else {
       setIncludeStockAddition(false);
     }
-    setPhotoPrev(readings?.photocopy?.prevReading ?? 0);
+    if (typeof readings?.photocopy?.prevReading === "number") {
+      setPhotoPrev(readings.photocopy.prevReading);
+    }
     if (readings?.stamp?.parts) {
       setStampPrev({
         50: readings.stamp.parts?.[50]?.prevReading ?? 0,
@@ -416,8 +409,6 @@ export default function DailyReadingsDialog({
         500: readings.stamp.parts?.[500]?.prevReading ?? 0,
         1000: readings.stamp.parts?.[1000]?.prevReading ?? 0,
       });
-    } else {
-      setStampPrev(EMPTY_DENOM_RECORD);
     }
     setRoundOffPhotocopy(
       Boolean(
@@ -599,6 +590,7 @@ export default function DailyReadingsDialog({
   const r100 = stampForm.watch("r100") ?? 0;
   const r500 = stampForm.watch("r500") ?? 0;
   const r1000 = stampForm.watch("r1000") ?? 0;
+  const stampDirtyFields = stampForm.formState.dirtyFields;
   const debouncedR50 = useDebouncedNumber(r50, isReadOnlyView ? 0 : 500);
   const debouncedR100 = useDebouncedNumber(r100, isReadOnlyView ? 0 : 500);
   const debouncedR500 = useDebouncedNumber(r500, isReadOnlyView ? 0 : 500);
@@ -618,6 +610,14 @@ export default function DailyReadingsDialog({
     1000: "r1000",
   };
 
+  const shouldCalculateStampForDenom = (denom: Denomination) => {
+    if (isReadOnlyView || hasStampReading || hasLocalStampDraft) {
+      return true;
+    }
+
+    return Boolean(stampDirtyFields[stampFieldByDenom[denom]]);
+  };
+
   const stockFieldByDenom: Record<
     Denomination,
     "s50" | "s100" | "s500" | "s1000"
@@ -629,10 +629,18 @@ export default function DailyReadingsDialog({
   };
 
   const stampSold = {
-    50: clamp0(stampPrev[50] + s50 - debouncedR50),
-    100: clamp0(stampPrev[100] + s100 - debouncedR100),
-    500: clamp0(stampPrev[500] + s500 - debouncedR500),
-    1000: clamp0(stampPrev[1000] + s1000 - debouncedR1000),
+    50: shouldCalculateStampForDenom(50)
+      ? clamp0(stampPrev[50] + s50 - debouncedR50)
+      : 0,
+    100: shouldCalculateStampForDenom(100)
+      ? clamp0(stampPrev[100] + s100 - debouncedR100)
+      : 0,
+    500: shouldCalculateStampForDenom(500)
+      ? clamp0(stampPrev[500] + s500 - debouncedR500)
+      : 0,
+    1000: shouldCalculateStampForDenom(1000)
+      ? clamp0(stampPrev[1000] + s1000 - debouncedR1000)
+      : 0,
   } as const;
 
   const stampAmounts = {
