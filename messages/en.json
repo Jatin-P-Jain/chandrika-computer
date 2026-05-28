@@ -223,6 +223,8 @@
     "AbsentDaysCount": "{count, plural, one {# day absent} other {# days absent}}",
     "Salary": "Monthly Salary",
     "SalaryPlaceholder": "Enter monthly salary",
+    "FromMonth": "From Month",
+    "FromMonthRequired": "From month is required",
     "AddSalary": "Add Salary",
     "EditSalary": "Edit Salary",
     "SalaryUpdated": "Salary updated",

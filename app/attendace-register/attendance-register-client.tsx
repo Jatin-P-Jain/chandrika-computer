@@ -120,6 +120,31 @@ function formatDateTime(date: Date, locale: string) {
   }).format(date);
 }
 
+function formatMonthLabel(monthKey: string, locale: string) {
+  const [year, month] = monthKey.split("-").map(Number);
+  const date = new Date(year, month - 1, 1);
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function toMonthInputValue(date = new Date()) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  return `${yyyy}-${mm}`;
+}
+
+function parseMonthKeyToDate(monthKey: string) {
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) return undefined;
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month - 1, 1);
+}
+
+function getMonthKey(year: number, monthIndex: number) {
+  return `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+}
+
 function toDateOrNull(input: Date | string | null | undefined) {
   if (!input) return null;
   if (input instanceof Date) return input;
@@ -129,6 +154,54 @@ function toDateOrNull(input: Date | string | null | undefined) {
 }
 
 const AVERAGE_SALARY_DAYS = 30;
+
+function resolveMonthlySalaryForMonth(
+  monthKey: string,
+  currentSalary: number | null,
+  salaryAuditTrail: AttendanceSalaryAuditEntry[],
+) {
+  const sortedTrail = [...salaryAuditTrail]
+    .filter((entry) => Boolean(entry.effectiveFromMonth))
+    .sort(
+      (a, b) =>
+        (a.effectiveFromMonth ?? "").localeCompare(
+          b.effectiveFromMonth ?? "",
+        ) ||
+        (toDateOrNull(a.updatedAt)?.getTime() ?? 0) -
+          (toDateOrNull(b.updatedAt)?.getTime() ?? 0),
+    );
+
+  if (sortedTrail.length === 0) {
+    return {
+      monthlySalary: currentSalary,
+      effectiveFromMonth: null,
+    };
+  }
+
+  let lastKnownSalary: number | null = null;
+  let lastKnownFromMonth: string | null = null;
+
+  for (const entry of sortedTrail) {
+    if (!entry.effectiveFromMonth) {
+      continue;
+    }
+
+    if (monthKey < entry.effectiveFromMonth) {
+      return {
+        monthlySalary: entry.previousSalary ?? lastKnownSalary ?? currentSalary,
+        effectiveFromMonth: lastKnownFromMonth,
+      };
+    }
+
+    lastKnownSalary = entry.newSalary;
+    lastKnownFromMonth = entry.effectiveFromMonth;
+  }
+
+  return {
+    monthlySalary: lastKnownSalary ?? currentSalary,
+    effectiveFromMonth: lastKnownFromMonth,
+  };
+}
 
 export function AttendanceRegisterClient({
   attendancePromise,
@@ -148,6 +221,13 @@ export function AttendanceRegisterClient({
   } | null>(null);
   const [name, setName] = React.useState("");
   const [salaryInput, setSalaryInput] = React.useState(0);
+  const [salaryFromMonth, setSalaryFromMonth] =
+    React.useState(toMonthInputValue());
+  const [salaryMonthPickerYear, setSalaryMonthPickerYear] = React.useState(
+    new Date().getFullYear(),
+  );
+  const [isSalaryMonthPickerOpen, setIsSalaryMonthPickerOpen] =
+    React.useState(false);
   const [isAdding, setIsAdding] = React.useState(false);
   const [savingEmployeeId, setSavingEmployeeId] = React.useState<string | null>(
     null,
@@ -172,6 +252,23 @@ export function AttendanceRegisterClient({
   const { authState } = useAuth();
   const { push } = useSafeRouter();
 
+  const monthOptions = React.useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, index) => ({
+        index,
+        label: new Intl.DateTimeFormat(locale, { month: "long" }).format(
+          new Date(2000, index, 1),
+        ),
+      })),
+    [locale],
+  );
+  const currentMonthKey = React.useMemo(() => toMonthInputValue(), []);
+  const currentYear = React.useMemo(() => new Date().getFullYear(), []);
+  const parsedSalaryInput = salaryInput > 0 ? salaryInput : null;
+  const isEditingSalaryUnchanged =
+    Boolean(editingEmployee) &&
+    editingEmployee?.currentSalary === parsedSalaryInput;
+
   React.useEffect(() => {
     setEmployees(data);
   }, [data]);
@@ -195,6 +292,9 @@ export function AttendanceRegisterClient({
     setEditingEmployee(null);
     setName("");
     setSalaryInput(0);
+    setSalaryFromMonth(toMonthInputValue());
+    setSalaryMonthPickerYear(new Date().getFullYear());
+    setIsSalaryMonthPickerOpen(false);
   };
 
   const onSaveEmployee = async () => {
@@ -207,6 +307,11 @@ export function AttendanceRegisterClient({
 
     const parsedSalary = salaryInput > 0 ? salaryInput : null;
 
+    if (parsedSalary && !/^\d{4}-\d{2}$/.test(salaryFromMonth)) {
+      toast.error(tAttendance("FromMonthRequired"));
+      return;
+    }
+
     // --- edit salary for existing employee ---
     if (editingEmployee) {
       try {
@@ -215,6 +320,7 @@ export function AttendanceRegisterClient({
         const result = await updateEmployeeSalary({
           employeeId: editingEmployee.id,
           monthlySalary: parsedSalary,
+          effectiveFromMonth: parsedSalary ? salaryFromMonth : null,
           user: authState.clientUser,
           authtoken: token,
         });
@@ -263,6 +369,7 @@ export function AttendanceRegisterClient({
       const result = await createAttendanceEmployee({
         name: trimmedName,
         monthlySalary: parsedSalary,
+        salaryFromMonth: parsedSalary ? salaryFromMonth : null,
         user: authState.clientUser,
         authtoken: token,
       });
@@ -519,6 +626,94 @@ export function AttendanceRegisterClient({
                   readOnly={isAdding}
                 />
               </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="employee-salary-from-month"
+                  className={clsx("text-muted-foreground", textSmCls)}
+                >
+                  {tAttendance("FromMonth")}
+                </Label>
+                <Popover
+                  open={isSalaryMonthPickerOpen}
+                  onOpenChange={setIsSalaryMonthPickerOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="employee-salary-from-month"
+                      variant="outline"
+                      disabled={isAdding}
+                      className={clsx(
+                        "w-full justify-between text-left font-medium",
+                        textBodyCls,
+                      )}
+                    >
+                      <span>
+                        {/^\d{4}-\d{2}$/.test(salaryFromMonth)
+                          ? formatMonthLabel(salaryFromMonth, locale)
+                          : tAttendance("SelectMonth")}
+                      </span>
+                      <CalendarDaysIcon className="size-4 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-2 space-y-2" align="start">
+                    <div className="flex items-center justify-between">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={salaryMonthPickerYear <= currentYear}
+                        onClick={() =>
+                          setSalaryMonthPickerYear((year) => year - 1)
+                        }
+                      >
+                        -
+                      </Button>
+                      <span
+                        className={clsx("text-sm font-semibold", textBodyCls)}
+                      >
+                        {salaryMonthPickerYear}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setSalaryMonthPickerYear((year) => year + 1)
+                        }
+                      >
+                        +
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      {monthOptions.map((month) => {
+                        const monthKey = getMonthKey(
+                          salaryMonthPickerYear,
+                          month.index,
+                        );
+                        const isSelected = salaryFromMonth === monthKey;
+                        const isPastMonth = monthKey < currentMonthKey;
+
+                        return (
+                          <Button
+                            key={monthKey}
+                            type="button"
+                            variant={isSelected ? "default" : "outline"}
+                            size="sm"
+                            className={clsx("justify-center", textSmCls)}
+                            disabled={isPastMonth}
+                            onClick={() => {
+                              setSalaryFromMonth(monthKey);
+                              setIsSalaryMonthPickerOpen(false);
+                            }}
+                          >
+                            {month.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
 
               {editingEmployee ? (
                 <div className="rounded-md border p-2 space-y-1">
@@ -572,6 +767,29 @@ export function AttendanceRegisterClient({
                                     {auditDate
                                       ? formatDateTime(auditDate, locale)
                                       : tCommon("Date")}
+                                  </p>
+                                  <p
+                                    className={clsx(
+                                      "text-xs text-muted-foreground",
+                                      textSmCls,
+                                    )}
+                                  >
+                                    {tAttendance("From")}:{" "}
+                                    <span
+                                      className={clsx(
+                                        "font-medium",
+                                        index === 0
+                                          ? "text-foreground"
+                                          : "text-muted-foreground",
+                                      )}
+                                    >
+                                      {entry.effectiveFromMonth
+                                        ? formatMonthLabel(
+                                            entry.effectiveFromMonth,
+                                            locale,
+                                          )
+                                        : "-"}
+                                    </span>
                                   </p>
                                   <p
                                     className={clsx(
@@ -647,7 +865,10 @@ export function AttendanceRegisterClient({
               >
                 {tCommon("Cancel")}
               </Button>
-              <Button onClick={onSaveEmployee} disabled={isAdding}>
+              <Button
+                onClick={onSaveEmployee}
+                disabled={isAdding || isEditingSalaryUnchanged}
+              >
                 {isAdding ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : editingEmployee ? null : (
@@ -746,14 +967,22 @@ export function AttendanceRegisterClient({
             const currentMonthAbsentDays = employee.absentDates.filter(
               (date) => getMonthPrefix(date) === getMonthPrefix(selectedDate),
             ).length;
-            const salaryBreakup = employee.monthlySalary
+            const selectedMonthKey = getMonthPrefix(selectedDate);
+            const resolvedSalary = resolveMonthlySalaryForMonth(
+              selectedMonthKey,
+              employee.monthlySalary,
+              employee.salaryAuditTrail,
+            );
+            const salaryBreakup = resolvedSalary.monthlySalary
               ? (() => {
                   const daysInMonth = AVERAGE_SALARY_DAYS;
-                  const perDay = employee.monthlySalary / daysInMonth;
+                  const perDay = resolvedSalary.monthlySalary / daysInMonth;
                   const deduction = perDay * currentMonthAbsentDays;
-                  const netSalary = employee.monthlySalary - deduction;
+                  const netSalary = resolvedSalary.monthlySalary - deduction;
 
                   return {
+                    monthlySalary: resolvedSalary.monthlySalary,
+                    effectiveFromMonth: resolvedSalary.effectiveFromMonth,
                     daysInMonth,
                     perDay,
                     deduction,
@@ -860,6 +1089,16 @@ export function AttendanceRegisterClient({
                                 salaryAuditTrail: employee.salaryAuditTrail,
                               });
                               setSalaryInput(employee.monthlySalary ?? 0);
+                              setSalaryFromMonth(
+                                employee.salaryAuditTrail[0]
+                                  ?.effectiveFromMonth ?? toMonthInputValue(),
+                              );
+                              setSalaryMonthPickerYear(
+                                parseMonthKeyToDate(
+                                  employee.salaryAuditTrail[0]
+                                    ?.effectiveFromMonth ?? toMonthInputValue(),
+                                )?.getFullYear() ?? new Date().getFullYear(),
+                              );
                               setIsDialogOpen(true);
                             }}
                             className={clsx(
@@ -867,7 +1106,9 @@ export function AttendanceRegisterClient({
                             )}
                           >
                             <span className="text-lg!">
-                              {formatINR(employee.monthlySalary)}
+                              {salaryBreakup
+                                ? formatINR(salaryBreakup.monthlySalary)
+                                : formatINR(employee.monthlySalary)}
                             </span>
                             <Pencil className=" size-5 bg-accent p-1 rounded-md text-muted-foreground" />
                           </Button>
@@ -919,7 +1160,7 @@ export function AttendanceRegisterClient({
                                       textSmCls,
                                     )}
                                   >
-                                    {formatINR(employee.monthlySalary)}
+                                    {formatINR(salaryBreakup.monthlySalary)}
                                   </span>
 
                                   <span
@@ -1001,6 +1242,8 @@ export function AttendanceRegisterClient({
                             salaryAuditTrail: employee.salaryAuditTrail,
                           });
                           setSalaryInput(0);
+                          setSalaryFromMonth(toMonthInputValue());
+                          setSalaryMonthPickerYear(new Date().getFullYear());
                           setIsDialogOpen(true);
                         }}
                         className={clsx(

@@ -223,6 +223,8 @@
     "AbsentDaysCount": "{count, plural, one {# दिन अनुपस्थित} other {# दिन अनुपस्थित}}",
     "Salary": "मासिक सैलरी",
     "SalaryPlaceholder": "मासिक सैलरी दर्ज करें",
+    "FromMonth": "किस महीने से",
+    "FromMonthRequired": "किस महीने से लागू है, यह आवश्यक है",
     "AddSalary": "सैलरी जोड़ें",
     "EditSalary": "सैलरी संपादित करें",
     "SalaryUpdated": "सैलरी अपडेट किया गया",

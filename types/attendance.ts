@@ -13,6 +13,7 @@ export type AttendanceEmployeeDoc = {
 export type AttendanceSalaryAuditEntry = {
   previousSalary: number | null;
   newSalary: number | null;
+  effectiveFromMonth: string | null; // YYYY-MM
   updatedAt: Date | null;
   updatedBy: {
     uid: string;

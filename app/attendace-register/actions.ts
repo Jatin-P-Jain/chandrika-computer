@@ -27,6 +27,10 @@ function isYmd(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+function isMonthKey(value: string) {
+  return /^\d{4}-\d{2}$/.test(value);
+}
+
 function toMillis(ts: unknown): number | null {
   if (!ts) return null;
   if (ts instanceof Date) return ts.getTime();
@@ -108,11 +112,21 @@ function normalizeEmployeeDoc(
         typeof value.newSalary === "number" && value.newSalary > 0
           ? value.newSalary
           : null;
+      const updatedAt = toDate(value.updatedAt);
+      const fallbackEffectiveMonth = updatedAt
+        ? getMonthPrefix(toYmd(updatedAt))
+        : null;
+      const effectiveFromMonth =
+        typeof value.effectiveFromMonth === "string" &&
+        isMonthKey(value.effectiveFromMonth)
+          ? value.effectiveFromMonth
+          : fallbackEffectiveMonth;
 
       return {
         previousSalary,
         newSalary,
-        updatedAt: toDate(value.updatedAt),
+        effectiveFromMonth,
+        updatedAt,
         updatedBy: {
           uid: typeof updatedByRaw.uid === "string" ? updatedByRaw.uid : "",
           displayName:
@@ -127,8 +141,10 @@ function normalizeEmployeeDoc(
     .filter((entry): entry is AttendanceSalaryAuditEntry => entry !== null)
     .sort(
       (a, b) =>
-        (toMillis(b.updatedAt) ?? 0) -
-        (toMillis(a.updatedAt) ?? 0),
+        (b.effectiveFromMonth ?? "").localeCompare(
+          a.effectiveFromMonth ?? "",
+        ) ||
+        (toMillis(b.updatedAt) ?? 0) - (toMillis(a.updatedAt) ?? 0),
     );
 
   return {
@@ -191,6 +207,7 @@ export async function getAttendanceEmployees(): Promise<{
 export async function createAttendanceEmployee(opts: {
   name: string;
   monthlySalary?: number | null;
+  salaryFromMonth?: string | null;
   user: UserData;
   authtoken: string;
 }) {
@@ -236,6 +253,12 @@ export async function createAttendanceEmployee(opts: {
       typeof opts.monthlySalary === "number" && opts.monthlySalary > 0
         ? opts.monthlySalary
         : null;
+    const effectiveFromMonth = salary
+      ? typeof opts.salaryFromMonth === "string" &&
+        isMonthKey(opts.salaryFromMonth)
+        ? opts.salaryFromMonth
+        : getMonthPrefix(toYmd(now))
+      : null;
 
     await fireStore.collection(EMPLOYEE_COLLECTION).doc(id).set({
       id,
@@ -249,6 +272,7 @@ export async function createAttendanceEmployee(opts: {
             {
               previousSalary: null,
               newSalary: salary,
+              effectiveFromMonth,
               updatedAt: now,
               updatedBy: {
                 uid: opts.user.uid,
@@ -285,6 +309,7 @@ export async function createAttendanceEmployee(opts: {
               {
                 previousSalary: null,
                 newSalary: salary,
+                effectiveFromMonth,
                 updatedAt: now,
                 updatedBy: {
                   uid: opts.user.uid,
@@ -307,6 +332,7 @@ export async function createAttendanceEmployee(opts: {
 export async function updateEmployeeSalary(opts: {
   employeeId: string;
   monthlySalary: number | null;
+  effectiveFromMonth: string | null;
   user: UserData;
   authtoken: string;
 }) {
@@ -333,6 +359,13 @@ export async function updateEmployeeSalary(opts: {
       typeof opts.monthlySalary === "number" && opts.monthlySalary > 0
         ? opts.monthlySalary
         : null;
+    const now = new Date();
+    const effectiveFromMonth = salary
+      ? typeof opts.effectiveFromMonth === "string" &&
+        isMonthKey(opts.effectiveFromMonth)
+        ? opts.effectiveFromMonth
+        : getMonthPrefix(toYmd(now))
+      : null;
 
     const employee = normalizeEmployeeDoc(
       snap.id,
@@ -357,11 +390,11 @@ export async function updateEmployeeSalary(opts: {
       };
     }
 
-    const now = new Date();
     const nextSalaryAuditTrail: AttendanceSalaryAuditEntry[] = [
       {
         previousSalary: employee.monthlySalary,
         newSalary: salary,
+        effectiveFromMonth,
         updatedAt: now,
         updatedBy: {
           uid: opts.user.uid,

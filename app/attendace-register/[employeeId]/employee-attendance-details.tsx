@@ -102,6 +102,70 @@ function monthLabel(monthKey: string, locale: string) {
   }).format(date);
 }
 
+function toMonthInputValue(date = new Date()) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  return `${yyyy}-${mm}`;
+}
+
+function parseMonthKeyToDate(monthKey: string) {
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) return undefined;
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month - 1, 1);
+}
+
+function getMonthKey(year: number, monthIndex: number) {
+  return `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+}
+
+function resolveMonthlySalaryForMonth(
+  monthKey: string,
+  currentSalary: number | null,
+  salaryAuditTrail: AttendanceSalaryAuditEntry[],
+) {
+  const sortedTrail = [...salaryAuditTrail]
+    .filter((entry) => Boolean(entry.effectiveFromMonth))
+    .sort(
+      (a, b) =>
+        (a.effectiveFromMonth ?? "").localeCompare(
+          b.effectiveFromMonth ?? "",
+        ) ||
+        (toDateOrNull(a.updatedAt)?.getTime() ?? 0) -
+          (toDateOrNull(b.updatedAt)?.getTime() ?? 0),
+    );
+
+  if (sortedTrail.length === 0) {
+    return {
+      monthlySalary: currentSalary,
+      effectiveFromMonth: null,
+    };
+  }
+
+  let lastKnownSalary: number | null = null;
+  let lastKnownFromMonth: string | null = null;
+
+  for (const entry of sortedTrail) {
+    if (!entry.effectiveFromMonth) {
+      continue;
+    }
+
+    if (monthKey < entry.effectiveFromMonth) {
+      return {
+        monthlySalary: entry.previousSalary ?? lastKnownSalary ?? currentSalary,
+        effectiveFromMonth: lastKnownFromMonth,
+      };
+    }
+
+    lastKnownSalary = entry.newSalary;
+    lastKnownFromMonth = entry.effectiveFromMonth;
+  }
+
+  return {
+    monthlySalary: lastKnownSalary ?? currentSalary,
+    effectiveFromMonth: lastKnownFromMonth,
+  };
+}
+
 function groupMonthWise(
   absentDates: string[],
   locale: string,
@@ -146,7 +210,32 @@ export function EmployeeAttendanceDetails({
   const [salaryInput, setSalaryInput] = React.useState(
     employee.monthlySalary ?? 0,
   );
+  const [salaryFromMonth, setSalaryFromMonth] = React.useState(
+    employee.salaryAuditTrail[0]?.effectiveFromMonth ?? toMonthInputValue(),
+  );
+  const [salaryMonthPickerYear, setSalaryMonthPickerYear] = React.useState(
+    parseMonthKeyToDate(
+      employee.salaryAuditTrail[0]?.effectiveFromMonth ?? toMonthInputValue(),
+    )?.getFullYear() ?? new Date().getFullYear(),
+  );
+  const [isSalaryMonthPickerOpen, setIsSalaryMonthPickerOpen] =
+    React.useState(false);
   const [isSavingSalary, setIsSavingSalary] = React.useState(false);
+
+  const monthOptions = React.useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, index) => ({
+        index,
+        label: new Intl.DateTimeFormat(locale, { month: "short" }).format(
+          new Date(2000, index, 1),
+        ),
+      })),
+    [locale],
+  );
+  const currentMonthKey = React.useMemo(() => toMonthInputValue(), []);
+  const currentYear = React.useMemo(() => new Date().getFullYear(), []);
+  const parsedSalaryInput = salaryInput > 0 ? salaryInput : null;
+  const isSalaryUnchanged = monthlySalary === parsedSalaryInput;
 
   const monthWiseAbsence = React.useMemo(
     () => groupMonthWise(employee.absentDates, locale),
@@ -165,31 +254,47 @@ export function EmployeeAttendanceDetails({
   }, [monthWiseAbsence, selectedMonth]);
 
   const getSalaryBreakup = React.useCallback(
-    (absentDays: number) => {
-      if (!monthlySalary) {
+    (absentDays: number, monthKey: string) => {
+      const resolvedSalary = resolveMonthlySalaryForMonth(
+        monthKey,
+        monthlySalary,
+        salaryAuditTrail,
+      );
+
+      if (!resolvedSalary.monthlySalary) {
         return null;
       }
 
-      const perDay = monthlySalary / AVERAGE_SALARY_DAYS;
+      const perDay = resolvedSalary.monthlySalary / AVERAGE_SALARY_DAYS;
       const deduction = perDay * absentDays;
-      const netSalary = monthlySalary - deduction;
+      const netSalary = resolvedSalary.monthlySalary - deduction;
 
       return {
+        monthlySalary: resolvedSalary.monthlySalary,
+        effectiveFromMonth: resolvedSalary.effectiveFromMonth,
         daysInMonth: AVERAGE_SALARY_DAYS,
         perDay,
         deduction,
         netSalary,
       };
     },
-    [monthlySalary],
+    [monthlySalary, salaryAuditTrail],
   );
 
   const latestSalaryAuditEntry = salaryAuditTrail[0] ?? null;
 
   const openSalaryDialog = React.useCallback(() => {
     setSalaryInput(monthlySalary ?? 0);
+    const nextFromMonth =
+      salaryAuditTrail[0]?.effectiveFromMonth ?? toMonthInputValue();
+    setSalaryFromMonth(nextFromMonth);
+    setSalaryMonthPickerYear(
+      parseMonthKeyToDate(nextFromMonth)?.getFullYear() ??
+        new Date().getFullYear(),
+    );
+    setIsSalaryMonthPickerOpen(false);
     setIsSalaryDialogOpen(true);
-  }, [monthlySalary]);
+  }, [monthlySalary, salaryAuditTrail]);
 
   const onSaveSalary = React.useCallback(async () => {
     if (isSavingSalary) return;
@@ -203,9 +308,16 @@ export function EmployeeAttendanceDetails({
       setIsSavingSalary(true);
       const token = await authState.currentUser.getIdToken();
       const parsedSalary = salaryInput > 0 ? salaryInput : null;
+
+      if (parsedSalary && !/^\d{4}-\d{2}$/.test(salaryFromMonth)) {
+        toast.error(tAttendance("FromMonthRequired"));
+        return;
+      }
+
       const result = await updateEmployeeSalary({
         employeeId: employee.id,
         monthlySalary: parsedSalary,
+        effectiveFromMonth: parsedSalary ? salaryFromMonth : null,
         user: authState.clientUser,
         authtoken: token,
       });
@@ -228,7 +340,14 @@ export function EmployeeAttendanceDetails({
     } finally {
       setIsSavingSalary(false);
     }
-  }, [authState, employee.id, isSavingSalary, salaryInput, tAttendance]);
+  }, [
+    authState,
+    employee.id,
+    isSavingSalary,
+    salaryFromMonth,
+    salaryInput,
+    tAttendance,
+  ]);
 
   return (
     <div className="flex flex-col w-full ">
@@ -304,6 +423,14 @@ export function EmployeeAttendanceDetails({
           setIsSalaryDialogOpen(open);
           if (!open) {
             setSalaryInput(monthlySalary ?? 0);
+            const nextFromMonth =
+              salaryAuditTrail[0]?.effectiveFromMonth ?? toMonthInputValue();
+            setSalaryFromMonth(nextFromMonth);
+            setSalaryMonthPickerYear(
+              parseMonthKeyToDate(nextFromMonth)?.getFullYear() ??
+                new Date().getFullYear(),
+            );
+            setIsSalaryMonthPickerOpen(false);
           }
         }}
       >
@@ -328,6 +455,95 @@ export function EmployeeAttendanceDetails({
               readOnly={isSavingSalary}
               inputClassName={clsx("font-bold")}
             />
+
+            <div className="space-y-1">
+              <label
+                htmlFor="employee-salary-from-month"
+                className={clsx("text-xs text-muted-foreground", textSmCls)}
+              >
+                {tAttendance("FromMonth")}
+              </label>
+              <Popover
+                open={isSalaryMonthPickerOpen}
+                onOpenChange={setIsSalaryMonthPickerOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    id="employee-salary-from-month"
+                    variant="outline"
+                    disabled={isSavingSalary}
+                    className={clsx(
+                      "w-full justify-between text-left font-medium",
+                      textBodyCls,
+                    )}
+                  >
+                    <span>
+                      {/^\d{4}-\d{2}$/.test(salaryFromMonth)
+                        ? monthLabel(salaryFromMonth, locale)
+                        : tAttendance("SelectMonth")}
+                    </span>
+                    <CalendarClock className="size-4 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-2 space-y-2" align="start">
+                  <div className="flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={salaryMonthPickerYear <= currentYear}
+                      onClick={() =>
+                        setSalaryMonthPickerYear((year) => year - 1)
+                      }
+                    >
+                      -
+                    </Button>
+                    <span
+                      className={clsx("text-sm font-semibold", textBodyCls)}
+                    >
+                      {salaryMonthPickerYear}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setSalaryMonthPickerYear((year) => year + 1)
+                      }
+                    >
+                      +
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {monthOptions.map((month) => {
+                      const monthKey = getMonthKey(
+                        salaryMonthPickerYear,
+                        month.index,
+                      );
+                      const isSelected = salaryFromMonth === monthKey;
+                      const isPastMonth = monthKey < currentMonthKey;
+
+                      return (
+                        <Button
+                          key={monthKey}
+                          type="button"
+                          variant={isSelected ? "default" : "outline"}
+                          size="sm"
+                          className={clsx("justify-center", textSmCls)}
+                          disabled={isPastMonth}
+                          onClick={() => {
+                            setSalaryFromMonth(monthKey);
+                            setIsSalaryMonthPickerOpen(false);
+                          }}
+                        >
+                          {month.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
 
             <div className="rounded-md border p-2 space-y-1">
               <h3
@@ -374,6 +590,20 @@ export function EmployeeAttendanceDetails({
                               {auditDate
                                 ? formatDateTime(auditDate, locale)
                                 : tCommon("Date")}
+                            </p>
+                            <p className={clsx("text-xs", textSmCls)}>
+                              {tAttendance("From")}:{" "}
+                              <span
+                                className={clsx(
+                                  index === 0
+                                    ? "font-medium text-foreground"
+                                    : "text-muted-foreground",
+                                )}
+                              >
+                                {entry.effectiveFromMonth
+                                  ? monthLabel(entry.effectiveFromMonth, locale)
+                                  : "-"}
+                              </span>
                             </p>
                             <p className={clsx("text-xs", textSmCls)}>
                               {tAttendance("UpdatedBy")}:{" "}
@@ -442,7 +672,10 @@ export function EmployeeAttendanceDetails({
             >
               {tCommon("Cancel")}
             </Button>
-            <Button onClick={onSaveSalary} disabled={isSavingSalary}>
+            <Button
+              onClick={onSaveSalary}
+              disabled={isSavingSalary || isSalaryUnchanged}
+            >
               {isSavingSalary ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : null}
@@ -504,7 +737,10 @@ export function EmployeeAttendanceDetails({
           <div className="flex flex-col gap-2">
             {filteredMonthWiseAbsence.map((monthItem) => {
               const monthAbsentDays = monthItem.absentDates.length;
-              const salaryBreakup = getSalaryBreakup(monthAbsentDays);
+              const salaryBreakup = getSalaryBreakup(
+                monthAbsentDays,
+                monthItem.monthKey,
+              );
 
               return (
                 <Card key={monthItem.monthKey} className="p-0 gap-0">
@@ -598,7 +834,29 @@ export function EmployeeAttendanceDetails({
                                 textSmCls,
                               )}
                             >
-                              {formatINR(monthlySalary ?? 0)}
+                              {formatINR(salaryBreakup.monthlySalary)}
+                            </span>
+
+                            <span
+                              className={clsx(
+                                "text-xs text-muted-foreground",
+                                textSmCls,
+                              )}
+                            >
+                              {tAttendance("From")}
+                            </span>
+                            <span
+                              className={clsx(
+                                "text-xs font-medium text-right",
+                                textSmCls,
+                              )}
+                            >
+                              {salaryBreakup.effectiveFromMonth
+                                ? monthLabel(
+                                    salaryBreakup.effectiveFromMonth,
+                                    locale,
+                                  )
+                                : "-"}
                             </span>
 
                             <span
