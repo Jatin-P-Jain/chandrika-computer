@@ -308,6 +308,10 @@
     "NewReading": "New Reading",
     "PhotocopyReadingRequired": "Please enter today's photocopy reading before continuing.",
     "StampReadingsRequired": "Please enter today's stamp readings for: {denominations}.",
+    "DiscardUnsavedReadingsTitle": "Discard unsaved readings?",
+    "DiscardUnsavedReadingsDescription": "You have changes on this step that are not saved yet. If you leave now, those edits will be lost.",
+    "StayOnReadings": "Stay",
+    "LeaveReadings": "Leave",
     "TomorrowStartingReadingWillBe": "Tomorrow's starting reading will be",
     "TomorrowReadingStartsFrom": "For tomorrow, reading will start from {value}."
   },

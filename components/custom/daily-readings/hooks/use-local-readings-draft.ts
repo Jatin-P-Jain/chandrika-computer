@@ -52,49 +52,211 @@ export function normalizeDenomRecord(
 }
 
 type Args = {
+  draftStorageKey: string;
   hasPhotocopyReading: boolean;
   hasStampReading: boolean;
   hasSavedReadings: boolean;
 };
 
+type StoredReadingsDraft = {
+  photocopyDraft: LocalPhotocopyDraft | null;
+  stampDraft: LocalStampDraft | null;
+  flags: LocalReadingsFlags;
+};
+
+function getEffectiveFlags(
+  storedDraft: StoredReadingsDraft | null,
+  hasPhotocopyReading: boolean,
+  hasStampReading: boolean,
+  hasSavedReadings: boolean
+): LocalReadingsFlags {
+  return {
+    photocopyDone:
+      hasPhotocopyReading || Boolean(storedDraft?.flags.photocopyDone),
+    stampDone: hasStampReading || Boolean(storedDraft?.flags.stampDone),
+    fullyDone: hasSavedReadings || Boolean(storedDraft?.flags.fullyDone),
+  };
+}
+
+function readStoredDraft(key: string): StoredReadingsDraft | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+
+    return JSON.parse(raw) as StoredReadingsDraft;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredDraft(key: string, value: StoredReadingsDraft) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore storage failures and continue with in-memory draft only.
+  }
+}
+
+function clearStoredDraft(key: string) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 export function useLocalReadingsDraft({
+  draftStorageKey,
   hasPhotocopyReading,
   hasStampReading,
   hasSavedReadings,
 }: Args) {
+  const storedDraft = React.useMemo(
+    () => readStoredDraft(draftStorageKey),
+    [draftStorageKey]
+  );
+  const initialFlags = getEffectiveFlags(
+    storedDraft,
+    hasPhotocopyReading,
+    hasStampReading,
+    hasSavedReadings
+  );
   const [localPhotocopyDraft, setLocalPhotocopyDraft] =
-    React.useState<LocalPhotocopyDraft | null>(null);
+    React.useState<LocalPhotocopyDraft | null>(
+      hasSavedReadings ? null : storedDraft?.photocopyDraft ?? null
+    );
   const [localStampDraft, setLocalStampDraft] =
-    React.useState<LocalStampDraft | null>(null);
+    React.useState<LocalStampDraft | null>(
+      hasSavedReadings ? null : storedDraft?.stampDraft ?? null
+    );
   const [localReadingsFlags, setLocalReadingsFlags] =
-    React.useState<LocalReadingsFlags | null>({
-      photocopyDone: hasPhotocopyReading,
-      stampDone: hasStampReading,
-      fullyDone: hasSavedReadings,
-    });
+    React.useState<LocalReadingsFlags | null>(initialFlags);
+  const localPhotocopyDraftRef = React.useRef<LocalPhotocopyDraft | null>(
+    hasSavedReadings ? null : storedDraft?.photocopyDraft ?? null
+  );
+  const localStampDraftRef = React.useRef<LocalStampDraft | null>(
+    hasSavedReadings ? null : storedDraft?.stampDraft ?? null
+  );
+  const localReadingsFlagsRef = React.useRef<LocalReadingsFlags | null>(
+    initialFlags
+  );
+
+  React.useEffect(() => {
+    const nextStoredDraft = readStoredDraft(draftStorageKey);
+
+    if (hasSavedReadings) {
+      const nextFlags = getEffectiveFlags(
+        nextStoredDraft,
+        hasPhotocopyReading,
+        hasStampReading,
+        hasSavedReadings
+      );
+
+      clearStoredDraft(draftStorageKey);
+      localPhotocopyDraftRef.current = null;
+      localStampDraftRef.current = null;
+      localReadingsFlagsRef.current = nextFlags;
+      setLocalPhotocopyDraft(null);
+      setLocalStampDraft(null);
+      setLocalReadingsFlags(nextFlags);
+      return;
+    }
+
+    const nextFlags = getEffectiveFlags(
+      nextStoredDraft,
+      hasPhotocopyReading,
+      hasStampReading,
+      hasSavedReadings
+    );
+    const nextPhotocopyDraft = nextStoredDraft?.photocopyDraft ?? null;
+    const nextStampDraft = nextStoredDraft?.stampDraft ?? null;
+
+    localPhotocopyDraftRef.current = nextPhotocopyDraft;
+    localStampDraftRef.current = nextStampDraft;
+    localReadingsFlagsRef.current = nextFlags;
+    setLocalPhotocopyDraft(nextPhotocopyDraft);
+    setLocalStampDraft(nextStampDraft);
+    setLocalReadingsFlags(nextFlags);
+  }, [draftStorageKey, hasPhotocopyReading, hasStampReading, hasSavedReadings]);
+
+  React.useEffect(() => {
+    if (hasSavedReadings) {
+      clearStoredDraft(draftStorageKey);
+    }
+  }, [draftStorageKey, hasSavedReadings]);
+
+  const syncStoredDraft = React.useCallback(
+    (
+      photocopyDraft: LocalPhotocopyDraft | null,
+      stampDraft: LocalStampDraft | null,
+      flags: LocalReadingsFlags | null
+    ) => {
+      if (!flags) {
+        clearStoredDraft(draftStorageKey);
+        return;
+      }
+
+      writeStoredDraft(draftStorageKey, {
+        photocopyDraft,
+        stampDraft,
+        flags,
+      });
+    },
+    [draftStorageKey]
+  );
 
   const persistPhotocopyDraft = React.useCallback(
     (next: LocalPhotocopyDraft | null) => {
+      localPhotocopyDraftRef.current = next;
       setLocalPhotocopyDraft(next);
+      syncStoredDraft(
+        next,
+        localStampDraftRef.current,
+        localReadingsFlagsRef.current
+      );
     },
-    []
+    [syncStoredDraft]
   );
 
   const persistStampDraft = React.useCallback(
     (next: LocalStampDraft | null) => {
+      localStampDraftRef.current = next;
       setLocalStampDraft(next);
+      syncStoredDraft(
+        localPhotocopyDraftRef.current,
+        next,
+        localReadingsFlagsRef.current
+      );
     },
-    []
+    [syncStoredDraft]
   );
 
-  const persistReadingsFlags = React.useCallback((next: LocalReadingsFlags) => {
-    setLocalReadingsFlags(next);
-  }, []);
+  const persistReadingsFlags = React.useCallback(
+    (next: LocalReadingsFlags) => {
+      localReadingsFlagsRef.current = next;
+      setLocalReadingsFlags(next);
+      syncStoredDraft(
+        localPhotocopyDraftRef.current,
+        localStampDraftRef.current,
+        next
+      );
+    },
+    [syncStoredDraft]
+  );
 
   const clearStepDrafts = React.useCallback(() => {
+    localPhotocopyDraftRef.current = null;
+    localStampDraftRef.current = null;
     setLocalPhotocopyDraft(null);
     setLocalStampDraft(null);
-  }, []);
+    clearStoredDraft(draftStorageKey);
+  }, [draftStorageKey]);
 
   return {
     localPhotocopyDraft,

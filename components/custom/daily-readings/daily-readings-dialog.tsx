@@ -15,6 +15,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Drawer,
   DrawerContent,
   DrawerHeader,
@@ -127,6 +137,8 @@ export default function DailyReadingsDialog({
   const { textPageHeadCls, textBodyCls, textSmCls, textXsCls } =
     useLocaleTypography();
   const { authState } = useAuth();
+  const readingsDraftOwnerKey =
+    authState.status === "ready" ? authState.currentUser.uid : "anonymous";
 
   const hasPhotocopyReading = Boolean(readings?.photocopy);
   const hasStampReading = Boolean(readings?.stamp);
@@ -140,6 +152,7 @@ export default function DailyReadingsDialog({
     persistReadingsFlags,
     clearStepDrafts,
   } = useLocalReadingsDraft({
+    draftStorageKey: `daily-readings-draft:${readingsDraftOwnerKey}:${todayDateYmd}`,
     hasPhotocopyReading,
     hasStampReading,
     hasSavedReadings,
@@ -171,6 +184,7 @@ export default function DailyReadingsDialog({
   const { isTabletUp } = useBreakpoints();
 
   const [open, setOpen] = React.useState(startOpen);
+  const [closeConfirmOpen, setCloseConfirmOpen] = React.useState(false);
   const prevReadingsInitKeyRef = React.useRef<string | null>(null);
   const [mobileViewportMaxHeight, setMobileViewportMaxHeight] = React.useState<
     number | null
@@ -259,8 +273,6 @@ export default function DailyReadingsDialog({
     setResolverOpenedFromEdit,
     setShowPreviousReadingsResolver,
   });
-
-  useDrawerBackButton(open, closeDialog);
 
   // In read-only mode, always reset back to review on open/close.
   React.useEffect(() => {
@@ -716,6 +728,72 @@ export default function DailyReadingsDialog({
 
   const stampTotal = DENOMS.reduce((acc, d) => acc + stampAmounts[d], 0);
 
+  const unsavedPhotocopyClose = !isReadOnlyView
+    ? clamp0(photoToday ?? 0) !==
+        clamp0(localPhotocopyDraft?.todayReading ?? readings?.photocopy?.todayReading ?? 0) ||
+      roundOffPhotocopy !==
+        Boolean(
+          localPhotocopyDraft?.roundOffPhotocopy ??
+            readings?.photocopy?.isRounded,
+        ) ||
+      clamp0(roundedPhotocopyAmount) !==
+        clamp0(
+          localPhotocopyDraft?.roundedPhotocopyAmount ??
+            readings?.photocopy?.roundedAmount ??
+            readings?.photocopy?.amount ??
+            0,
+        )
+    : false;
+
+  const unsavedStampClose = !isReadOnlyView
+    ? DENOMS.some(
+        (denom) =>
+          clamp0(todayByDenom[denom]) !==
+            clamp0(
+              localStampDraft?.readings[denom] ??
+                readings?.stamp?.parts?.[denom]?.todayReading ??
+                0,
+            ) ||
+          clamp0(stampStockAdded[denom]) !==
+            clamp0(
+              localStampDraft?.stockAdded[denom] ??
+                readings?.stamp?.parts?.[denom]?.stockAdded ??
+                0,
+            ),
+      ) ||
+      includeStockAddition !==
+        (localStampDraft?.includeStockAddition ?? hasSavedStockAddition)
+    : false;
+
+  const shouldWarnOnClose =
+    !saving && (step === "photocopy" ? unsavedPhotocopyClose : step === "stamp" ? unsavedStampClose : false);
+
+  const requestCloseDialog = React.useCallback(() => {
+    if (shouldWarnOnClose) {
+      setCloseConfirmOpen(true);
+      return false;
+    }
+
+    closeDialog();
+    return true;
+  }, [closeDialog, shouldWarnOnClose]);
+
+  useDrawerBackButton(open, requestCloseDialog);
+
+  React.useEffect(() => {
+    if (!open || !shouldWarnOnClose) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [open, shouldWarnOnClose]);
+
   // Step navigation
   const goNextFromPhotocopy = async () => {
     if (!hasPhotocopyTodayInput) {
@@ -1104,7 +1182,7 @@ export default function DailyReadingsDialog({
             }
           }}
           onRoundedAmountChange={setRoundedPhotocopyAmount}
-          onCancel={closeDialog}
+          onCancel={requestCloseDialog}
           onNext={() => goToStep("review")}
         />
       ) : step === "stamp" ? (
@@ -1227,7 +1305,7 @@ export default function DailyReadingsDialog({
               }
             }}
             onRoundedAmountChange={setRoundedPhotocopyAmount}
-            onCancel={closeDialog}
+            onCancel={requestCloseDialog}
             onNext={goNextFromPhotocopy}
           />
         ) : null}
@@ -1365,7 +1443,18 @@ export default function DailyReadingsDialog({
 
   if (isTabletUp) {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
+      <>
+        <Dialog
+          open={open}
+          onOpenChange={(nextOpen) => {
+            if (nextOpen) {
+              setOpen(true);
+              return;
+            }
+
+            requestCloseDialog();
+          }}
+        >
         <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
 
         <DialogContent
@@ -1383,18 +1472,46 @@ export default function DailyReadingsDialog({
 
           {ActiveContent}
         </DialogContent>
-      </Dialog>
+        </Dialog>
+
+        <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {tReadings("DiscardUnsavedReadingsTitle")}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {tReadings("DiscardUnsavedReadingsDescription")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                {tReadings("StayOnReadings")}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setCloseConfirmOpen(false);
+                  closeDialog();
+                }}
+              >
+                {tReadings("LeaveReadings")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
   return (
-    <Drawer
-      open={open}
-      onOpenChange={handleMobileDrawerOpenChange}
-      dismissible={false}
-      disablePreventScroll={false}
-      repositionInputs={false}
-    >
+    <>
+      <Drawer
+        open={open}
+        onOpenChange={handleMobileDrawerOpenChange}
+        dismissible={false}
+        disablePreventScroll={false}
+        repositionInputs={false}
+      >
       <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
 
       <DrawerContent
@@ -1438,13 +1555,38 @@ export default function DailyReadingsDialog({
             type="button"
             variant="ghost"
             size="icon-sm"
-            onClick={closeDialog}
+            onClick={requestCloseDialog}
           >
             <X className="size-4" />
           </Button>
         </DrawerHeader>
         <div className="min-h-0 overflow-y-auto pb-2">{ActiveContent}</div>
       </DrawerContent>
-    </Drawer>
+      </Drawer>
+
+      <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {tReadings("DiscardUnsavedReadingsTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {tReadings("DiscardUnsavedReadingsDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tReadings("StayOnReadings")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setCloseConfirmOpen(false);
+                closeDialog();
+              }}
+            >
+              {tReadings("LeaveReadings")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

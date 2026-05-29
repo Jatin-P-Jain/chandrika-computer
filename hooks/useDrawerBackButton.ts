@@ -15,27 +15,36 @@ const DRAWER_SENTINEL_KEY = "drawer-back-sentinel";
  *  - markNavigated() → call before router.push() inside the overlay so the
  *    cleanup doesn't undo the real navigation
  */
-export function useDrawerBackButton(isOpen: boolean, onClose: () => void) {
+export function useDrawerBackButton(
+  isOpen: boolean,
+  onClose: () => boolean | void
+) {
   const sentinelPushedRef = useRef(false);
   // True when the overlay was closed by the back button (or markNavigated was
   // called). In that case the sentinel is already gone so we must NOT call
   // history.back() in the cleanup effect.
   const skipCleanupBackRef = useRef(false);
 
+  const pushSentinel = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    window.history.pushState(
+      { [DRAWER_SENTINEL_KEY]: true },
+      "",
+      window.location.href
+    );
+    sentinelPushedRef.current = true;
+    skipCleanupBackRef.current = false;
+  }, []);
+
   // Push sentinel when overlay opens
   useEffect(() => {
     if (!isOpen) return;
 
-    if (!sentinelPushedRef.current && typeof window !== "undefined") {
-      window.history.pushState(
-        { [DRAWER_SENTINEL_KEY]: true },
-        "",
-        window.location.href
-      );
-      sentinelPushedRef.current = true;
-      skipCleanupBackRef.current = false;
+    if (!sentinelPushedRef.current) {
+      pushSentinel();
     }
-  }, [isOpen]);
+  }, [isOpen, pushSentinel]);
 
   // Listen for the back button while the overlay is open
   useEffect(() => {
@@ -45,12 +54,16 @@ export function useDrawerBackButton(isOpen: boolean, onClose: () => void) {
       // Back button consumed our sentinel — mark so the cleanup effect won't
       // call history.back() a second time.
       skipCleanupBackRef.current = true;
-      onClose();
+      const didClose = onClose();
+
+      if (didClose === false) {
+        pushSentinel();
+      }
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, pushSentinel]);
 
   // When the overlay closes normally (X button, backdrop, swipe, etc.) remove
   // the sentinel entry we pushed so it doesn't pollute the history stack.

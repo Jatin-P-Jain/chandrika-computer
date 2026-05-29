@@ -81,6 +81,27 @@ function clearLastActivity() {
   window.localStorage.removeItem(LAST_ACTIVITY_KEY);
 }
 
+function clearSessionStorageByPrefix(prefix: string) {
+  if (
+    typeof window === "undefined" ||
+    typeof window.sessionStorage === "undefined"
+  ) {
+    return;
+  }
+
+  const keysToRemove: string[] = [];
+  for (let index = 0; index < window.sessionStorage.length; index += 1) {
+    const key = window.sessionStorage.key(index);
+    if (key && key.startsWith(prefix)) {
+      keysToRemove.push(key);
+    }
+  }
+
+  for (const key of keysToRemove) {
+    window.sessionStorage.removeItem(key);
+  }
+}
+
 type AuthStatus =
   | { status: "loading" }
   | { status: "no-user" }
@@ -461,6 +482,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               clearOtpVerifiedForCycle(currentUid);
             }
             clearLastActivity();
+            clearSessionStorageByPrefix("daily-readings-draft:");
             await logoutUser();
             window.location.href = "/";
           } catch (err) {

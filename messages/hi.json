@@ -308,6 +308,10 @@
     "NewReading": "नई रीडिंग",
     "PhotocopyReadingRequired": "आगे बढ़ने से पहले कृपया आज की फोटोकॉपी रीडिंग दर्ज करें।",
     "StampReadingsRequired": "कृपया इन स्टाम्प की आज की रीडिंग दर्ज करें: {denominations}।",
+    "DiscardUnsavedReadingsTitle": "क्या रीडिंग छोड़नी है?",
+    "DiscardUnsavedReadingsDescription": "यहाँ आपने रीडिंग दर्ज की हैं जो अभी तक सेव नहीं हुई हैं। यदि आप अभी बाहर जाते हैं, तो ये रीडिंग खो जाएगी।",
+    "StayOnReadings": "यहीं रहें",
+    "LeaveReadings": "बाहर जाएं",
     "TomorrowStartingReadingWillBe": "कल की शुरुआती रीडिंग होगी",
     "TomorrowReadingStartsFrom": "कल के लिए रीडिंग {value} से शुरू होगी।"
   },

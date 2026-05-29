@@ -19,7 +19,7 @@ import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
 import { useNavigationLock } from "@/context/navigation-lock-provider";
 import clsx from "clsx";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type DailyAccountCardProps = {
   dailyAccount: DailyAccount;
@@ -60,6 +60,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   const { push } = useSafeRouter();
   const { isNavigating: isGlobalNavigating } = useNavigationLock();
   const pendingNavigationRef = useRef(false);
+  const [isCardNavigating, setIsCardNavigating] = useState(false);
 
   useEffect(() => {
     if (!isGlobalNavigating && pendingNavigationRef.current) {
@@ -69,6 +70,10 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   }, [cardTarget, isGlobalNavigating, push]);
 
   const handleNavigate = () => {
+    if (isCardNavigating) return;
+
+    setIsCardNavigating(true);
+
     if (isGlobalNavigating) {
       pendingNavigationRef.current = true;
       return;
@@ -94,7 +99,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
       onClick={handleNavigate}
       className={clsx(
         "cursor-pointer w-full flex p-1 shadow-sm border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
-        isGlobalNavigating && "pointer-events-none opacity-85",
+        isCardNavigating && "pointer-events-none opacity-85",
         isDraft && "bg-amber-50/60",
       )}
     >
@@ -217,7 +222,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
 
         <Button
           className="flex flex-1  w-full"
-          disabled={isGlobalNavigating}
+          disabled={isCardNavigating}
           onClick={(e) => {
             e.stopPropagation();
             handleNavigate();
@@ -228,7 +233,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
             : isDraft
               ? tDailyAccount("CompleteDailyAccount")
               : tDailyAccount("CreateDailyAccount")}{" "}
-          {isGlobalNavigating ? (
+          {isCardNavigating ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <ChevronsRight className="size-4" />
