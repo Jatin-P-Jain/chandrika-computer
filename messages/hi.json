@@ -230,7 +230,7 @@
     "SalaryUpdated": "सैलरी अपडेट किया गया",
     "UnableToUpdateSalary": "सैलरी अपडेट करने में समस्या आई",
     "SalaryBreakdown": "सैलरी विवरण",
-    "PerDayRate": "प्रति दिन दर",
+    "PerDayRate": "प्रति दिन",
     "DaysUnit": "दिन",
     "Deduction": "कटौती",
     "NetSalary": "नेट सैलरी",
@@ -306,6 +306,8 @@
     "StockAdditionExplanation1": "स्टॉक में जोड़े गए स्टैम्प को बिक्री के रूप में नहीं गिना जाएगा। यह आपको केवल बेचे गए स्टैम्प को सटीक रूप से ट्रैक करने में मदद करता है।",
     "StockAdditionExplanation2": "जोड़ा गया स्टॉक आज की बिक्री संख्या को प्रभावित नहीं करता। इसे केवल आज की रीडिंग में जोड़ा जाता है ताकि कल की शुरुआती बेसलाइन अपडेट हो।",
     "NewReading": "नई रीडिंग",
+    "PhotocopyReadingRequired": "आगे बढ़ने से पहले कृपया आज की फोटोकॉपी रीडिंग दर्ज करें।",
+    "StampReadingsRequired": "कृपया इन स्टाम्प की आज की रीडिंग दर्ज करें: {denominations}।",
     "TomorrowStartingReadingWillBe": "कल की शुरुआती रीडिंग होगी",
     "TomorrowReadingStartsFrom": "कल के लिए रीडिंग {value} से शुरू होगी।"
   },

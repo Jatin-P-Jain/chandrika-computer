@@ -235,6 +235,9 @@ export function AttendanceRegisterClient({
   const [deletingEmployeeId, setDeletingEmployeeId] = React.useState<
     string | null
   >(null);
+  const [navigatingEmployeeId, setNavigatingEmployeeId] = React.useState<
+    string | null
+  >(null);
   const [reasonDialog, setReasonDialog] = React.useState<{
     employeeId: string;
     dateYmd: string;
@@ -244,7 +247,13 @@ export function AttendanceRegisterClient({
     Record<string, string>
   >({});
 
-  const { textHeadingCls, textBodyCls, textSmCls } = useLocaleTypography();
+  const {
+    textDisplayCls,
+    textHeadingCls,
+    textBodyCls,
+    textPageHeadCls,
+    textSmCls,
+  } = useLocaleTypography();
   const locale = useLocale();
   const calendarLocale = locale === "hi" ? hi : enUS;
   const tCommon = useTranslations("Common");
@@ -549,6 +558,15 @@ export function AttendanceRegisterClient({
     }
   };
 
+  const onOpenEmployeeDetails = React.useCallback(
+    (employeeId: string) => {
+      if (navigatingEmployeeId) return;
+      setNavigatingEmployeeId(employeeId);
+      push(`/attendace-register/${employeeId}`);
+    },
+    [navigatingEmployeeId, push],
+  );
+
   return (
     <div className="flex flex-col gap-3 w-full">
       <div className="flex flex-wrap items-center justify-between gap-3 w-full">
@@ -569,7 +587,7 @@ export function AttendanceRegisterClient({
         >
           <DialogTrigger asChild>
             <Button
-              className="gap-2 text-primary border border-primary"
+              className="gap-2 text-primary border border-primary font-semibold"
               variant="outline"
             >
               <UserPlus2 className="size-4" />
@@ -592,8 +610,8 @@ export function AttendanceRegisterClient({
             <div className="space-y-3">
               {editingEmployee ? (
                 <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2">
-                  <UserCircle2 className="size-4 text-muted-foreground shrink-0" />
-                  <span className={clsx("text-sm font-medium", textBodyCls)}>
+                  <UserCircle2 className="size-5 text-muted-foreground shrink-0" />
+                  <span className={clsx("font-medium", textPageHeadCls)}>
                     {editingEmployee.name}
                   </span>
                 </div>
@@ -608,6 +626,7 @@ export function AttendanceRegisterClient({
                     onChange={(event) => setName(event.target.value)}
                     placeholder={tAttendance("EmployeeNamePlaceholder")}
                     disabled={isAdding}
+                    className={clsx("text-lg", textPageHeadCls)}
                   />
                 </div>
               )}
@@ -624,6 +643,10 @@ export function AttendanceRegisterClient({
                   onChange={setSalaryInput}
                   placeholder={tAttendance("SalaryPlaceholder")}
                   readOnly={isAdding}
+                  inputClassName={clsx(
+                    "placeholder:font-normal text-lg",
+                    textPageHeadCls,
+                  )}
                 />
               </div>
               <div className="space-y-2">
@@ -644,14 +667,13 @@ export function AttendanceRegisterClient({
                       disabled={isAdding}
                       className={clsx(
                         "w-full justify-between text-left font-medium",
-                        textBodyCls,
+                        textPageHeadCls,
                       )}
                     >
-                      <span>
-                        {/^\d{4}-\d{2}$/.test(salaryFromMonth)
-                          ? formatMonthLabel(salaryFromMonth, locale)
-                          : tAttendance("SelectMonth")}
-                      </span>
+                      {/^\d{4}-\d{2}$/.test(salaryFromMonth)
+                        ? formatMonthLabel(salaryFromMonth, locale)
+                        : tAttendance("SelectMonth")}
+
                       <CalendarDaysIcon className="size-4 text-muted-foreground" />
                     </Button>
                   </PopoverTrigger>
@@ -992,14 +1014,14 @@ export function AttendanceRegisterClient({
               : null;
 
             return (
-              <Card key={employee.id} className="p-2">
+              <Card key={employee.id} className="p-2 border border-primary/80">
                 <CardContent className="p-0 gap-2 flex flex-col">
                   <div className="flex flex-wrap gap-3 justify-between items-start">
                     <div className="flex flex-col px-2 gap-0.5">
-                      <div className="flex gap-1 items-center">
-                        <UserCircle2 className="size-5 text-primary" />
+                      <div className="flex gap-2 items-center">
+                        <UserCircle2 className="size-6 text-primary" />
                         <h3
-                          className={`text-primary font-semibold text-lg ${textHeadingCls}`}
+                          className={`text-primary font-semibold text-lg mt-0.5 ${textHeadingCls}`}
                         >
                           {employee.name}
                         </h3>
@@ -1010,12 +1032,15 @@ export function AttendanceRegisterClient({
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-primary"
-                        onClick={() =>
-                          push(`/attendace-register/${employee.id}`)
-                        }
+                        className="text-primary font-semibold"
+                        onClick={() => onOpenEmployeeDetails(employee.id)}
+                        disabled={navigatingEmployeeId === employee.id}
                       >
-                        <Calendars className="size-4" />
+                        {navigatingEmployeeId === employee.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Calendars className="size-4" />
+                        )}
                         {tAttendance("Details")}
                       </Button>
 
@@ -1074,7 +1099,12 @@ export function AttendanceRegisterClient({
                       <div className="flex flex-wrap items-center border rounded-md">
                         <span className="text-sm text-muted-foreground px-3 py-1">
                           {tAttendance("Salary")}{" "}
-                          <span className="font-semibold text-foreground">
+                          <span
+                            className={clsx(
+                              "font-semibold text-foreground",
+                              textBodyCls,
+                            )}
+                          >
                             ({selectedMonthLabel})
                           </span>
                         </span>
@@ -1105,7 +1135,12 @@ export function AttendanceRegisterClient({
                               "flex items-center gap-1 justify-start",
                             )}
                           >
-                            <span className="text-lg!">
+                            <span
+                              className={clsx(
+                                "text-base font-semibold",
+                                textPageHeadCls,
+                              )}
+                            >
                               {salaryBreakup
                                 ? formatINR(salaryBreakup.monthlySalary)
                                 : formatINR(employee.monthlySalary)}
@@ -1125,30 +1160,35 @@ export function AttendanceRegisterClient({
                                   )}
                                 >
                                   {tAttendance("NetSalary")}:
-                                  <span className="font-semibold text-lg! text-green-700">
+                                  <span
+                                    className={clsx(
+                                      "font-semibold text-lg text-green-700",
+                                      textHeadingCls,
+                                    )}
+                                  >
                                     {formatINR(salaryBreakup.netSalary)}
                                   </span>
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent
                                 align="end"
-                                className=" space-y-2"
+                                className="min-w-[320px] w-full space-y-2"
                               >
                                 <p
                                   className={clsx(
-                                    "text-xs font-semibold text-muted-foreground",
-                                    textSmCls,
+                                    "text-sm font-semibold text-muted-foreground",
+                                    textBodyCls,
                                   )}
                                 >
                                   {tAttendance("SalaryBreakdown")}
-                                  <span className="ml-1 text-foreground/70">
+                                  <span className="text-foreground/70">
                                     ({selectedMonthLabel})
                                   </span>
                                 </p>
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                   <span
                                     className={clsx(
-                                      "text-xs text-muted-foreground",
+                                      "text-sm text-muted-foreground",
                                       textSmCls,
                                     )}
                                   >
@@ -1156,8 +1196,8 @@ export function AttendanceRegisterClient({
                                   </span>
                                   <span
                                     className={clsx(
-                                      "text-xs font-medium text-right",
-                                      textSmCls,
+                                      "text-base font-medium text-right",
+                                      textBodyCls,
                                     )}
                                   >
                                     {formatINR(salaryBreakup.monthlySalary)}
@@ -1165,7 +1205,7 @@ export function AttendanceRegisterClient({
 
                                   <span
                                     className={clsx(
-                                      "text-xs text-muted-foreground",
+                                      "text-sm text-muted-foreground",
                                       textSmCls,
                                     )}
                                   >
@@ -1177,8 +1217,8 @@ export function AttendanceRegisterClient({
                                   </span>
                                   <span
                                     className={clsx(
-                                      "text-xs font-medium text-right",
-                                      textSmCls,
+                                      "text-base font-medium text-right",
+                                      textBodyCls,
                                     )}
                                   >
                                     {formatINR(salaryBreakup.perDay)}
@@ -1186,13 +1226,13 @@ export function AttendanceRegisterClient({
 
                                   <span
                                     className={clsx(
-                                      "text-xs text-muted-foreground",
+                                      "text-sm text-muted-foreground",
                                       textSmCls,
                                     )}
                                   >
                                     {tAttendance("Deduction")}
                                     {currentMonthAbsentDays > 0 && (
-                                      <span className="text-muted-foreground/60 ml-1">
+                                      <span className="text-muted-foreground font-medium">
                                         ({currentMonthAbsentDays}×
                                         {formatINR(salaryBreakup.perDay)})
                                       </span>
@@ -1200,8 +1240,8 @@ export function AttendanceRegisterClient({
                                   </span>
                                   <span
                                     className={clsx(
-                                      "text-xs font-medium text-right text-destructive",
-                                      textSmCls,
+                                      "text-base font-medium text-right text-destructive",
+                                      textBodyCls,
                                     )}
                                   >
                                     {currentMonthAbsentDays > 0
@@ -1211,15 +1251,15 @@ export function AttendanceRegisterClient({
 
                                   <span
                                     className={clsx(
-                                      "text-xs font-semibold border-t pt-1",
-                                      textSmCls,
+                                      "text-sm font-semibold border-t pt-1",
+                                      textBodyCls,
                                     )}
                                   >
                                     {tAttendance("NetSalary")}
                                   </span>
                                   <span
                                     className={clsx(
-                                      "text-xs font-bold text-right text-primary border-t pt-1",
+                                      "text-base font-bold text-right text-primary border-t pt-1",
                                       textBodyCls,
                                     )}
                                   >
@@ -1247,7 +1287,7 @@ export function AttendanceRegisterClient({
                           setIsDialogOpen(true);
                         }}
                         className={clsx(
-                          "flex items-center gap-2 text-sm text-primary",
+                          "flex items-center gap-2 text-sm text-primary font-semibold",
                           textBodyCls,
                         )}
                       >
@@ -1256,7 +1296,7 @@ export function AttendanceRegisterClient({
                         <SquarePlus className="size-4" />
                       </Button>
                     )}
-                    <div className="flex items-center justify-between border rounded-md px-3 py-2 shadow-sm gap-1">
+                    <div className="flex items-center justify-between border rounded-md px-3 py-2 shadow-md gap-1 border-primary">
                       <Label
                         htmlFor={`absent-switch-${employee.id}`}
                         className={`flex wrap-break-word text-muted-foreground text-sm ${textSmCls}`}
@@ -1269,7 +1309,7 @@ export function AttendanceRegisterClient({
                             <Button
                               variant="outline"
                               disabled={isSaving}
-                              className={`justify-between text-right text-primary text-sm font-medium ${textBodyCls}`}
+                              className={`justify-between text-right text-primary text-sm font-semibold ${textBodyCls}`}
                             >
                               <CalendarDaysIcon className="size-4 text-muted-foreground" />
                               <span className="truncate">

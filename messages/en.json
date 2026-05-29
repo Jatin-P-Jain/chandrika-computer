@@ -230,7 +230,7 @@
     "SalaryUpdated": "Salary updated",
     "UnableToUpdateSalary": "Unable to update salary",
     "SalaryBreakdown": "Salary Breakdown",
-    "PerDayRate": "Per Day Rate",
+    "PerDayRate": "Per Day",
     "DaysUnit": "days",
     "Deduction": "Deduction",
     "NetSalary": "Net Salary",
@@ -306,6 +306,8 @@
     "StockAdditionExplanation1": "Stamps added to stock will not be counted as sales. This helps you accurately track only the stamps you sold.",
     "StockAdditionExplanation2": "Stock added does not affect today's sold count. It is only added to today's reading so tomorrow starts from the updated baseline.",
     "NewReading": "New Reading",
+    "PhotocopyReadingRequired": "Please enter today's photocopy reading before continuing.",
+    "StampReadingsRequired": "Please enter today's stamp readings for: {denominations}.",
     "TomorrowStartingReadingWillBe": "Tomorrow's starting reading will be",
     "TomorrowReadingStartsFrom": "For tomorrow, reading will start from {value}."
   },

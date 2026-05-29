@@ -28,6 +28,7 @@ type Props = {
   control: Control<StampFormInput>;
   errors: FieldErrors<StampFormInput>;
   stampFieldByDenom: Record<Denomination, "r50" | "r100" | "r500" | "r1000">;
+  showStampCalculationByDenom: Record<Denomination, boolean>;
   stockControl: Control<StockFormInput>;
   stockErrors: FieldErrors<StockFormInput>;
   stockFieldByDenom: Record<Denomination, "s50" | "s100" | "s500" | "s1000">;
@@ -47,6 +48,7 @@ type Props = {
   saving: boolean;
   loadingPrev: boolean;
   includeStockAddition: boolean;
+  disableNext?: boolean;
   onBack: () => void;
   onNext: () => void;
   onToggleStockAddition?: (include: boolean) => void;
@@ -56,6 +58,7 @@ export default function StampStep({
   control,
   errors,
   stampFieldByDenom,
+  showStampCalculationByDenom,
   stockControl,
   stockErrors,
   stockFieldByDenom,
@@ -72,6 +75,7 @@ export default function StampStep({
   saving,
   loadingPrev,
   includeStockAddition,
+  disableNext = false,
   onBack,
   onNext,
   onToggleStockAddition,
@@ -88,6 +92,9 @@ export default function StampStep({
     1000: s1000,
   };
 
+  const hasStockAdditionValue = includeStockAddition
+    ? denoms.some((denom) => stockByDenom[denom] > 0)
+    : false;
   const newReadingByDenom: Record<Denomination, number> = {
     50: stampPrev[50] + stockByDenom[50],
     100: stampPrev[100] + stockByDenom[100],
@@ -127,7 +134,7 @@ export default function StampStep({
                   )}
                 >
                   {tReadings("Yesterday")}:{" "}
-                  <span className={clsx("font-medium", textPageHeadCls)}>
+                  <span className={clsx("font-medium text-base", textPageHeadCls)}>
                     {stampPrev[denom]}
                   </span>
                 </div>
@@ -158,18 +165,18 @@ export default function StampStep({
                     />
                   </div>
                 ) : null}
-                {includeStockAddition ? (
+                {hasStockAdditionValue ? (
                   <div
                     className={clsx(
                       "flex items-center justify-between gap-2 font-medium bg-accent rounded-md px-2 py-1",
                       textSmCls,
                     )}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className={clsx("flex items-center gap-1 text-sm", textBodyCls)}>
                       {/* <Info className="size-4" /> */}
                       {tReadings("NewReading")}
                     </div>
-                    <span className={clsx("font-medium", textPageHeadCls)}>
+                    <span className={clsx("font-medium text-base", textPageHeadCls)}>
                       {newReadingByDenom[denom]}
                     </span>
                   </div>
@@ -195,9 +202,10 @@ export default function StampStep({
                       <ReadingInput
                         value={(field.value as number) ?? 0}
                         onChange={field.onChange}
+                        onBlur={field.onBlur}
                         placeholder="0"
                         inputClassName={clsx(
-                          "w-fit! text-right font-medium",
+                          "w-fit! text-right font-medium text-base",
                           textPageHeadCls,
                         )}
                       />
@@ -216,11 +224,11 @@ export default function StampStep({
                     textBodyCls,
                   )}
                 >
-                  {tReadings("StampsSold")}:{" "}
+                  {tReadings("StampsSold")}: {" "}
                   <span
                     className={clsx("text-base font-semibold", textPageHeadCls)}
                   >
-                    {stampSold[denom]}
+                    {showStampCalculationByDenom[denom] ? stampSold[denom] : 0}
                   </span>
                 </div>
                 <div
@@ -229,14 +237,16 @@ export default function StampStep({
                     textBodyCls,
                   )}
                 >
-                  {tCommon("Amount")}:{" "}
+                  {tCommon("Amount")}: {" "}
                   <span
                     className={clsx(
                       "font-semibold text-primary text-lg",
                       textPageHeadCls,
                     )}
                   >
-                    {formatINR(stampAmounts[denom])}
+                    {showStampCalculationByDenom[denom]
+                      ? formatINR(stampAmounts[denom])
+                      : formatINR(0)}
                   </span>
                 </div>
               </div>
@@ -300,7 +310,7 @@ export default function StampStep({
           </Button>
           <Button
             onClick={onNext}
-            disabled={saving || loadingPrev}
+            disabled={saving || loadingPrev || disableNext}
             className="gap-0 text-base"
           >
             {tCommon("Next")} <ChevronRight className="size-4" />

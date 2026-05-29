@@ -87,25 +87,6 @@ function clamp0(n: number) {
   return Math.max(0, Number.isFinite(n) ? n : 0);
 }
 
-function useDebouncedNumber(value: number, delayMs: number) {
-  const [debouncedValue, setDebouncedValue] = React.useState(value);
-
-  React.useEffect(() => {
-    if (delayMs <= 0) {
-      setDebouncedValue(value);
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setDebouncedValue(value);
-    }, delayMs);
-
-    return () => window.clearTimeout(timer);
-  }, [value, delayMs]);
-
-  return debouncedValue;
-}
-
 function hasUsablePreviousBaseline(res: {
   photocopy: PhotocopyReadingDoc | null;
   stamp: StampReadingDoc | null;
@@ -258,6 +239,9 @@ export default function DailyReadingsDialog({
   });
 
   const readingsFound = hasSavedReadings;
+  const hasSavedStockAddition = DENOMS.some(
+    (denom) => (readings?.stamp?.parts?.[denom]?.stockAdded ?? 0) > 0,
+  );
 
   const {
     closeDialog,
@@ -444,19 +428,21 @@ export default function DailyReadingsDialog({
     if (!open) return;
     if (!readingsFound) return;
 
-    if (
+    const hasAnyEdits =
       photoForm.formState.isDirty ||
       stampForm.formState.isDirty ||
-      stockForm.formState.isDirty
-    ) {
-      setHasEdits(true);
-    }
+      stockForm.formState.isDirty ||
+      includeStockAddition !== hasSavedStockAddition;
+
+    setHasEdits(hasAnyEdits);
   }, [
     open,
     readingsFound,
     photoForm.formState.isDirty,
     stampForm.formState.isDirty,
     stockForm.formState.isDirty,
+    includeStockAddition,
+    hasSavedStockAddition,
   ]);
 
   const applyPreviousReadings = React.useCallback(
@@ -579,11 +565,27 @@ export default function DailyReadingsDialog({
 
   // Live calculations from watch()
   const photoToday = photoForm.watch("todayReading");
+  const photoDirtyFields = photoForm.formState.dirtyFields;
+  const photoTouchedFields = photoForm.formState.touchedFields;
   const photoRate = 2;
-  const photoDiff = clamp0((photoToday ?? 0) - photoPrev);
-  const photoActualAmount = clamp0(photoDiff * photoRate);
+  const hasPhotocopyTodayInput = Boolean(
+    isReadOnlyView ||
+    hasPhotocopyReading ||
+    localPhotocopyDraft?.hasTodayReadingInput ||
+    photoDirtyFields.todayReading ||
+    photoTouchedFields.todayReading ||
+    (photoToday ?? 0) > 0,
+  );
+  const photoDiff = hasPhotocopyTodayInput
+    ? clamp0((photoToday ?? 0) - photoPrev)
+    : 0;
+  const photoActualAmount = hasPhotocopyTodayInput
+    ? clamp0(photoDiff * photoRate)
+    : 0;
   const photoAmount = roundOffPhotocopy
-    ? clamp0(roundedPhotocopyAmount)
+    ? hasPhotocopyTodayInput
+      ? clamp0(roundedPhotocopyAmount)
+      : 0
     : photoActualAmount;
 
   const r50 = stampForm.watch("r50") ?? 0;
@@ -591,10 +593,7 @@ export default function DailyReadingsDialog({
   const r500 = stampForm.watch("r500") ?? 0;
   const r1000 = stampForm.watch("r1000") ?? 0;
   const stampDirtyFields = stampForm.formState.dirtyFields;
-  const debouncedR50 = useDebouncedNumber(r50, isReadOnlyView ? 0 : 500);
-  const debouncedR100 = useDebouncedNumber(r100, isReadOnlyView ? 0 : 500);
-  const debouncedR500 = useDebouncedNumber(r500, isReadOnlyView ? 0 : 500);
-  const debouncedR1000 = useDebouncedNumber(r1000, isReadOnlyView ? 0 : 500);
+  const stampTouchedFields = stampForm.formState.touchedFields;
   const s50 = includeStockAddition ? (stockForm.watch("s50") ?? 0) : 0;
   const s100 = includeStockAddition ? (stockForm.watch("s100") ?? 0) : 0;
   const s500 = includeStockAddition ? (stockForm.watch("s500") ?? 0) : 0;
@@ -610,13 +609,68 @@ export default function DailyReadingsDialog({
     1000: "r1000",
   };
 
-  const shouldCalculateStampForDenom = (denom: Denomination) => {
-    if (isReadOnlyView || hasStampReading || hasLocalStampDraft) {
-      return true;
-    }
-
-    return Boolean(stampDirtyFields[stampFieldByDenom[denom]]);
+  const todayByDenom: Record<Denomination, number> = {
+    50: r50,
+    100: r100,
+    500: r500,
+    1000: r1000,
   };
+
+  const stampTodayInputByDenom: Record<Denomination, boolean> = {
+    50: Boolean(
+      isReadOnlyView ||
+      hasStampReading ||
+      localStampDraft?.enteredReadings?.[50] ||
+      stampDirtyFields.r50 ||
+      stampTouchedFields.r50 ||
+      todayByDenom[50] > 0,
+    ),
+    100: Boolean(
+      isReadOnlyView ||
+      hasStampReading ||
+      localStampDraft?.enteredReadings?.[100] ||
+      stampDirtyFields.r100 ||
+      stampTouchedFields.r100 ||
+      todayByDenom[100] > 0,
+    ),
+    500: Boolean(
+      isReadOnlyView ||
+      hasStampReading ||
+      localStampDraft?.enteredReadings?.[500] ||
+      stampDirtyFields.r500 ||
+      stampTouchedFields.r500 ||
+      todayByDenom[500] > 0,
+    ),
+    1000: Boolean(
+      isReadOnlyView ||
+      hasStampReading ||
+      localStampDraft?.enteredReadings?.[1000] ||
+      stampDirtyFields.r1000 ||
+      stampTouchedFields.r1000 ||
+      todayByDenom[1000] > 0,
+    ),
+  };
+
+  const shouldCalculateStampForDenom = (denom: Denomination) => {
+    return stampTodayInputByDenom[denom];
+  };
+
+  const showStampCalculationByDenom: Record<Denomination, boolean> = {
+    50: shouldCalculateStampForDenom(50),
+    100: shouldCalculateStampForDenom(100),
+    500: shouldCalculateStampForDenom(500),
+    1000: shouldCalculateStampForDenom(1000),
+  };
+
+  const missingStampTodayReadings = DENOMS.filter(
+    (denom) => !stampTodayInputByDenom[denom],
+  );
+  const missingStampTodayReadingLabels = missingStampTodayReadings
+    .map((denom) => `₹${denom}`)
+    .join(", ");
+  const canProceedFromPhotocopy = hasPhotocopyTodayInput;
+  const canProceedFromStamp = missingStampTodayReadings.length === 0;
+  const canConfirmReadings = canProceedFromPhotocopy && canProceedFromStamp;
 
   const stockFieldByDenom: Record<
     Denomination,
@@ -630,16 +684,16 @@ export default function DailyReadingsDialog({
 
   const stampSold = {
     50: shouldCalculateStampForDenom(50)
-      ? clamp0(stampPrev[50] + s50 - debouncedR50)
+      ? clamp0(stampPrev[50] + s50 - r50)
       : 0,
     100: shouldCalculateStampForDenom(100)
-      ? clamp0(stampPrev[100] + s100 - debouncedR100)
+      ? clamp0(stampPrev[100] + s100 - r100)
       : 0,
     500: shouldCalculateStampForDenom(500)
-      ? clamp0(stampPrev[500] + s500 - debouncedR500)
+      ? clamp0(stampPrev[500] + s500 - r500)
       : 0,
     1000: shouldCalculateStampForDenom(1000)
-      ? clamp0(stampPrev[1000] + s1000 - debouncedR1000)
+      ? clamp0(stampPrev[1000] + s1000 - r1000)
       : 0,
   } as const;
 
@@ -658,15 +712,14 @@ export default function DailyReadingsDialog({
   } as const;
 
   const stampTotal = DENOMS.reduce((acc, d) => acc + stampAmounts[d], 0);
-  const todayByDenom: Record<Denomination, number> = {
-    50: r50,
-    100: r100,
-    500: r500,
-    1000: r1000,
-  };
 
   // Step navigation
   const goNextFromPhotocopy = async () => {
+    if (!hasPhotocopyTodayInput) {
+      toast.error(tReadings("PhotocopyReadingRequired"));
+      return;
+    }
+
     const valid = await photoForm.trigger();
     if (!valid) return;
 
@@ -675,6 +728,11 @@ export default function DailyReadingsDialog({
       const photoValues = photoForm.getValues();
       const nextDraft: LocalPhotocopyDraft = {
         todayReading: clamp0(photoValues.todayReading ?? 0),
+        hasTodayReadingInput: Boolean(
+          photoDirtyFields.todayReading ||
+          photoTouchedFields.todayReading ||
+          clamp0(photoValues.todayReading ?? 0) > 0,
+        ),
         roundOffPhotocopy,
         roundedPhotocopyAmount: clamp0(roundedPhotocopyAmount),
       };
@@ -699,6 +757,15 @@ export default function DailyReadingsDialog({
   };
 
   const goNextFromStamp = async () => {
+    if (missingStampTodayReadings.length > 0) {
+      toast.error(
+        tReadings("StampReadingsRequired", {
+          denominations: missingStampTodayReadingLabels,
+        }),
+      );
+      return;
+    }
+
     const valid = await stampForm.trigger();
     if (!valid) return;
 
@@ -710,6 +777,28 @@ export default function DailyReadingsDialog({
         100: clamp0(stampValues.r100 ?? 0),
         500: clamp0(stampValues.r500 ?? 0),
         1000: clamp0(stampValues.r1000 ?? 0),
+      },
+      enteredReadings: {
+        50: Boolean(
+          stampDirtyFields.r50 ||
+          stampTouchedFields.r50 ||
+          clamp0(stampValues.r50 ?? 0) > 0,
+        ),
+        100: Boolean(
+          stampDirtyFields.r100 ||
+          stampTouchedFields.r100 ||
+          clamp0(stampValues.r100 ?? 0) > 0,
+        ),
+        500: Boolean(
+          stampDirtyFields.r500 ||
+          stampTouchedFields.r500 ||
+          clamp0(stampValues.r500 ?? 0) > 0,
+        ),
+        1000: Boolean(
+          stampDirtyFields.r1000 ||
+          stampTouchedFields.r1000 ||
+          clamp0(stampValues.r1000 ?? 0) > 0,
+        ),
       },
       includeStockAddition,
       stockAdded: {
@@ -742,6 +831,22 @@ export default function DailyReadingsDialog({
   const onConfirmSave = async () => {
     try {
       setSaving(true);
+
+      if (!hasPhotocopyTodayInput) {
+        setStep("photocopy");
+        toast.error(tReadings("PhotocopyReadingRequired"));
+        return;
+      }
+
+      if (missingStampTodayReadings.length > 0) {
+        setStep("stamp");
+        toast.error(
+          tReadings("StampReadingsRequired", {
+            denominations: missingStampTodayReadingLabels,
+          }),
+        );
+        return;
+      }
 
       const pv = await photoForm.trigger();
       if (!pv) {
@@ -985,6 +1090,7 @@ export default function DailyReadingsDialog({
           tCommon={tCommon}
           tReadings={tReadings}
           canEditPreviousReadings={true}
+          disableNext={!canProceedFromPhotocopy}
           onEditPreviousReadings={openPreviousReadingsResolverFromEdit}
           onRoundOffChange={(checked) => {
             setRoundOffPhotocopy(checked);
@@ -1003,6 +1109,7 @@ export default function DailyReadingsDialog({
           control={stampForm.control}
           errors={stampForm.formState.errors}
           stampFieldByDenom={stampFieldByDenom}
+          showStampCalculationByDenom={showStampCalculationByDenom}
           stockControl={stockForm.control}
           stockErrors={stockForm.formState.errors}
           stockFieldByDenom={stockFieldByDenom}
@@ -1019,6 +1126,7 @@ export default function DailyReadingsDialog({
           saving={saving}
           loadingPrev={loadingPrev}
           includeStockAddition={includeStockAddition}
+          disableNext={!canProceedFromStamp}
           onBack={() => goToStep("review")}
           onNext={() => goToStep("review")}
           onToggleStockAddition={setIncludeStockAddition}
@@ -1044,16 +1152,19 @@ export default function DailyReadingsDialog({
           stampAmounts={stampAmounts}
           stampTotal={stampTotal}
           todayByDenom={todayByDenom}
+          showStampCalculationByDenom={showStampCalculationByDenom}
           readingsFound={readingsFound}
           hasEdits={hasEdits}
           saving={saving}
           loadingPrev={loadingPrev}
           readOnly={readOnly}
+          includeStockAddition={includeStockAddition}
+          stockFormIsDirty={stockForm.formState.isDirty}
+          disableConfirmSave={!canConfirmReadings}
           onEditPhotocopy={() => goToStep("photocopy")}
           onEditStamp={() => goToStep("stamp")}
           onBack={goBack}
           onConfirmSave={onConfirmSave}
-          onClose={closeDialog}
         />
       )}
     </div>
@@ -1102,6 +1213,7 @@ export default function DailyReadingsDialog({
             tCommon={tCommon}
             tReadings={tReadings}
             canEditPreviousReadings={true}
+            disableNext={!canProceedFromPhotocopy}
             onEditPreviousReadings={openPreviousReadingsResolverFromEdit}
             onRoundOffChange={(checked) => {
               setRoundOffPhotocopy(checked);
@@ -1122,6 +1234,7 @@ export default function DailyReadingsDialog({
             control={stampForm.control}
             errors={stampForm.formState.errors}
             stampFieldByDenom={stampFieldByDenom}
+            showStampCalculationByDenom={showStampCalculationByDenom}
             stockControl={stockForm.control}
             stockErrors={stockForm.formState.errors}
             stockFieldByDenom={stockFieldByDenom}
@@ -1138,6 +1251,7 @@ export default function DailyReadingsDialog({
             saving={saving}
             loadingPrev={loadingPrev}
             includeStockAddition={includeStockAddition}
+            disableNext={!canProceedFromStamp}
             onBack={goBack}
             onNext={goNextFromStamp}
             onToggleStockAddition={setIncludeStockAddition}
@@ -1165,16 +1279,19 @@ export default function DailyReadingsDialog({
             stampAmounts={stampAmounts}
             stampTotal={stampTotal}
             todayByDenom={todayByDenom}
+            showStampCalculationByDenom={showStampCalculationByDenom}
             readingsFound={readingsFound}
             hasEdits={hasEdits}
             saving={saving}
             loadingPrev={loadingPrev}
             readOnly={false}
+            includeStockAddition={includeStockAddition}
+            stockFormIsDirty={stockForm.formState.isDirty}
+            disableConfirmSave={!canConfirmReadings}
             onEditPhotocopy={() => goToStep("photocopy")}
             onEditStamp={() => goToStep("stamp")}
             onBack={goBack}
             onConfirmSave={onConfirmSave}
-            onClose={closeDialog}
           />
         ) : null}
       </div>

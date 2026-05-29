@@ -13,6 +13,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -198,7 +199,13 @@ export function EmployeeAttendanceDetails({
   const locale = useLocale();
   const tCommon = useTranslations("Common");
   const tAttendance = useTranslations("AttendanceRegister");
-  const { textHeadingCls, textBodyCls, textSmCls } = useLocaleTypography();
+  const {
+    textDisplayCls,
+    textHeadingCls,
+    textBodyCls,
+    textPageHeadCls,
+    textSmCls,
+  } = useLocaleTypography();
   const { authState } = useAuth();
   const [monthlySalary, setMonthlySalary] = React.useState<number | null>(
     employee.monthlySalary,
@@ -376,14 +383,14 @@ export function EmployeeAttendanceDetails({
                 variant="link"
                 onClick={openSalaryDialog}
                 className={clsx(
-                  "flex items-center gap-1 px-3 py-1",
+                  "flex items-center gap-1 px-3 py-1 justify-start",
                   textBodyCls,
                 )}
               >
-                <span className="text-xl font-semibold text-primary">
+                <span className={clsx("text-lg font-semibold text-primary", textHeadingCls)}>
                   {formatINR(monthlySalary)}
                 </span>
-                <Pencil className="size-4 text-muted-foreground" />
+                <Pencil className="size-5 bg-accent p-1 rounded-md text-muted-foreground" />
               </Button>
             ) : (
               <Button
@@ -435,7 +442,7 @@ export function EmployeeAttendanceDetails({
         }}
       >
         <DialogContent
-          className="p-3! py-4!"
+          className="sm:max-w-md"
           onOpenAutoFocus={(event) => event.preventDefault()}
         >
           <DialogHeader>
@@ -446,23 +453,26 @@ export function EmployeeAttendanceDetails({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <AmountInput
               inputId="employee-monthly-salary"
               value={salaryInput}
               onChange={setSalaryInput}
               placeholder={tAttendance("SalaryPlaceholder")}
               readOnly={isSavingSalary}
-              inputClassName={clsx("font-bold")}
+              inputClassName={clsx(
+                "placeholder:font-normal text-lg",
+                textPageHeadCls,
+              )}
             />
 
-            <div className="space-y-1">
-              <label
+            <div className="space-y-2">
+              <Label
                 htmlFor="employee-salary-from-month"
-                className={clsx("text-xs text-muted-foreground", textSmCls)}
+                className={clsx("text-muted-foreground", textSmCls)}
               >
                 {tAttendance("FromMonth")}
-              </label>
+              </Label>
               <Popover
                 open={isSalaryMonthPickerOpen}
                 onOpenChange={setIsSalaryMonthPickerOpen}
@@ -802,27 +812,35 @@ export function EmployeeAttendanceDetails({
                             )}
                           >
                             {tAttendance("NetSalary")}:
-                            <span className="text-xl! text-green-700">
+                            <span
+                              className={clsx(
+                                "font-semibold text-lg text-green-700",
+                                textHeadingCls,
+                              )}
+                            >
                               {formatINR(salaryBreakup.netSalary)}
                             </span>
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent align="center" className=" space-y-2">
+                        <PopoverContent
+                          align="end"
+                          className="min-w-[320px] w-full space-y-2"
+                        >
                           <p
                             className={clsx(
-                              "text-xs font-semibold text-muted-foreground",
+                              "text-sm font-semibold text-muted-foreground",
                               textSmCls,
                             )}
                           >
                             {tAttendance("SalaryBreakdown")}
-                            <span className="ml-1 text-foreground/70">
+                            <span className="text-foreground/70">
                               ({monthItem.monthLabel})
                             </span>
                           </p>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                             <span
                               className={clsx(
-                                "text-xs text-muted-foreground",
+                                "text-sm text-muted-foreground",
                                 textSmCls,
                               )}
                             >
@@ -830,8 +848,8 @@ export function EmployeeAttendanceDetails({
                             </span>
                             <span
                               className={clsx(
-                                "text-xs font-medium text-right",
-                                textSmCls,
+                                "text-base font-medium text-right",
+                                textBodyCls,
                               )}
                             >
                               {formatINR(salaryBreakup.monthlySalary)}
@@ -839,16 +857,16 @@ export function EmployeeAttendanceDetails({
 
                             <span
                               className={clsx(
-                                "text-xs text-muted-foreground",
+                                "text-sm text-muted-foreground",
                                 textSmCls,
                               )}
                             >
-                              {tAttendance("From")}
+                              {tAttendance("FromMonth")}
                             </span>
                             <span
                               className={clsx(
-                                "text-xs font-medium text-right",
-                                textSmCls,
+                                "text-base font-medium text-right",
+                                textBodyCls,
                               )}
                             >
                               {salaryBreakup.effectiveFromMonth
@@ -861,7 +879,7 @@ export function EmployeeAttendanceDetails({
 
                             <span
                               className={clsx(
-                                "text-xs text-muted-foreground",
+                                "text-sm text-muted-foreground",
                                 textSmCls,
                               )}
                             >
@@ -873,8 +891,8 @@ export function EmployeeAttendanceDetails({
                             </span>
                             <span
                               className={clsx(
-                                "text-xs font-medium text-right",
-                                textSmCls,
+                                "text-base font-medium text-right",
+                                textBodyCls,
                               )}
                             >
                               {formatINR(salaryBreakup.perDay)}
@@ -882,7 +900,7 @@ export function EmployeeAttendanceDetails({
 
                             <span
                               className={clsx(
-                                "text-xs text-muted-foreground",
+                                "text-sm text-muted-foreground",
                                 textSmCls,
                               )}
                             >
@@ -896,8 +914,8 @@ export function EmployeeAttendanceDetails({
                             </span>
                             <span
                               className={clsx(
-                                "text-xs font-medium text-right text-destructive",
-                                textSmCls,
+                                "text-base font-medium text-right text-destructive",
+                                textBodyCls,
                               )}
                             >
                               {monthAbsentDays > 0
@@ -907,15 +925,15 @@ export function EmployeeAttendanceDetails({
 
                             <span
                               className={clsx(
-                                "text-xs font-semibold border-t pt-1",
-                                textSmCls,
+                                "text-sm font-semibold border-t pt-1",
+                                textBodyCls,
                               )}
                             >
                               {tAttendance("NetSalary")}
                             </span>
                             <span
                               className={clsx(
-                                "text-xs font-bold text-right text-primary border-t pt-1",
+                                "text-base font-bold text-right text-primary border-t pt-1",
                                 textBodyCls,
                               )}
                             >

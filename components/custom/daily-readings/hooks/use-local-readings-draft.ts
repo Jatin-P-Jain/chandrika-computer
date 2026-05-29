@@ -4,14 +4,23 @@ import type { Denomination } from "@/types/readings";
 
 export type LocalPhotocopyDraft = {
   todayReading: number;
+  hasTodayReadingInput: boolean;
   roundOffPhotocopy: boolean;
   roundedPhotocopyAmount: number;
 };
 
 export type LocalStampDraft = {
   readings: Record<Denomination, number>;
+  enteredReadings: Record<Denomination, boolean>;
   includeStockAddition: boolean;
   stockAdded: Record<Denomination, number>;
+};
+
+export const EMPTY_DENOM_BOOLEAN_RECORD: Record<Denomination, boolean> = {
+  50: false,
+  100: false,
+  500: false,
+  1000: false,
 };
 
 export type LocalReadingsFlags = {
