@@ -276,7 +276,7 @@ export default function DailyReadingsDialog({
       const viewportHeight =
         window.visualViewport?.height ?? window.innerHeight;
       setMobileViewportMaxHeight(
-        Math.max(320, Math.floor(viewportHeight * 0.92)),
+        Math.max(320, Math.floor(viewportHeight * 0.96)),
       );
     };
 
@@ -1395,7 +1395,7 @@ export default function DailyReadingsDialog({
       <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
 
       <DrawerContent
-        className="max-h-[98dvh] p-0 px-3 py-3 shadow-2xl [&>div:first-child]:hidden md:px-4 md:py-6"
+        className="max-h-[90dvh] p-0 px-3 py-3 shadow-2xl [&>div:first-child]:hidden md:px-4 md:py-6"
         style={
           mobileViewportMaxHeight
             ? { maxHeight: `${mobileViewportMaxHeight}px` }

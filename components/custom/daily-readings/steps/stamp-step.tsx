@@ -104,7 +104,7 @@ export default function StampStep({
 
   return (
     <div className="space-y-4 w-full">
-      <div className="space-y-3 max-h-[50vh] overflow-auto no-scrollbar">
+      <div className="space-y-3 max-h-[70vh] overflow-auto no-scrollbar">
         {loadingPrev && (
           <div className="text-sm text-muted-foreground flex items-center gap-2 justify-start">
             {tReadings("LoadingYesterdaysReadings")}{" "}

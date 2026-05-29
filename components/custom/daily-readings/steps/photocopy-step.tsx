@@ -67,7 +67,7 @@ export default function PhotocopyStep({
 }: Props) {
   return (
     <div className="flex flex-col gap-2 w-full">
-      <div className="max-h-[50vh] overflow-auto no-scrollbar flex flex-col gap-2">
+      <div className="max-h-[70vh] overflow-auto no-scrollbar flex flex-col gap-2">
         <div className={clsx("flex italic font-medium", textBodyCls)}>
           {tReadings("PhotocopyMachineReading")}
         </div>

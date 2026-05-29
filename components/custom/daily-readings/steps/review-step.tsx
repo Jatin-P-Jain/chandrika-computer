@@ -89,7 +89,7 @@ export default function ReviewStep({
 
   return (
     <div className="space-y-4 w-full">
-      <div className="max-h-[50vh] overflow-auto no-scrollbar flex flex-col gap-2">
+      <div className="max-h-[70vh] overflow-auto no-scrollbar flex flex-col gap-2">
         <div className="rounded-md border p-3 text-sm flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <span className={clsx("italic", textBodyCls)}>
