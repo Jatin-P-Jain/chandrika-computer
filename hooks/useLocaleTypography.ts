@@ -23,24 +23,24 @@ const HI_SCALE = {
   /** Extra-small captions, timestamps */
   xs: "text-xs! font-[inherit]",
   /** Toggle / menu-item labels */
-  label: "text-base! font-medium",
+  label: "text-sm! font-medium",
 } as const;
 
 export function useLocaleTypography() {
   const locale = useLocale();
   const isHi = locale === "hi";
-  const cls = (hiClass: string) => (isHi ? hiClass : "");
+  const cls = (hiClass: string, enClass: string) => (isHi ? hiClass : enClass);
 
   return {
     locale,
     isHi,
-    textDisplayCls: cls(HI_SCALE.display),
-    textHeadingCls: cls(HI_SCALE.heading),
-    textSubheadingCls: cls(HI_SCALE.subheading),
-    textPageHeadCls: cls(HI_SCALE.pageHead),
-    textBodyCls: cls(HI_SCALE.body),
-    textSmCls: cls(HI_SCALE.sm),
-    textXsCls: cls(HI_SCALE.xs),
-    textLabelCls: cls(HI_SCALE.label),
+    textDisplayCls: cls(HI_SCALE.display, ""),
+    textHeadingCls: cls(HI_SCALE.heading, ""),
+    textSubheadingCls: cls(HI_SCALE.subheading, ""),
+    textPageHeadCls: cls(HI_SCALE.pageHead, ""),
+    textBodyCls: cls(HI_SCALE.body,""),
+    textSmCls: cls(HI_SCALE.sm,""),
+    textXsCls: cls(HI_SCALE.xs,""),
+    textLabelCls: cls(HI_SCALE.label, "text-sm"),
   };
 }
