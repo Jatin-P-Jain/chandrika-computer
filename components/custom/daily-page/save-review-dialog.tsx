@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus } from "lucide-react";
+import { useDrawerBackButton } from "@/hooks/useDrawerBackButton";
 
 export type ReviewItem = {
   id: string;
@@ -57,6 +58,11 @@ export function SaveReviewDialog({
   const [pendingActionId, setPendingActionId] = React.useState<string | null>(
     null,
   );
+
+  const handleBackClose = React.useCallback(() => {
+    if (!isSaving) onOpenChange(false);
+  }, [isSaving, onOpenChange]);
+  useDrawerBackButton(open, handleBackClose);
 
   // Reset checks whenever dialog opens or item list changes
   React.useEffect(() => {

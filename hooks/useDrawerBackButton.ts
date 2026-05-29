@@ -4,76 +4,75 @@ import { useEffect, useRef, useCallback } from "react";
 
 const DRAWER_SENTINEL_KEY = "drawer-back-sentinel";
 
+/**
+ * Intercepts the mobile/browser back button while an overlay (drawer, dialog,
+ * sheet) is open and closes the overlay instead of navigating away.
+ *
+ * How it works:
+ *  - On open  → push a sentinel history entry (same URL, no visible navigation)
+ *  - Back btn → popstate fires → call onClose(); skip cleanup's history.back()
+ *  - On close → call history.back() to consume the sentinel entry we pushed
+ *  - markNavigated() → call before router.push() inside the overlay so the
+ *    cleanup doesn't undo the real navigation
+ */
 export function useDrawerBackButton(isOpen: boolean, onClose: () => void) {
   const sentinelPushedRef = useRef(false);
-  const navigationMarkedRef = useRef(false);
+  // True when the overlay was closed by the back button (or markNavigated was
+  // called). In that case the sentinel is already gone so we must NOT call
+  // history.back() in the cleanup effect.
+  const skipCleanupBackRef = useRef(false);
 
-  // Push sentinel when drawer opens
+  // Push sentinel when overlay opens
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
 
     if (!sentinelPushedRef.current && typeof window !== "undefined") {
-      // Push a sentinel state to history
       window.history.pushState(
         { [DRAWER_SENTINEL_KEY]: true },
         "",
         window.location.href
       );
       sentinelPushedRef.current = true;
-      navigationMarkedRef.current = false;
+      skipCleanupBackRef.current = false;
     }
   }, [isOpen]);
 
-  // Handle popstate (back button)
+  // Listen for the back button while the overlay is open
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
 
-    const handlePopState = (e: PopStateEvent) => {
-      // Check if this is our sentinel state
-      if (e.state && e.state[DRAWER_SENTINEL_KEY]) {
-        // This should not happen as we consumed it
-        return;
-      }
-
-      // Back button pressed while drawer is open - close drawer
-      // Push sentinel back since user went back
-      window.history.pushState(
-        { [DRAWER_SENTINEL_KEY]: true },
-        "",
-        window.location.href
-      );
+    const handlePopState = () => {
+      // Back button consumed our sentinel — mark so the cleanup effect won't
+      // call history.back() a second time.
+      skipCleanupBackRef.current = true;
       onClose();
-      e.preventDefault();
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [isOpen, onClose]);
 
-  // Clean up sentinel when drawer closes
+  // When the overlay closes normally (X button, backdrop, swipe, etc.) remove
+  // the sentinel entry we pushed so it doesn't pollute the history stack.
   useEffect(() => {
-    if (isOpen || !sentinelPushedRef.current) {
-      return;
-    }
+    if (isOpen || !sentinelPushedRef.current) return;
 
-    // Drawer closed normally (not by back button)
-    // Consume the sentinel by going back if not marked as navigated
-    if (!navigationMarkedRef.current && typeof window !== "undefined") {
+    sentinelPushedRef.current = false;
+
+    if (!skipCleanupBackRef.current && typeof window !== "undefined") {
       window.history.back();
     }
 
-    sentinelPushedRef.current = false;
-    navigationMarkedRef.current = false;
+    skipCleanupBackRef.current = false;
   }, [isOpen]);
 
-  // Mark that a navigation happened inside drawer
-  // Call this before router.push() inside drawer to prevent cleanup from undoing it
+  /**
+   * Call this before programmatic navigation (router.push) that happens while
+   * the overlay is open, so the cleanup effect doesn't fire history.back() and
+   * undo the real navigation.
+   */
   const markNavigated = useCallback(() => {
-    navigationMarkedRef.current = true;
+    skipCleanupBackRef.current = true;
   }, []);
 
   return { markNavigated };

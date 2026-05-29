@@ -62,6 +62,7 @@ import {
   type LocalStampDraft,
 } from "./hooks/use-local-readings-draft";
 import { useReadingsDialogNavigation } from "./hooks/use-readings-dialog-navigation";
+import { useDrawerBackButton } from "@/hooks/useDrawerBackButton";
 
 const PhotocopyStep = dynamic(() => import("./steps/photocopy-step"), {
   loading: () => (
@@ -258,6 +259,8 @@ export default function DailyReadingsDialog({
     setResolverOpenedFromEdit,
     setShowPreviousReadingsResolver,
   });
+
+  useDrawerBackButton(open, closeDialog);
 
   // In read-only mode, always reset back to review on open/close.
   React.useEffect(() => {
