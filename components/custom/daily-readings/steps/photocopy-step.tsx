@@ -32,6 +32,7 @@ type Props = {
   tCommon: (key: string) => string;
   tReadings: (key: string) => string;
   canEditPreviousReadings: boolean;
+  disableNext?: boolean;
   onEditPreviousReadings: () => void;
   onRoundOffChange: (checked: boolean) => void;
   onRoundedAmountChange: (amount: number) => void;
@@ -57,6 +58,7 @@ export default function PhotocopyStep({
   tCommon,
   tReadings,
   canEditPreviousReadings,
+  disableNext = false,
   onEditPreviousReadings,
   onRoundOffChange,
   onRoundedAmountChange,
@@ -65,7 +67,7 @@ export default function PhotocopyStep({
 }: Props) {
   return (
     <div className="flex flex-col gap-2 w-full">
-      <div className="max-h-[50vh] overflow-auto no-scrollbar flex flex-col gap-2">
+      <div className="max-h-[70vh] overflow-auto no-scrollbar flex flex-col gap-2">
         <div className={clsx("flex italic font-medium", textBodyCls)}>
           {tReadings("PhotocopyMachineReading")}
         </div>
@@ -81,7 +83,9 @@ export default function PhotocopyStep({
             {loadingPrev ? (
               <Loader2Icon className="size-3 animate-spin" />
             ) : (
-              <span className={clsx("text-base font-medium", textBodyCls)}>{photoPrev}</span>
+              <span className={clsx("text-base font-medium", textBodyCls)}>
+                {photoPrev}
+              </span>
             )}
             {canEditPreviousReadings ? (
               <Button
@@ -110,6 +114,7 @@ export default function PhotocopyStep({
               <ReadingInput
                 value={(field.value as number) ?? 0}
                 onChange={field.onChange}
+                onBlur={field.onBlur}
                 placeholder="0"
                 inputClassName={clsx("w-fit! text-right", textBodyCls)}
               />
@@ -129,7 +134,10 @@ export default function PhotocopyStep({
         >
           {tReadings("TotalCopies")} ={" "}
           <span
-            className={clsx("text-base text-primary font-semibold", textBodyCls)}
+            className={clsx(
+              "text-base text-primary font-semibold",
+              textBodyCls,
+            )}
           >
             {photoDiff}
           </span>
@@ -139,7 +147,12 @@ export default function PhotocopyStep({
           <div className="flex justify-between items-center w-full">
             <span className="flex gap-2 justify-start items-center">
               {tReadings("Copies")} × ₹2 ={" "}
-              <span className={clsx("text-base tabular-nums font-medium", textBodyCls)}>
+              <span
+                className={clsx(
+                  "text-base tabular-nums font-medium",
+                  textBodyCls,
+                )}
+              >
                 {formatINR(photoActualAmount)}
               </span>
             </span>
@@ -222,7 +235,7 @@ export default function PhotocopyStep({
         </Button>
         <Button
           onClick={onNext}
-          disabled={saving || loadingPrev || savingPhotocopyStep}
+          disabled={saving || loadingPrev || savingPhotocopyStep || disableNext}
           className="gap-0 active:scale-95 transition-transform text-base"
         >
           {savingPhotocopyStep ? (

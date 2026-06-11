@@ -56,7 +56,7 @@ export function SettingsDropdown() {
 
       <DropdownMenuContent align="end" className="p-3 gap-3 flex flex-col">
         <div className="flex flex-col gap-1">
-          <DropdownMenuLabel className="font-semibold text-muted-foreground p-0 mb-2">
+          <DropdownMenuLabel className="font-medium text-muted-foreground p-0 mb-2">
             {tCommon("Settings")}
           </DropdownMenuLabel>
 
@@ -78,7 +78,7 @@ export function SettingsDropdown() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full justify-center gap-1"
+                className="w-full justify-center gap-1 "
                 onClick={onInstall}
                 disabled={isInstalling}
               >

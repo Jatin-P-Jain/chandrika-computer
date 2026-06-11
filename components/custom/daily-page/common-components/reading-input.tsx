@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 type ReadingInputProps = {
   value: number;
   onChange: (next: number) => void;
+  onBlur?: () => void;
   placeholder?: string;
   inputClassName?: string;
   readOnly?: boolean;
@@ -15,6 +16,7 @@ type ReadingInputProps = {
 export function ReadingInput({
   value,
   onChange,
+  onBlur,
   placeholder = "0",
   inputClassName,
   readOnly = false,
@@ -32,6 +34,7 @@ export function ReadingInput({
         inputClassName,
       )}
       value={value === 0 ? "" : String(value)}
+      onBlur={onBlur}
       onChange={(e) => {
         const raw = e.target.value.trim();
         if (raw === "") return onChange(0);

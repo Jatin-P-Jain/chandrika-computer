@@ -27,16 +27,19 @@ type Props = {
   stampAmounts: Record<Denomination, number>;
   stampTotal: number;
   todayByDenom: Record<Denomination, number>;
+  showStampCalculationByDenom: Record<Denomination, boolean>;
   readingsFound?: boolean;
   hasEdits: boolean;
   saving: boolean;
   loadingPrev: boolean;
   readOnly?: boolean;
+  includeStockAddition: boolean;
+  stockFormIsDirty: boolean;
+  disableConfirmSave?: boolean;
   onEditPhotocopy: () => void;
   onEditStamp: () => void;
   onBack: () => void;
   onConfirmSave: () => void;
-  onClose: () => void;
 };
 
 export default function ReviewStep({
@@ -59,24 +62,35 @@ export default function ReviewStep({
   stampAmounts,
   stampTotal,
   todayByDenom,
+  showStampCalculationByDenom,
   readingsFound,
   hasEdits,
   saving,
   loadingPrev,
   readOnly = false,
+  includeStockAddition,
+  stockFormIsDirty,
+  disableConfirmSave = false,
   onEditPhotocopy,
   onEditStamp,
   onBack,
   onConfirmSave,
-  onClose,
 }: Props) {
   const hasAnyStockAdded = denoms.some((denom) => stampStockAdded[denom] > 0);
+  const hasStockAdditionValue =
+    includeStockAddition && (stockFormIsDirty || hasAnyStockAdded);
   const showValuesUsedNote = !readOnly || hasEdits || !readingsFound;
+  const newReadingByDenom: Record<Denomination, number> = {
+    50: stampPrev[50] + stampStockAdded[50],
+    100: stampPrev[100] + stampStockAdded[100],
+    500: stampPrev[500] + stampStockAdded[500],
+    1000: stampPrev[1000] + stampStockAdded[1000],
+  };
 
   return (
     <div className="space-y-4 w-full">
-      <div className="max-h-[50vh] overflow-auto no-scrollbar flex flex-col gap-4">
-        <div className="rounded-md border p-3 text-sm flex flex-col gap-2">
+      <div className="max-h-[70vh] overflow-auto no-scrollbar flex flex-col gap-2">
+        <div className="rounded-md border p-3 text-sm flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <span className={clsx("italic", textBodyCls)}>
               {tReadings("PhotocopyMachineReading")}
@@ -128,7 +142,7 @@ export default function ReviewStep({
           </div>
           <div
             className={clsx(
-              "text-sm text-muted-foreground flex justify-between items-center",
+              "text-sm text-muted-foreground flex justify-between items-center border-t",
               textBodyCls,
             )}
           >
@@ -219,7 +233,7 @@ export default function ReviewStep({
 
                 <div
                   className={clsx(
-                    "text-sm text-muted-foreground flex items-center justify-between",
+                    "text-sm text-muted-foreground flex items-center justify-between px-2",
                     textBodyCls,
                   )}
                 >
@@ -228,23 +242,10 @@ export default function ReviewStep({
                     {stampPrev[d]}
                   </span>
                 </div>
-
-                <div
-                  className={clsx(
-                    "text-sm text-muted-foreground flex items-center justify-between",
-                    textBodyCls,
-                  )}
-                >
-                  {tReadings("Today")}:{" "}
-                  <span className="text-base text-foreground tabular-nums font-medium">
-                    {todayByDenom[d]}
-                  </span>
-                </div>
-
                 {hasAnyStockAdded ? (
                   <div
                     className={clsx(
-                      "text-sm text-green-700 flex items-center justify-between",
+                      "text-sm text-green-700 flex items-center justify-between px-2",
                       textBodyCls,
                     )}
                   >
@@ -255,27 +256,64 @@ export default function ReviewStep({
                   </div>
                 ) : null}
 
+                {hasStockAdditionValue ? (
+                  <div
+                    className={clsx(
+                      "flex items-center justify-between gap-2 font-medium bg-accent rounded-md px-2 py-1",
+                      textSmCls,
+                    )}
+                  >
+                    <div
+                      className={clsx(
+                        "flex items-center gap-1 text-sm",
+                        textBodyCls,
+                      )}
+                    >
+                      {tReadings("NewReading")}
+                    </div>
+                    <span
+                      className={clsx("font-medium text-base", textPageHeadCls)}
+                    >
+                      {newReadingByDenom[d]}
+                    </span>
+                  </div>
+                ) : null}
+
                 <div
                   className={clsx(
-                    "text-sm text-muted-foreground flex items-center justify-between",
+                    "text-sm text-muted-foreground flex items-center justify-between px-2",
                     textBodyCls,
                   )}
                 >
-                  {tReadings("StampsSold")}:{" "}
-                  <span className="text-base text-foreground tabular-nums font-semibold">
-                    {stampSold[d]}
+                  {tReadings("Today")}:{" "}
+                  <span className="text-base text-foreground tabular-nums font-medium">
+                    {todayByDenom[d]}
                   </span>
                 </div>
 
                 <div
                   className={clsx(
-                    "text-sm flex items-center justify-between text-primary font-medium  ",
+                    "text-sm text-muted-foreground flex items-center justify-between border-t px-2",
+                    textBodyCls,
+                  )}
+                >
+                  {tReadings("StampsSold")}:{" "}
+                  <span className="text-base text-foreground tabular-nums font-semibold">
+                    {showStampCalculationByDenom[d] ? stampSold[d] : 0}
+                  </span>
+                </div>
+
+                <div
+                  className={clsx(
+                    "text-sm flex items-center justify-between text-primary font-medium  px-2",
                     textBodyCls,
                   )}
                 >
                   {tCommon("Amount")}:{" "}
                   <span className="text-base tabular-nums font-semibold">
-                    {formatINR(stampAmounts[d])}
+                    {showStampCalculationByDenom[d]
+                      ? formatINR(stampAmounts[d])
+                      : formatINR(0)}
                   </span>
                 </div>
               </div>
@@ -307,14 +345,7 @@ export default function ReviewStep({
         </div>
       </div>
 
-      {readOnly &&
-      readingsFound &&
-      !hasEdits ? // Read-only mode without edits: show only OK button
-      // <div className="flex justify-end gap-2">
-      //   <Button onClick={onClose} className="gap-1">
-      //     <span className={textSmCls}>{tCommon("Ok")} 👍🏻</span>
-      //   </Button>
-      // </div>
+      {readOnly && readingsFound && !hasEdits ? // </div> //   </Button> //     <span className={textSmCls}>{tCommon("Ok")} 👍🏻</span> //   <Button onClick={onClose} className="gap-1"> // <div className="flex justify-end gap-2"> // Read-only mode without edits: show only OK button
       null : !readingsFound || hasEdits ? (
         <div className="flex justify-end gap-2">
           <Button
@@ -328,7 +359,7 @@ export default function ReviewStep({
 
           <Button
             onClick={onConfirmSave}
-            disabled={saving || loadingPrev}
+            disabled={saving || loadingPrev || disableConfirmSave}
             className="gap-1 active:scale-95 transition-transform text-base"
           >
             {saving ? (

@@ -8,7 +8,6 @@ import Image from "next/image";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { LogInIcon } from "lucide-react";
-import { useSafeRouter } from "@/hooks/useSafeRouter";
 import {
   GOOGLE_EMAIL_DENIED_ERROR_CODE,
   GoogleEmailNotAllowedError,
@@ -35,7 +34,6 @@ export default function GoogleLoginButton({
 }: ButtonProps) {
   const tSignIn = useTranslations("Common");
   const auth = useAuth();
-  const { refresh } = useSafeRouter();
   const [signingIn, setSigningIn] = useState(false);
   const isDeniedError = (error: unknown) => {
     if (error instanceof GoogleEmailNotAllowedError) return true;
@@ -59,7 +57,6 @@ export default function GoogleLoginButton({
             onSuccess();
             setSigningIn(false);
           } else {
-            refresh();
             setSigningIn(false);
           }
         } catch (e) {

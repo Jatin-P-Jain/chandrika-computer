@@ -11,6 +11,7 @@ import { KeyboardProvider } from "@/context/keyboard-context";
 import { NavigationLockProvider } from "@/context/navigation-lock-provider";
 import { Metadata, Viewport } from "next";
 import { GlobalClientEnhancements } from "./global-client-enhancements";
+import { getInstalledAppName } from "@/lib/app-display-name";
 
 const laila = Laila({
   variable: "--font-laila",
@@ -29,17 +30,17 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Chandrika Computer",
+  title: getInstalledAppName(),
   description: "",
-  applicationName: "Chandrika Computer",
+  applicationName: getInstalledAppName(),
   appleWebApp: {
-    title: "Chandrika Computer",
+    title: getInstalledAppName(),
   },
   icons: {
     icon: "/icons/favicon.ico",
     shortcut: "/icons/favicon.ico",
   },
-  manifest: "/site.webmanifest",
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {

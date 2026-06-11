@@ -4,27 +4,29 @@ import type { Denomination } from "@/types/readings";
 
 export type LocalPhotocopyDraft = {
   todayReading: number;
+  hasTodayReadingInput: boolean;
   roundOffPhotocopy: boolean;
   roundedPhotocopyAmount: number;
 };
 
 export type LocalStampDraft = {
   readings: Record<Denomination, number>;
+  enteredReadings: Record<Denomination, boolean>;
   includeStockAddition: boolean;
   stockAdded: Record<Denomination, number>;
+};
+
+export const EMPTY_DENOM_BOOLEAN_RECORD: Record<Denomination, boolean> = {
+  50: false,
+  100: false,
+  500: false,
+  1000: false,
 };
 
 export type LocalReadingsFlags = {
   photocopyDone: boolean;
   stampDone: boolean;
   fullyDone: boolean;
-};
-
-export type LocalPreviousBaselineDraft = {
-  photoPrev: number;
-  stampPrev: Record<Denomination, number>;
-  prevReadingsManual: boolean;
-  resolvedLookbackDays: number | null;
 };
 
 export const EMPTY_DENOM_RECORD: Record<Denomination, number> = {
@@ -49,210 +51,220 @@ export function normalizeDenomRecord(
   };
 }
 
-function readLocalStorageJson<T>(key: string): T | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeLocalStorageJson(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
-}
-
-function removeLocalStorageKeys(keys: string[]) {
-  if (typeof window === "undefined") return;
-  keys.forEach((key) => window.localStorage.removeItem(key));
-}
-
 type Args = {
-  todayDateYmd: string;
+  draftStorageKey: string;
   hasPhotocopyReading: boolean;
   hasStampReading: boolean;
   hasSavedReadings: boolean;
 };
 
+type StoredReadingsDraft = {
+  photocopyDraft: LocalPhotocopyDraft | null;
+  stampDraft: LocalStampDraft | null;
+  flags: LocalReadingsFlags;
+};
+
+function getEffectiveFlags(
+  storedDraft: StoredReadingsDraft | null,
+  hasPhotocopyReading: boolean,
+  hasStampReading: boolean,
+  hasSavedReadings: boolean
+): LocalReadingsFlags {
+  return {
+    photocopyDone:
+      hasPhotocopyReading || Boolean(storedDraft?.flags.photocopyDone),
+    stampDone: hasStampReading || Boolean(storedDraft?.flags.stampDone),
+    fullyDone: hasSavedReadings || Boolean(storedDraft?.flags.fullyDone),
+  };
+}
+
+function readStoredDraft(key: string): StoredReadingsDraft | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+
+    return JSON.parse(raw) as StoredReadingsDraft;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredDraft(key: string, value: StoredReadingsDraft) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore storage failures and continue with in-memory draft only.
+  }
+}
+
+function clearStoredDraft(key: string) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 export function useLocalReadingsDraft({
-  todayDateYmd,
+  draftStorageKey,
   hasPhotocopyReading,
   hasStampReading,
   hasSavedReadings,
 }: Args) {
-  const localPhotocopyDraftKey = React.useMemo(
-    () => `daily-readings-photocopy-draft:${todayDateYmd}`,
-    [todayDateYmd]
+  const storedDraft = React.useMemo(
+    () => readStoredDraft(draftStorageKey),
+    [draftStorageKey]
   );
-  const localStampDraftKey = React.useMemo(
-    () => `daily-readings-stamp-draft:${todayDateYmd}`,
-    [todayDateYmd]
-  );
-  const localReadingsFlagsKey = React.useMemo(
-    () => `daily-readings-flags:${todayDateYmd}`,
-    [todayDateYmd]
-  );
-  const localPreviousBaselineKey = React.useMemo(
-    () => `daily-readings-previous-baseline:${todayDateYmd}`,
-    [todayDateYmd]
-  );
-
-  const [localPhotocopyDraft, setLocalPhotocopyDraft] =
-    React.useState<LocalPhotocopyDraft | null>(null);
-  const [localStampDraft, setLocalStampDraft] =
-    React.useState<LocalStampDraft | null>(null);
-  const [localReadingsFlags, setLocalReadingsFlags] =
-    React.useState<LocalReadingsFlags | null>(null);
-  const [localPreviousBaselineDraft, setLocalPreviousBaselineDraft] =
-    React.useState<LocalPreviousBaselineDraft | null>(null);
-  const [isPreviousBaselineHydrated, setIsPreviousBaselineHydrated] =
-    React.useState(false);
-
-  React.useEffect(() => {
-    const parsed = readLocalStorageJson<Partial<LocalPhotocopyDraft>>(
-      localPhotocopyDraftKey
-    );
-    if (!parsed || typeof parsed.todayReading !== "number") {
-      setLocalPhotocopyDraft(null);
-      return;
-    }
-
-    setLocalPhotocopyDraft({
-      todayReading: clamp0(parsed.todayReading),
-      roundOffPhotocopy: Boolean(parsed.roundOffPhotocopy),
-      roundedPhotocopyAmount: clamp0(parsed.roundedPhotocopyAmount ?? 0),
-    });
-  }, [localPhotocopyDraftKey]);
-
-  React.useEffect(() => {
-    const parsed =
-      readLocalStorageJson<Partial<LocalStampDraft>>(localStampDraftKey);
-    const readingsDraft = parsed?.readings;
-    if (!readingsDraft) {
-      setLocalStampDraft(null);
-      return;
-    }
-
-    setLocalStampDraft({
-      readings: normalizeDenomRecord(readingsDraft),
-      includeStockAddition: Boolean(parsed.includeStockAddition),
-      stockAdded: normalizeDenomRecord(parsed.stockAdded),
-    });
-  }, [localStampDraftKey]);
-
-  React.useEffect(() => {
-    const parsed = readLocalStorageJson<Partial<LocalPreviousBaselineDraft>>(
-      localPreviousBaselineKey
-    );
-
-    if (!parsed?.stampPrev) {
-      setLocalPreviousBaselineDraft(null);
-      setIsPreviousBaselineHydrated(true);
-      return;
-    }
-
-    setLocalPreviousBaselineDraft({
-      photoPrev: clamp0(parsed.photoPrev ?? 0),
-      stampPrev: normalizeDenomRecord(parsed.stampPrev),
-      prevReadingsManual: Boolean(parsed.prevReadingsManual),
-      resolvedLookbackDays:
-        typeof parsed.resolvedLookbackDays === "number"
-          ? Math.max(1, Math.floor(parsed.resolvedLookbackDays))
-          : null,
-    });
-    setIsPreviousBaselineHydrated(true);
-  }, [localPreviousBaselineKey]);
-
-  React.useEffect(() => {
-    const parsed = readLocalStorageJson<Partial<LocalReadingsFlags>>(
-      localReadingsFlagsKey
-    );
-    if (parsed) {
-      setLocalReadingsFlags({
-        photocopyDone: Boolean(parsed.photocopyDone),
-        stampDone: Boolean(parsed.stampDone),
-        fullyDone: Boolean(parsed.fullyDone),
-      });
-      return;
-    }
-
-    const initialFlags: LocalReadingsFlags = {
-      photocopyDone: hasPhotocopyReading,
-      stampDone: hasStampReading,
-      fullyDone: hasSavedReadings,
-    };
-    setLocalReadingsFlags(initialFlags);
-    writeLocalStorageJson(localReadingsFlagsKey, initialFlags);
-  }, [
+  const initialFlags = getEffectiveFlags(
+    storedDraft,
     hasPhotocopyReading,
-    hasSavedReadings,
     hasStampReading,
-    localReadingsFlagsKey,
-  ]);
+    hasSavedReadings
+  );
+  const [localPhotocopyDraft, setLocalPhotocopyDraft] =
+    React.useState<LocalPhotocopyDraft | null>(
+      hasSavedReadings ? null : storedDraft?.photocopyDraft ?? null
+    );
+  const [localStampDraft, setLocalStampDraft] =
+    React.useState<LocalStampDraft | null>(
+      hasSavedReadings ? null : storedDraft?.stampDraft ?? null
+    );
+  const [localReadingsFlags, setLocalReadingsFlags] =
+    React.useState<LocalReadingsFlags | null>(initialFlags);
+  const localPhotocopyDraftRef = React.useRef<LocalPhotocopyDraft | null>(
+    hasSavedReadings ? null : storedDraft?.photocopyDraft ?? null
+  );
+  const localStampDraftRef = React.useRef<LocalStampDraft | null>(
+    hasSavedReadings ? null : storedDraft?.stampDraft ?? null
+  );
+  const localReadingsFlagsRef = React.useRef<LocalReadingsFlags | null>(
+    initialFlags
+  );
+
+  React.useEffect(() => {
+    const nextStoredDraft = readStoredDraft(draftStorageKey);
+
+    if (hasSavedReadings) {
+      const nextFlags = getEffectiveFlags(
+        nextStoredDraft,
+        hasPhotocopyReading,
+        hasStampReading,
+        hasSavedReadings
+      );
+
+      clearStoredDraft(draftStorageKey);
+      localPhotocopyDraftRef.current = null;
+      localStampDraftRef.current = null;
+      localReadingsFlagsRef.current = nextFlags;
+      setLocalPhotocopyDraft(null);
+      setLocalStampDraft(null);
+      setLocalReadingsFlags(nextFlags);
+      return;
+    }
+
+    const nextFlags = getEffectiveFlags(
+      nextStoredDraft,
+      hasPhotocopyReading,
+      hasStampReading,
+      hasSavedReadings
+    );
+    const nextPhotocopyDraft = nextStoredDraft?.photocopyDraft ?? null;
+    const nextStampDraft = nextStoredDraft?.stampDraft ?? null;
+
+    localPhotocopyDraftRef.current = nextPhotocopyDraft;
+    localStampDraftRef.current = nextStampDraft;
+    localReadingsFlagsRef.current = nextFlags;
+    setLocalPhotocopyDraft(nextPhotocopyDraft);
+    setLocalStampDraft(nextStampDraft);
+    setLocalReadingsFlags(nextFlags);
+  }, [draftStorageKey, hasPhotocopyReading, hasStampReading, hasSavedReadings]);
+
+  React.useEffect(() => {
+    if (hasSavedReadings) {
+      clearStoredDraft(draftStorageKey);
+    }
+  }, [draftStorageKey, hasSavedReadings]);
+
+  const syncStoredDraft = React.useCallback(
+    (
+      photocopyDraft: LocalPhotocopyDraft | null,
+      stampDraft: LocalStampDraft | null,
+      flags: LocalReadingsFlags | null
+    ) => {
+      if (!flags) {
+        clearStoredDraft(draftStorageKey);
+        return;
+      }
+
+      writeStoredDraft(draftStorageKey, {
+        photocopyDraft,
+        stampDraft,
+        flags,
+      });
+    },
+    [draftStorageKey]
+  );
 
   const persistPhotocopyDraft = React.useCallback(
     (next: LocalPhotocopyDraft | null) => {
+      localPhotocopyDraftRef.current = next;
       setLocalPhotocopyDraft(next);
-      if (next) {
-        writeLocalStorageJson(localPhotocopyDraftKey, next);
-      } else {
-        removeLocalStorageKeys([localPhotocopyDraftKey]);
-      }
+      syncStoredDraft(
+        next,
+        localStampDraftRef.current,
+        localReadingsFlagsRef.current
+      );
     },
-    [localPhotocopyDraftKey]
+    [syncStoredDraft]
   );
 
   const persistStampDraft = React.useCallback(
     (next: LocalStampDraft | null) => {
+      localStampDraftRef.current = next;
       setLocalStampDraft(next);
-      if (next) {
-        writeLocalStorageJson(localStampDraftKey, next);
-      } else {
-        removeLocalStorageKeys([localStampDraftKey]);
-      }
+      syncStoredDraft(
+        localPhotocopyDraftRef.current,
+        next,
+        localReadingsFlagsRef.current
+      );
     },
-    [localStampDraftKey]
+    [syncStoredDraft]
   );
 
   const persistReadingsFlags = React.useCallback(
     (next: LocalReadingsFlags) => {
+      localReadingsFlagsRef.current = next;
       setLocalReadingsFlags(next);
-      writeLocalStorageJson(localReadingsFlagsKey, next);
+      syncStoredDraft(
+        localPhotocopyDraftRef.current,
+        localStampDraftRef.current,
+        next
+      );
     },
-    [localReadingsFlagsKey]
-  );
-
-  const persistPreviousBaseline = React.useCallback(
-    (next: LocalPreviousBaselineDraft | null) => {
-      setLocalPreviousBaselineDraft(next);
-      if (next) {
-        writeLocalStorageJson(localPreviousBaselineKey, next);
-      } else {
-        removeLocalStorageKeys([localPreviousBaselineKey]);
-      }
-    },
-    [localPreviousBaselineKey]
+    [syncStoredDraft]
   );
 
   const clearStepDrafts = React.useCallback(() => {
+    localPhotocopyDraftRef.current = null;
+    localStampDraftRef.current = null;
     setLocalPhotocopyDraft(null);
     setLocalStampDraft(null);
-    removeLocalStorageKeys([localPhotocopyDraftKey, localStampDraftKey]);
-  }, [localPhotocopyDraftKey, localStampDraftKey]);
+    clearStoredDraft(draftStorageKey);
+  }, [draftStorageKey]);
 
   return {
     localPhotocopyDraft,
     localStampDraft,
     localReadingsFlags,
-    localPreviousBaselineDraft,
-    isPreviousBaselineHydrated,
     persistPhotocopyDraft,
     persistStampDraft,
     persistReadingsFlags,
-    persistPreviousBaseline,
     clearStepDrafts,
   };
 }

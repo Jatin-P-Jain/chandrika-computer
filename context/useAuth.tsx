@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   loginWithEmailAndPass,
   loginWithGoogle as loginWithGoogleAuth,
@@ -12,7 +12,13 @@ import {
   isGoogleEmailAllowlisted,
 } from "@/lib/auth/firebase-auth";
 import { auth, firestore } from "@/firebase/client"; // 👈 Add adminAuth
-import { ConfirmationResult, RecaptchaVerifier, User } from "firebase/auth";
+import {
+  browserSessionPersistence,
+  ConfirmationResult,
+  RecaptchaVerifier,
+  setPersistence,
+  User,
+} from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { mapDbUserToClientUser } from "@/lib/firebase/mapDBUserToClient";
 import useMonitorInactivity from "@/hooks/useMonitorInactivity";
@@ -25,6 +31,9 @@ import {
 } from "@/lib/auth/trusted-device";
 
 const OTP_CYCLE_PREFIX = "otp_cycle_verified";
+const LAST_ACTIVITY_KEY = "lastActivity";
+const AUTH_DIAGNOSTICS_ENABLED =
+  process.env.NEXT_PUBLIC_AUTH_DIAGNOSTICS === "true";
 
 function canUseStorage() {
   return (
@@ -67,6 +76,32 @@ function clearAllOtpCycleFlags() {
   }
 }
 
+function clearLastActivity() {
+  if (!canUseStorage()) return;
+  window.localStorage.removeItem(LAST_ACTIVITY_KEY);
+}
+
+function clearSessionStorageByPrefix(prefix: string) {
+  if (
+    typeof window === "undefined" ||
+    typeof window.sessionStorage === "undefined"
+  ) {
+    return;
+  }
+
+  const keysToRemove: string[] = [];
+  for (let index = 0; index < window.sessionStorage.length; index += 1) {
+    const key = window.sessionStorage.key(index);
+    if (key && key.startsWith(prefix)) {
+      keysToRemove.push(key);
+    }
+  }
+
+  for (const key of keysToRemove) {
+    window.sessionStorage.removeItem(key);
+  }
+}
+
 type AuthStatus =
   | { status: "loading" }
   | { status: "no-user" }
@@ -77,6 +112,12 @@ type AuthStatus =
       clientUser: UserData;
       currentUser: User;
     };
+
+type AuthDebugEntry = {
+  id: string;
+  timestamp: string;
+  message: string;
+};
 
 type AuthContextType = {
   user: UserData | null;
@@ -102,6 +143,8 @@ type AuthContextType = {
   startPhoneVerificationFlow: () => void;
   accessDenied: boolean;
   clearAccessDenied: () => void;
+  authDebugEntries: AuthDebugEntry[];
+  clearAuthDebugEntries: () => void;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -110,8 +153,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authState, setAuthState] = useState<AuthStatus>({ status: "loading" });
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [authDebugEntries, setAuthDebugEntries] = useState<AuthDebugEntry[]>(
+    [],
+  );
   const inactivityLimit =
     Number(process.env.NEXT_PUBLIC_ADMIN_INACTIVITY_LIMIT || "0") || undefined;
+  const previousStatusRef = useRef<AuthStatus["status"]>("loading");
 
   const isDeniedError = (error: unknown) => {
     if (error instanceof GoogleEmailNotAllowedError) return true;
@@ -132,6 +179,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const ua = navigator.userAgent.toLowerCase();
     return /android|iphone|ipad|ipod|mobile|iemobile|opera mini/.test(ua);
   };
+
+  const pushAuthDebug = (message: string) => {
+    if (!AUTH_DIAGNOSTICS_ENABLED) return;
+
+    const entry: AuthDebugEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date().toISOString(),
+      message,
+    };
+
+    setAuthDebugEntries((prev) => [entry, ...prev].slice(0, 40));
+  };
+
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current;
+    const currentStatus = authState.status;
+
+    if (AUTH_DIAGNOSTICS_ENABLED && previousStatus !== currentStatus) {
+      const hasUser =
+        authState.status !== "no-user" && authState.status !== "loading";
+      pushAuthDebug(
+        `status: ${previousStatus} -> ${currentStatus} | hasUser=${hasUser} | accessDenied=${accessDenied}`,
+      );
+    }
+
+    previousStatusRef.current = currentStatus;
+  }, [accessDenied, authState]);
 
   const getUserToken = async () => {
     const { currentUser } =
@@ -155,16 +229,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const completePhoneVerification = async () => {
-    console.log(
-      "[Auth] completePhoneVerification called. Current authState.status:",
-      authState.status,
-    );
     try {
-      const { currentUser } =
+      const currentUserFromState =
         authState.status === "phone-verification-required" ||
         authState.status === "first-time-setup"
-          ? authState
-          : { currentUser: null };
+          ? authState.currentUser
+          : null;
+      const currentUser = currentUserFromState ?? auth.currentUser;
 
       if (!currentUser) {
         console.error(
@@ -173,13 +244,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         );
         throw new Error("No current user for verification");
       }
-      console.log("[Auth] currentUser uid:", currentUser.uid);
 
       await currentUser.reload();
-      console.log(
-        "[Auth] User reloaded. phoneNumber:",
-        currentUser.phoneNumber,
-      );
 
       const phoneNumber = currentUser.phoneNumber
         ? currentUser.phoneNumber.slice(3)
@@ -187,7 +253,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const role = "admin";
 
       const userDocRef = doc(firestore, "users", currentUser.uid);
-      console.log("[Auth] Writing Firestore doc (upsert)...");
       await setDoc(
         userDocRef,
         {
@@ -203,7 +268,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         },
         { merge: true },
       );
-      console.log("[Auth] Firestore upsert OK");
 
       const deviceId = getOrCreateDeviceId();
       if (deviceId) {
@@ -222,12 +286,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         markDeviceTrustedLocally(currentUser.uid, deviceId);
       }
 
-      console.log("[Auth] Fetching updated user doc...");
       const updatedSnap = await getDoc(
         doc(firestore, "users", currentUser.uid),
       );
       if (updatedSnap.exists()) {
-        console.log("[Auth] Updated doc exists. Setting authState → ready");
         const clientUser = mapDbUserToClientUser(updatedSnap.data());
         markOtpVerifiedForCycle(currentUser.uid);
         setAuthState({
@@ -235,10 +297,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           clientUser,
           currentUser,
         });
-        console.log(
-          "[Auth] ✅ authState set to ready for uid:",
-          currentUser.uid,
-        );
 
         void (async () => {
           const { refreshAndSaveFcmToken } =
@@ -258,151 +316,142 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      console.log(
-        "[Auth] onAuthStateChanged fired. user:",
-        user
-          ? { uid: user.uid, email: user.email, phoneNumber: user.phoneNumber }
-          : null,
-      );
+    let unsubscribe = () => {};
+    let isMounted = true;
 
-      if (!user) {
-        console.log("[Auth] No user → status: no-user");
-        clearAllOtpCycleFlags();
-        setAuthState({ status: "no-user" });
-        await removeToken();
-        return;
-      }
-
-      const allowed = isGoogleEmailAllowlisted(user.email);
-      console.log(
-        "[Auth] isGoogleEmailAllowlisted:",
-        allowed,
-        "for email:",
-        user.email,
-      );
-      if (!allowed) {
-        console.warn(
-          "[Auth] Email not allowlisted → logging out, setting accessDenied",
-        );
-        setAccessDenied(true);
-        setAuthState({ status: "no-user" });
-        await logoutUser();
-        return;
-      }
-
-      setAccessDenied(false);
-
+    const initializeAuth = async () => {
       try {
-        const userDocRef = doc(firestore, "users", user.uid);
-        const snap = await getDoc(userDocRef);
+        await setPersistence(auth, browserSessionPersistence);
+      } catch (error) {
+        console.error("[Auth] Failed to set session persistence", error);
+      }
 
-        let dbUser = snap.exists() ? snap.data() : null;
-        if (!dbUser) {
-          const nowIso = new Date().toISOString();
-          dbUser = {
-            uid: user.uid,
-            email: user.email ?? null,
-            phoneNumber: user.phoneNumber?.slice(3) ?? null,
-            displayName: user.displayName ?? null,
-            role: "admin",
-            photoUrl: user.photoURL ?? null,
-            phoneVerified: false,
-            createdAt: nowIso,
-            updatedAt: nowIso,
-          };
-          await setDoc(userDocRef, dbUser, { merge: true });
+      if (!isMounted) return;
+
+      unsubscribe = auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          pushAuthDebug("auth observer: no-user");
+          clearAllOtpCycleFlags();
+          clearLastActivity();
+          setAuthState({ status: "no-user" });
+          await removeToken();
+          return;
         }
 
-        const phoneVerified = dbUser.phoneVerified === true;
-        console.log(
-          "[Auth] dbUser.phoneVerified:",
-          dbUser.phoneVerified,
-          "→ phoneVerified:",
-          phoneVerified,
-        );
-
-        if (!phoneVerified) {
-          console.log("[Auth] phoneVerified=false → status: first-time-setup");
-          setAuthState({ status: "first-time-setup", currentUser: user });
-        } else {
-          const mobileDevice = isMobileDevice();
-
-          if (mobileDevice) {
-            const deviceId = getOrCreateDeviceId();
-            const trustedDevices =
-              typeof dbUser.trustedDevices === "object" && dbUser.trustedDevices
-                ? (dbUser.trustedDevices as Record<string, unknown>)
-                : {};
-            const trustedOnServer = Boolean(
-              deviceId && trustedDevices[deviceId],
-            );
-            const trustedLocally = Boolean(
-              deviceId && isDeviceTrustedLocally(user.uid, deviceId),
-            );
-
-            console.log("[Auth] mobile trusted-device check:", {
-              uid: user.uid,
-              deviceId,
-              trustedOnServer,
-              trustedLocally,
-            });
-
-            if (trustedOnServer && trustedLocally) {
-              console.log("[Auth] trusted mobile device → status: ready");
-              const clientUser = mapDbUserToClientUser(dbUser);
-              setAuthState({ status: "ready", clientUser, currentUser: user });
-              return;
-            }
-
-            console.log(
-              "[Auth] untrusted mobile device → status: phone-verification-required",
-            );
-            setAuthState({
-              status: "phone-verification-required",
-              currentUser: user,
-            });
-            return;
-          }
-
-          const otpVerifiedForCycle = isOtpVerifiedForCycle(user.uid);
-
-          console.log("[Auth] desktop OTP cycle check:", {
-            uid: user.uid,
-            otpVerifiedForCycle,
-          });
-
-          if (otpVerifiedForCycle) {
-            console.log(
-              "[Auth] desktop OTP already verified in this login cycle → status: ready",
-            );
-            const clientUser = mapDbUserToClientUser(dbUser);
-            setAuthState({ status: "ready", clientUser, currentUser: user });
-            return;
-          }
-
-          console.log(
-            "[Auth] desktop OTP required for this login cycle → status: phone-verification-required",
+        const allowed = isGoogleEmailAllowlisted(user.email);
+        if (!allowed) {
+          console.warn(
+            "[Auth] Email not allowlisted → logging out, setting accessDenied",
           );
-          setAuthState({
-            status: "phone-verification-required",
-            currentUser: user,
-          });
-        }
-      } catch (e) {
-        if (isDeniedError(e)) {
-          console.warn("[Auth] isDeniedError → logging out, accessDenied");
           setAccessDenied(true);
           setAuthState({ status: "no-user" });
           await logoutUser();
           return;
         }
-        console.error("[Auth] onAuthStateChanged handler threw:", e);
-        setAuthState({ status: "first-time-setup", currentUser: user });
-      }
-    });
 
-    return unsubscribe;
+        setAccessDenied(false);
+
+        try {
+          const userDocRef = doc(firestore, "users", user.uid);
+          const snap = await getDoc(userDocRef);
+
+          let dbUser = snap.exists() ? snap.data() : null;
+          if (!dbUser) {
+            const nowIso = new Date().toISOString();
+            dbUser = {
+              uid: user.uid,
+              email: user.email ?? null,
+              phoneNumber: user.phoneNumber?.slice(3) ?? null,
+              displayName: user.displayName ?? null,
+              role: "admin",
+              photoUrl: user.photoURL ?? null,
+              phoneVerified: false,
+              createdAt: nowIso,
+              updatedAt: nowIso,
+            };
+            await setDoc(userDocRef, dbUser, { merge: true });
+          }
+
+          const phoneVerified = dbUser.phoneVerified === true;
+
+          if (!phoneVerified) {
+            pushAuthDebug("decision: first-time-setup (phone not verified)");
+            setAuthState({ status: "first-time-setup", currentUser: user });
+          } else {
+            const mobileDevice = isMobileDevice();
+
+            if (mobileDevice) {
+              const deviceId = getOrCreateDeviceId();
+              const trustedDevices =
+                typeof dbUser.trustedDevices === "object" &&
+                dbUser.trustedDevices
+                  ? (dbUser.trustedDevices as Record<string, unknown>)
+                  : {};
+              const trustedOnServer = Boolean(
+                deviceId && trustedDevices[deviceId],
+              );
+              const trustedLocally = Boolean(
+                deviceId && isDeviceTrustedLocally(user.uid, deviceId),
+              );
+
+              if (trustedOnServer && trustedLocally) {
+                pushAuthDebug("decision: ready (mobile trusted device)");
+                const clientUser = mapDbUserToClientUser(dbUser);
+                setAuthState({
+                  status: "ready",
+                  clientUser,
+                  currentUser: user,
+                });
+                return;
+              }
+
+              setAuthState({
+                status: "phone-verification-required",
+                currentUser: user,
+              });
+              pushAuthDebug(
+                "decision: phone-verification-required (mobile untrusted device)",
+              );
+              return;
+            }
+
+            const otpVerifiedForCycle = isOtpVerifiedForCycle(user.uid);
+
+            if (otpVerifiedForCycle) {
+              pushAuthDebug("decision: ready (desktop otp already verified)");
+              const clientUser = mapDbUserToClientUser(dbUser);
+              setAuthState({ status: "ready", clientUser, currentUser: user });
+              return;
+            }
+
+            setAuthState({
+              status: "phone-verification-required",
+              currentUser: user,
+            });
+            pushAuthDebug(
+              "decision: phone-verification-required (desktop otp required)",
+            );
+          }
+        } catch (e) {
+          if (isDeniedError(e)) {
+            console.warn("[Auth] isDeniedError → logging out, accessDenied");
+            setAccessDenied(true);
+            setAuthState({ status: "no-user" });
+            await logoutUser();
+            return;
+          }
+          console.error("[Auth] onAuthStateChanged handler threw:", e);
+          setAuthState({ status: "first-time-setup", currentUser: user });
+        }
+      });
+    };
+
+    void initializeAuth();
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   useMonitorInactivity(
@@ -432,6 +481,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (currentUid) {
               clearOtpVerifiedForCycle(currentUid);
             }
+            clearLastActivity();
+            clearSessionStorageByPrefix("daily-readings-draft:");
             await logoutUser();
             window.location.href = "/";
           } catch (err) {
@@ -469,6 +520,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         startPhoneVerificationFlow,
         accessDenied,
         clearAccessDenied: () => setAccessDenied(false),
+        authDebugEntries,
+        clearAuthDebugEntries: () => setAuthDebugEntries([]),
       }}
     >
       {children}

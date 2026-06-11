@@ -32,16 +32,32 @@ const ALLOWED_GOOGLE_EMAILS = new Set(
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean)
 );
+const ENFORCE_GOOGLE_ALLOWLIST =
+  process.env.NEXT_PUBLIC_ENFORCE_GOOGLE_ALLOWLIST === "true";
+let hasWarnedMissingAllowlist = false;
 
 export const isGoogleEmailAllowlisted = (email: string | null): boolean => {
   if (!email) return false;
-  if (ALLOWED_GOOGLE_EMAILS.size === 0) return false;
+
+  if (ALLOWED_GOOGLE_EMAILS.size === 0) {
+    if (ENFORCE_GOOGLE_ALLOWLIST) return false;
+
+    if (!hasWarnedMissingAllowlist) {
+      hasWarnedMissingAllowlist = true;
+      console.warn(
+        "Google allowlist is empty; allowing all Google emails. Set NEXT_PUBLIC_ALLOWED_GOOGLE_EMAILS or enable NEXT_PUBLIC_ENFORCE_GOOGLE_ALLOWLIST=true to enforce."
+      );
+    }
+    return true;
+  }
+
   return ALLOWED_GOOGLE_EMAILS.has(email.trim().toLowerCase());
 };
 
 export const loginWithGoogle = async (): Promise<User | undefined> => {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
+
   const result = await signInWithPopup(auth, provider);
   const user = result.user;
 

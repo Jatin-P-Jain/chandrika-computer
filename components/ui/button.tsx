@@ -36,7 +36,7 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
 
 function Button({
@@ -50,11 +50,10 @@ function Button({
     asChild?: boolean;
   }) {
   const Comp = asChild ? Slot : "button";
-  const locale = useLocale(); // reads current locale from next-intl[web:45][web:111]
 
   const finalClassName = cn(
     buttonVariants({ variant, size, className }),
-    locale === "hi" && "font-semibold text-lg items-center" // extra weight for Hindi[web:107][web:110]
+    "font-medium",
   );
 
   return (

@@ -33,6 +33,7 @@ import {
 
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/useAuth";
+import { useDrawerBackButton } from "@/hooks/useDrawerBackButton";
 import type { NoteItem, NoteItemStatus } from "@/types/daily-notes";
 import { addNoteItem } from "@/app/daily-accounts/notes-actions";
 
@@ -69,6 +70,11 @@ export default function DailyNotesReadOnlyDialog({
   const tNotes = useTranslations("Notes");
   const { authState } = useAuth();
   const [open, setOpen] = React.useState(startOpen);
+
+  useDrawerBackButton(
+    open,
+    React.useCallback(() => setOpen(false), []),
+  );
   const [dismissedOpen, setDismissedOpen] = React.useState(false);
   const [composerOpen, setComposerOpen] = React.useState(false);
   const [draft, setDraft] = React.useState("");

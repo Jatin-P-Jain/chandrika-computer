@@ -37,6 +37,7 @@ import { useTranslations } from "next-intl";
 import type { NoteItem, NoteItemStatus } from "@/types/daily-notes";
 import { noteItemTextSchema } from "@/schema/daily-notes-schema";
 import { useAuth } from "@/context/useAuth";
+import { useDrawerBackButton } from "@/hooks/useDrawerBackButton";
 import {
   addNoteItem,
   updateNoteStatus,
@@ -74,6 +75,11 @@ export default function DailyNotesDialog({
   const tNotes = useTranslations("Notes");
   const [open, setOpen] = React.useState(startOpen);
   const { authState } = useAuth();
+
+  useDrawerBackButton(
+    open,
+    React.useCallback(() => setOpen(false), []),
+  );
   const [notes, setNotes] = React.useState<NoteItem[]>(() =>
     (initialNotes ?? []).map((n) => ({
       ...n,

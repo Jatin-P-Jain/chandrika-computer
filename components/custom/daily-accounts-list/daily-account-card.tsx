@@ -17,8 +17,9 @@ import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
 import { useLocaleTypography } from "@/hooks/useLocaleTypography";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
+import { useNavigationLock } from "@/context/navigation-lock-provider";
 import clsx from "clsx";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type DailyAccountCardProps = {
   dailyAccount: DailyAccount;
@@ -57,11 +58,29 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
   const cardTarget = `/daily-accounts/${id}`;
 
   const { push } = useSafeRouter();
-  const [isNavigating, setIsNavigating] = useState(false);
+  const { isNavigating: isGlobalNavigating } = useNavigationLock();
+  const pendingNavigationRef = useRef(false);
+  const [isCardNavigating, setIsCardNavigating] = useState(false);
+
+  useEffect(() => {
+    if (!isGlobalNavigating && pendingNavigationRef.current) {
+      pendingNavigationRef.current = false;
+      push(cardTarget);
+    }
+  }, [cardTarget, isGlobalNavigating, push]);
 
   const handleNavigate = () => {
-    if (isNavigating) return;
-    setIsNavigating(true);
+    if (isCardNavigating) return;
+
+    setIsCardNavigating(true);
+
+    if (isGlobalNavigating) {
+      pendingNavigationRef.current = true;
+      return;
+    }
+
+    if (pendingNavigationRef.current) return;
+
     push(cardTarget);
   };
 
@@ -80,7 +99,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
       onClick={handleNavigate}
       className={clsx(
         "cursor-pointer w-full flex p-1 shadow-sm border border-border hover:shadow-lg transition-all duration-300 hover:scale-[1.005]",
-        isNavigating && "pointer-events-none opacity-85",
+        isCardNavigating && "pointer-events-none opacity-85",
         isDraft && "bg-amber-50/60",
       )}
     >
@@ -203,7 +222,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
 
         <Button
           className="flex flex-1  w-full"
-          disabled={isNavigating}
+          disabled={isCardNavigating}
           onClick={(e) => {
             e.stopPropagation();
             handleNavigate();
@@ -214,7 +233,7 @@ export function DailyAccountCard({ dailyAccount }: DailyAccountCardProps) {
             : isDraft
               ? tDailyAccount("CompleteDailyAccount")
               : tDailyAccount("CreateDailyAccount")}{" "}
-          {isNavigating ? (
+          {isCardNavigating ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <ChevronsRight className="size-4" />
